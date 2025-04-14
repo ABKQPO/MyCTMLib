@@ -34,13 +34,14 @@ public class Textures {
         CTMIconManager manager = ctmIconMap.get(iIcon.getIconName());
         if (!manager.hasInited()) manager.init();
 
+        float offset = 1e-3f;
         switch (forgeDirection) {
-            case DOWN -> renderFaceYNeg(renderBlocks, x, y, z, manager);
-            case UP -> renderFaceYPos(renderBlocks, x, y, z, manager);
-            case NORTH -> renderFaceZNeg(renderBlocks, x, y, z, manager);
-            case SOUTH -> renderFaceZPos(renderBlocks, x, y, z, manager);
-            case WEST -> renderFaceXNeg(renderBlocks, x, y, z, manager);
-            case EAST -> renderFaceXPos(renderBlocks, x, y, z, manager);
+            case DOWN -> renderFaceYNeg(renderBlocks, x, y + offset, z, manager);
+            case UP -> renderFaceYPos(renderBlocks, x, y - offset, z, manager);
+            case NORTH -> renderFaceZNeg(renderBlocks, x, y, z + offset, manager);
+            case SOUTH -> renderFaceZPos(renderBlocks, x, y, z - offset, manager);
+            case WEST -> renderFaceXNeg(renderBlocks, x + offset, y, z, manager);
+            case EAST -> renderFaceXPos(renderBlocks, x - offset, y, z, manager);
             default -> {
                 return false;
             }
