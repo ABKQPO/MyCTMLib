@@ -18,6 +18,7 @@ import gregtech.api.interfaces.tileentity.ITexturedTileEntity;
 import gregtech.common.blocks.BlockMachines;
 import gregtech.common.render.GTCopiedBlockTextureRender;
 
+@SuppressWarnings("DuplicatedCode")
 public class Textures {
 
     public static Map<String, CTMIconManager> ctmIconMap = new HashMap<>();

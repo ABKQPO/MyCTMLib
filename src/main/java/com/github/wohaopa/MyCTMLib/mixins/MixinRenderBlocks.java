@@ -18,7 +18,7 @@ import com.github.wohaopa.MyCTMLib.Textures;
 public abstract class MixinRenderBlocks {
 
     @Shadow
-    IBlockAccess blockAccess;
+    public IBlockAccess blockAccess;
 
     @Inject(method = "renderFaceYNeg", at = @At("HEAD"), cancellable = true)
     private void redirect$renderFaceYNeg(Block block, double x, double y, double z, IIcon iIcon, CallbackInfo ci) {
