@@ -26,20 +26,6 @@ public class MyCTMLib {
             .bus()
             .register(this);
         configuration = new Configuration(event.getSuggestedConfigurationFile());
-        // GameRegistry.registerBlock(new Block(Material.wood) {
-        //
-        // @Override
-        // public void registerBlockIcons(IIconRegister reg) {
-        // blockIcon = reg.registerIcon("myctmlib:iceiceice");
-        // IIcon icon = reg.registerIcon("myctmlib:iceiceice-ctm");
-        // Textures.ctmIconMap.put("myctmlib:iceiceice", new CTMIconManager(blockIcon, icon));
-        // }
-        //
-        // @Override
-        // public IIcon getIcon(int side, int meta) {
-        // return super.getIcon(side, meta);
-        // }
-        // }, "iceiceice");
         loadConfig();
     }
 
