@@ -5,18 +5,26 @@ import java.util.Map;
 
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockAir;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.RenderBlocks;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.IIcon;
 import net.minecraft.world.IBlockAccess;
+import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
+import com.github.wohaopa.MyCTMLib.mixins.GTRenderedTextureAccessor;
+
 import gregtech.api.GregTechAPI;
+import gregtech.api.interfaces.IBlockWithClientMeta;
+import gregtech.api.interfaces.IBlockWithTextures;
+import gregtech.api.interfaces.IIconContainer;
 import gregtech.api.interfaces.ITexture;
 import gregtech.api.interfaces.tileentity.ITexturedTileEntity;
 import gregtech.common.blocks.BlockMachines;
 import gregtech.common.render.GTCopiedBlockTextureRender;
+import gregtech.common.render.GTRenderedTexture;
 
 @SuppressWarnings("DuplicatedCode")
 public class Textures {
@@ -106,13 +114,6 @@ public class Textures {
                 d9 = minV;
                 d10 = maxV;
             }
-
-            // double d1 = minU;
-            // minU = maxU;
-            // maxU = d1;
-            // d1 = minV;
-            // minV = maxV;
-            // maxV = d1;
 
             double minX = x + renderBlocks.renderMinX + 0.5 * i;
             double maxX = x + renderBlocks.renderMaxX - (i == 0 ? 0.5 : 0);
@@ -734,10 +735,21 @@ public class Textures {
         }
     }
 
+    /**
+     * 根据某个方向上的四个相邻方块判断连接情况，并生成连接纹理的四个象限的 iconIdx。
+     *
+     * connections[0-3]：表示主方向四周是否连接。
+     * connections[4-7]：表示对角线是否连接（需要两个邻居都连接才视为连接）。
+     *
+     * iconIdx[0-3]：表示象限使用的纹理索引，按逆时针顺序：左上、右上、右下、左下。
+     */
     private static void buildConnect(IBlockAccess blockAccess, int x, int y, int z, IIcon iIcon,
         ForgeDirection forgeDirection) {
 
+        // 获取当前面对应的“连接检查方向数组”，共 4 个主方向（如上下左右）
         ForgeDirection[] forgeDirections1 = forgeDirections[forgeDirection.ordinal()];
+
+        // 第一步：判断主方向是否连接（上下左右）
         for (int i = 0; i < 4; i++) {
             IIcon i2 = getIcon(
                 blockAccess,
@@ -745,11 +757,15 @@ public class Textures {
                 y + forgeDirections1[i].offsetY,
                 z + forgeDirections1[i].offsetZ,
                 forgeDirection);
-            connections[i] = i2 == iIcon;
+            connections[i] = i2 != null && i2.getIconName()
+                .equals(iIcon.getIconName());
         }
+
+        // 第二步：判断对角线方向是否连接（连接的条件是两个主方向都连接）
         for (int i = 4; i < 8; i++) {
-            int i1 = i - 4;
-            int i2 = i - 3 == 4 ? 0 : i - 3;
+            int i1 = i - 4; // 第一个方向
+            int i2 = i - 3 == 4 ? 0 : i - 3; // 第二个方向（循环边界处理）
+
             if (connections[i1] && connections[i2]) {
                 IIcon ic = getIcon(
                     blockAccess,
@@ -757,10 +773,12 @@ public class Textures {
                     y + forgeDirections1[i1].offsetY + forgeDirections1[i2].offsetY,
                     z + forgeDirections1[i1].offsetZ + forgeDirections1[i2].offsetZ,
                     forgeDirection);
-                connections[i] = ic == iIcon;
+                connections[i] = ic != null && ic.getIconName()
+                    .equals(iIcon.getIconName());
             } else connections[i] = false;
         }
 
+        // 第三步：为每个象限选择合适的图标索引（iconIdx）
         {
             if (connections[7]) iconIdx[0] = 1;
             else if (connections[3] && connections[0]) iconIdx[0] = 11;
@@ -789,12 +807,39 @@ public class Textures {
             else if (connections[2]) iconIdx[3] = 8;
             else iconIdx[3] = 20;
         }
-
     }
 
     private static IIcon getIcon(IBlockAccess blockAccess, int x, int y, int z, ForgeDirection forgeDirection) {
         Block block = blockAccess.getBlock(x, y, z);
-        if (block instanceof BlockAir) return null;
+        if (block == null || block instanceof BlockAir) return null;
+        int renderMetadata;
+
+        if (block instanceof IBlockWithClientMeta clientMetaBlock) {
+            World world = Minecraft.getMinecraft().theWorld;
+            renderMetadata = clientMetaBlock.getClientMeta(world, x, y, z);
+        } else {
+            renderMetadata = blockAccess.getBlockMetadata(x, y, z);
+        }
+
+        if (block instanceof IBlockWithTextures texturedBlock) {
+            ITexture[][] textures = texturedBlock.getTextures(renderMetadata);
+            if (textures != null && textures.length > forgeDirection.ordinal()
+                && textures[forgeDirection.ordinal()] != null) {
+                if (textures[forgeDirection.ordinal()].length > 0) {
+                    ITexture firstTexture = textures[forgeDirection.ordinal()][0];
+                    if (firstTexture instanceof GTCopiedBlockTextureRender gtCopiedBlockTextureRender) {
+                        return gtCopiedBlockTextureRender.getBlock()
+                            .getIcon(forgeDirection.ordinal(), renderMetadata);
+                    } else if (firstTexture instanceof GTRenderedTexture gtRenderedTexture) {
+                        IIconContainer container = ((GTRenderedTextureAccessor) gtRenderedTexture).getIconContainer();
+                        if (container != null) {
+                            return container.getIcon();
+                        }
+                    }
+                }
+            }
+        }
+
         if (block instanceof BlockMachines) {
             TileEntity tileEntity = blockAccess.getTileEntity(x, y, z);
             if (tileEntity instanceof ITexturedTileEntity texturedTileEntity) {
