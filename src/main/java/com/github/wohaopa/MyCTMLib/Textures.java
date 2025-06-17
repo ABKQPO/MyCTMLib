@@ -32,14 +32,35 @@ public class Textures {
     public static Map<String, CTMIconManager> ctmIconMap = new HashMap<>();
 
     public static boolean contain(String icon) {
-        return ctmIconMap.containsKey(icon);
+        int firstColon = icon.indexOf(':');
+        int secondColon = icon.indexOf(':', firstColon + 1);
+
+        if (secondColon != -1) {
+            icon = icon.substring(0, secondColon) + "&"
+                + icon.substring(secondColon + 1)
+                    .replace(":", "&");
+        }
+
+        boolean result = ctmIconMap.containsKey(icon);
+        if (MyCTMLib.debugMode) System.out.println("[CTM] contain(\"" + icon + "\") = " + result);
+        return result;
     }
 
     public static boolean renderWorldBlock(RenderBlocks renderBlocks, IBlockAccess blockAccess, Block block, double x,
         double y, double z, IIcon iIcon, ForgeDirection forgeDirection) {
 
+        String icon = iIcon.getIconName();
+        int firstColon = icon.indexOf(':');
+        int secondColon = icon.indexOf(':', firstColon + 1);
+
+        if (secondColon != -1) {
+            icon = icon.substring(0, secondColon) + "&"
+                + icon.substring(secondColon + 1)
+                    .replace(":", "&");
+        }
+
         buildConnect(blockAccess, (int) x, (int) y, (int) z, iIcon, forgeDirection);
-        CTMIconManager manager = ctmIconMap.get(iIcon.getIconName());
+        CTMIconManager manager = ctmIconMap.get(icon);
         if (!manager.hasInited()) manager.init();
 
         float offset = 1e-3f;

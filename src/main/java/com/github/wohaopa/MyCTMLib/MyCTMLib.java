@@ -18,6 +18,7 @@ public class MyCTMLib {
     public static final String MODID = "MyCTMLib";
     public static final Logger LOG = LogManager.getLogger(MODID);
     public String[] textures;
+    public static boolean debugMode = false;
     public Configuration configuration;
 
     @Mod.EventHandler
@@ -43,8 +44,10 @@ public class MyCTMLib {
 
     private void loadConfig() {
         textures = configuration.getStringList("textures", Configuration.CATEGORY_GENERAL, new String[] {}, "ctm list");
+        debugMode = configuration.getBoolean("debug", Configuration.CATEGORY_GENERAL, false, "Enable debug mode");
         if (configuration.hasChanged()) {
             configuration.save();
         }
+
     }
 }

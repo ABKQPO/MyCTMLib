@@ -37,7 +37,19 @@ public abstract class MixinRenderBlocks {
      */
     @Inject(method = "renderFaceYNeg", at = @At("HEAD"), cancellable = true)
     private void redirect$renderFaceYNeg(Block block, double x, double y, double z, IIcon iIcon, CallbackInfo ci) {
-        if (blockAccess == null || !Textures.contain(iIcon.getIconName())) return;
+        if (blockAccess == null) return;
+
+        String iconName = iIcon.getIconName();
+        int firstColon = iconName.indexOf(':');
+        int secondColon = iconName.indexOf(':', firstColon + 1);
+
+        if (secondColon != -1) {
+            iconName = iconName.substring(0, secondColon) + "&"
+                + iconName.substring(secondColon + 1)
+                    .replace(":", "&");
+        }
+
+        if (!Textures.contain(iconName)) return;
 
         if (Textures.renderWorldBlock(
             (RenderBlocks) ((Object) this),
@@ -48,7 +60,7 @@ public abstract class MixinRenderBlocks {
             z,
             iIcon,
             ForgeDirection.DOWN)) {
-            ci.cancel(); // 成功渲染则取消默认渲染逻辑
+            ci.cancel();
         }
     }
 
@@ -57,7 +69,19 @@ public abstract class MixinRenderBlocks {
      */
     @Inject(method = "renderFaceYPos", at = @At("HEAD"), cancellable = true)
     private void redirect$renderFaceYPos(Block block, double x, double y, double z, IIcon iIcon, CallbackInfo ci) {
-        if (blockAccess == null || !Textures.contain(iIcon.getIconName())) return;
+        if (blockAccess == null) return;
+
+        String iconName = iIcon.getIconName();
+        int firstColon = iconName.indexOf(':');
+        int secondColon = iconName.indexOf(':', firstColon + 1);
+
+        if (secondColon != -1) {
+            iconName = iconName.substring(0, secondColon) + "&"
+                + iconName.substring(secondColon + 1)
+                    .replace(":", "&");
+        }
+
+        if (!Textures.contain(iconName)) return;
 
         if (Textures
             .renderWorldBlock((RenderBlocks) ((Object) this), blockAccess, block, x, y, z, iIcon, ForgeDirection.UP)) {
@@ -70,7 +94,19 @@ public abstract class MixinRenderBlocks {
      */
     @Inject(method = "renderFaceZNeg", at = @At("HEAD"), cancellable = true)
     private void redirect$renderFaceZNeg(Block block, double x, double y, double z, IIcon iIcon, CallbackInfo ci) {
-        if (blockAccess == null || !Textures.contain(iIcon.getIconName())) return;
+        if (blockAccess == null) return;
+
+        String iconName = iIcon.getIconName();
+        int firstColon = iconName.indexOf(':');
+        int secondColon = iconName.indexOf(':', firstColon + 1);
+
+        if (secondColon != -1) {
+            iconName = iconName.substring(0, secondColon) + "&"
+                + iconName.substring(secondColon + 1)
+                    .replace(":", "&");
+        }
+
+        if (!Textures.contain(iconName)) return;
 
         if (Textures.renderWorldBlock(
             (RenderBlocks) ((Object) this),
@@ -90,7 +126,19 @@ public abstract class MixinRenderBlocks {
      */
     @Inject(method = "renderFaceZPos", at = @At("HEAD"), cancellable = true)
     private void redirect$renderFaceZPos(Block block, double x, double y, double z, IIcon iIcon, CallbackInfo ci) {
-        if (blockAccess == null || !Textures.contain(iIcon.getIconName())) return;
+        if (blockAccess == null) return;
+
+        String iconName = iIcon.getIconName();
+        int firstColon = iconName.indexOf(':');
+        int secondColon = iconName.indexOf(':', firstColon + 1);
+
+        if (secondColon != -1) {
+            iconName = iconName.substring(0, secondColon) + "&"
+                + iconName.substring(secondColon + 1)
+                    .replace(":", "&");
+        }
+
+        if (!Textures.contain(iconName)) return;
 
         if (Textures.renderWorldBlock(
             (RenderBlocks) ((Object) this),
@@ -110,7 +158,19 @@ public abstract class MixinRenderBlocks {
      */
     @Inject(method = "renderFaceXNeg", at = @At("HEAD"), cancellable = true)
     private void redirect$renderFaceXNeg(Block block, double x, double y, double z, IIcon iIcon, CallbackInfo ci) {
-        if (blockAccess == null || !Textures.contain(iIcon.getIconName())) return;
+        if (blockAccess == null) return;
+
+        String iconName = iIcon.getIconName();
+        int firstColon = iconName.indexOf(':');
+        int secondColon = iconName.indexOf(':', firstColon + 1);
+
+        if (secondColon != -1) {
+            iconName = iconName.substring(0, secondColon) + "&"
+                + iconName.substring(secondColon + 1)
+                    .replace(":", "&");
+        }
+
+        if (!Textures.contain(iconName)) return;
 
         if (Textures.renderWorldBlock(
             (RenderBlocks) ((Object) this),
@@ -130,7 +190,19 @@ public abstract class MixinRenderBlocks {
      */
     @Inject(method = "renderFaceXPos", at = @At("HEAD"), cancellable = true)
     private void redirect$renderFaceXPos(Block block, double x, double y, double z, IIcon iIcon, CallbackInfo ci) {
-        if (blockAccess == null || !Textures.contain(iIcon.getIconName())) return;
+        if (blockAccess == null) return;
+
+        String iconName = iIcon.getIconName();
+        int firstColon = iconName.indexOf(':');
+        int secondColon = iconName.indexOf(':', firstColon + 1);
+
+        if (secondColon != -1) {
+            iconName = iconName.substring(0, secondColon) + "&"
+                + iconName.substring(secondColon + 1)
+                    .replace(":", "&");
+        }
+
+        if (!Textures.contain(iconName)) return;
 
         if (Textures.renderWorldBlock(
             (RenderBlocks) ((Object) this),
