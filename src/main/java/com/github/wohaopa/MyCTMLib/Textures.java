@@ -24,24 +24,47 @@ public class Textures {
     public static Map<String, CTMIconManager> ctmIconMap = new HashMap<>();
 
     public static boolean contain(String icon) {
-        return ctmIconMap.containsKey(icon);
+        int firstColon = icon.indexOf(':');
+        int secondColon = icon.indexOf(':', firstColon + 1);
+
+        if (secondColon != -1) {
+            icon = icon.substring(0, secondColon) + "&"
+                + icon.substring(secondColon + 1)
+                    .replace(":", "&");
+        }
+
+        boolean result = ctmIconMap.containsKey(icon);
+        if (MyCTMLib.debugMode) System.out.println("[CTM] contain(\"" + icon + "\") = " + result);
+        return result;
     }
 
     public static boolean renderWorldBlock(RenderBlocks renderBlocks, IBlockAccess blockAccess, Block block, double x,
         double y, double z, IIcon iIcon, ForgeDirection forgeDirection) {
 
-        buildConnect(blockAccess, (int) x, (int) y, (int) z, iIcon, forgeDirection);
-        CTMIconManager manager = ctmIconMap.get(iIcon.getIconName());
+        String icon = iIcon.getIconName();
+        int firstColon = icon.indexOf(':');
+        int secondColon = icon.indexOf(':', firstColon + 1);
+
+        if (secondColon != -1) {
+            icon = icon.substring(0, secondColon) + "&"
+                + icon.substring(secondColon + 1)
+                    .replace(":", "&");
+        }
+
+        int[] iconIdx = new int[4];
+        buildConnect(blockAccess, (int) x, (int) y, (int) z, iIcon, forgeDirection, iconIdx);
+
+        CTMIconManager manager = ctmIconMap.get(icon);
         if (!manager.hasInited()) manager.init();
 
         float offset = 1e-3f;
         switch (forgeDirection) {
-            case DOWN -> renderFaceYNeg(renderBlocks, x, y + offset, z, manager);
-            case UP -> renderFaceYPos(renderBlocks, x, y - offset, z, manager);
-            case NORTH -> renderFaceZNeg(renderBlocks, x, y, z + offset, manager);
-            case SOUTH -> renderFaceZPos(renderBlocks, x, y, z - offset, manager);
-            case WEST -> renderFaceXNeg(renderBlocks, x + offset, y, z, manager);
-            case EAST -> renderFaceXPos(renderBlocks, x - offset, y, z, manager);
+            case DOWN -> renderFaceYNeg(renderBlocks, x, y + offset, z, manager, iconIdx);
+            case UP -> renderFaceYPos(renderBlocks, x, y - offset, z, manager, iconIdx);
+            case NORTH -> renderFaceZNeg(renderBlocks, x, y, z + offset, manager, iconIdx);
+            case SOUTH -> renderFaceZPos(renderBlocks, x, y, z - offset, manager, iconIdx);
+            case WEST -> renderFaceXNeg(renderBlocks, x + offset, y, z, manager, iconIdx);
+            case EAST -> renderFaceXPos(renderBlocks, x - offset, y, z, manager, iconIdx);
             default -> {
                 return false;
             }
@@ -49,11 +72,11 @@ public class Textures {
         return true;
     }
 
-    private static void renderFaceYNeg(RenderBlocks renderBlocks, double x, double y, double z,
-        CTMIconManager manager) {
+    private static void renderFaceYNeg(RenderBlocks renderBlocks, double x, double y, double z, CTMIconManager manager,
+        int[] iconIdxOut) {
         Tessellator tessellator = Tessellator.instance;
         for (int i = 0; i < 2; i++) for (int j = 0; j < 2; j++) {
-            IIcon iIcon = manager.getIcon(iconIdx[i + j * 2]);
+            IIcon iIcon = manager.getIcon(iconIdxOut[i + j * 2]);
             double minU = iIcon.getInterpolatedU(renderBlocks.renderMinX * 16.0D);
             double maxU = iIcon.getInterpolatedU(renderBlocks.renderMaxX * 16.0D);
             double minV = iIcon.getInterpolatedV(renderBlocks.renderMinZ * 16.0D);
@@ -107,13 +130,6 @@ public class Textures {
                 d10 = maxV;
             }
 
-            // double d1 = minU;
-            // minU = maxU;
-            // maxU = d1;
-            // d1 = minV;
-            // minV = maxV;
-            // maxV = d1;
-
             double minX = x + renderBlocks.renderMinX + 0.5 * i;
             double maxX = x + renderBlocks.renderMaxX - (i == 0 ? 0.5 : 0);
             double minY = y + renderBlocks.renderMinY;
@@ -160,12 +176,12 @@ public class Textures {
         }
     }
 
-    private static void renderFaceYPos(RenderBlocks renderBlocks, double x, double y, double z,
-        CTMIconManager manager) {
+    private static void renderFaceYPos(RenderBlocks renderBlocks, double x, double y, double z, CTMIconManager manager,
+        int[] iconIdxOut) {
         Tessellator tessellator = Tessellator.instance;
         for (int i = 0; i < 2; i++) for (int j = 0; j < 2; j++) {
 
-            IIcon iIcon = manager.getIcon(iconIdx[i + j * 2]);
+            IIcon iIcon = manager.getIcon(iconIdxOut[i + j * 2]);
             double minU = iIcon.getInterpolatedU(renderBlocks.renderMinX * 16.0D);
             double maxU = iIcon.getInterpolatedU(renderBlocks.renderMaxX * 16.0D);
             double minV = iIcon.getInterpolatedV(renderBlocks.renderMinZ * 16.0D);
@@ -266,11 +282,11 @@ public class Textures {
 
     }
 
-    private static void renderFaceZNeg(RenderBlocks renderBlocks, double x, double y, double z,
-        CTMIconManager manager) {
+    private static void renderFaceZNeg(RenderBlocks renderBlocks, double x, double y, double z, CTMIconManager manager,
+        int[] iconIdxOut) {
         Tessellator tessellator = Tessellator.instance;
         for (int i = 0; i < 2; i++) for (int j = 0; j < 2; j++) {
-            IIcon iIcon = manager.getIcon(iconIdx[i + j * 2]);
+            IIcon iIcon = manager.getIcon(iconIdxOut[i + j * 2]);
 
             double d3 = iIcon.getInterpolatedU(renderBlocks.renderMinX * 16.0D);
             double d4 = iIcon.getInterpolatedU(renderBlocks.renderMaxX * 16.0D);
@@ -384,12 +400,12 @@ public class Textures {
         }
     }
 
-    private static void renderFaceZPos(RenderBlocks renderBlocks, double x, double y, double z,
-        CTMIconManager manager) {
+    private static void renderFaceZPos(RenderBlocks renderBlocks, double x, double y, double z, CTMIconManager manager,
+        int[] iconIdxOut) {
         Tessellator tessellator = Tessellator.instance;
         for (int i = 0; i < 2; i++) for (int j = 0; j < 2; j++) {
 
-            IIcon iIcon = manager.getIcon(iconIdx[i + j * 2]);
+            IIcon iIcon = manager.getIcon(iconIdxOut[i + j * 2]);
 
             if (renderBlocks.hasOverrideBlockTexture()) {
                 iIcon = renderBlocks.overrideBlockTexture;
@@ -500,12 +516,12 @@ public class Textures {
         }
     }
 
-    private static void renderFaceXNeg(RenderBlocks renderBlocks, double x, double y, double z,
-        CTMIconManager manager) {
+    private static void renderFaceXNeg(RenderBlocks renderBlocks, double x, double y, double z, CTMIconManager manager,
+        int[] iconIdxOut) {
         Tessellator tessellator = Tessellator.instance;
         for (int i = 0; i < 2; i++) for (int j = 0; j < 2; j++) {
 
-            IIcon iIcon = manager.getIcon(iconIdx[i * 2 + j]);
+            IIcon iIcon = manager.getIcon(iconIdxOut[i * 2 + j]);
 
             if (renderBlocks.hasOverrideBlockTexture()) {
                 iIcon = renderBlocks.overrideBlockTexture;
@@ -616,12 +632,12 @@ public class Textures {
         }
     }
 
-    private static void renderFaceXPos(RenderBlocks renderBlocks, double x, double y, double z,
-        CTMIconManager manager) {
+    private static void renderFaceXPos(RenderBlocks renderBlocks, double x, double y, double z, CTMIconManager manager,
+        int[] iconIdxOut) {
         Tessellator tessellator = Tessellator.instance;
         for (int i = 0; i < 2; i++) for (int j = 0; j < 2; j++) {
 
-            IIcon iIcon = manager.getIcon(iconIdx[i * 2 + j]);
+            IIcon iIcon = manager.getIcon(iconIdxOut[i * 2 + j]);
 
             double d3 = iIcon.getInterpolatedU(renderBlocks.renderMinZ * 16.0D);
             double d4 = iIcon.getInterpolatedU(renderBlocks.renderMaxZ * 16.0D);
@@ -734,10 +750,20 @@ public class Textures {
         }
     }
 
+    /**
+     * 根据某个方向上的四个相邻方块判断连接情况，并生成连接纹理的四个象限的 iconIdx。
+     * <p>
+     * connections[0-3]：表示主方向四周是否连接。
+     * connections[4-7]：表示对角线是否连接（需要两个邻居都连接才视为连接）。
+     * <p>
+     * iconIdx[0-3]：表示象限使用的纹理索引，按逆时针顺序：左上、右上、右下、左下。
+     */
     private static void buildConnect(IBlockAccess blockAccess, int x, int y, int z, IIcon iIcon,
-        ForgeDirection forgeDirection) {
+        ForgeDirection forgeDirection, int[] iconIdxOut) {
 
+        boolean[] connections = new boolean[8];
         ForgeDirection[] forgeDirections1 = forgeDirections[forgeDirection.ordinal()];
+
         for (int i = 0; i < 4; i++) {
             IIcon i2 = getIcon(
                 blockAccess,
@@ -745,11 +771,14 @@ public class Textures {
                 y + forgeDirections1[i].offsetY,
                 z + forgeDirections1[i].offsetZ,
                 forgeDirection);
-            connections[i] = i2 == iIcon;
+            connections[i] = i2 != null && i2.getIconName()
+                .equals(iIcon.getIconName());
         }
+
         for (int i = 4; i < 8; i++) {
             int i1 = i - 4;
-            int i2 = i - 3 == 4 ? 0 : i - 3;
+            int i2 = (i - 3 == 4) ? 0 : i - 3;
+
             if (connections[i1] && connections[i2]) {
                 IIcon ic = getIcon(
                     blockAccess,
@@ -757,39 +786,23 @@ public class Textures {
                     y + forgeDirections1[i1].offsetY + forgeDirections1[i2].offsetY,
                     z + forgeDirections1[i1].offsetZ + forgeDirections1[i2].offsetZ,
                     forgeDirection);
-                connections[i] = ic == iIcon;
+                connections[i] = ic != null && ic.getIconName()
+                    .equals(iIcon.getIconName());
             } else connections[i] = false;
         }
 
-        {
-            if (connections[7]) iconIdx[0] = 1;
-            else if (connections[3] && connections[0]) iconIdx[0] = 11;
-            else if (connections[3]) iconIdx[0] = 9;
-            else if (connections[0]) iconIdx[0] = 3;
-            else iconIdx[0] = 17;
-        }
-        {
-            if (connections[4]) iconIdx[1] = 2;
-            else if (connections[0] && connections[1]) iconIdx[1] = 12;
-            else if (connections[0]) iconIdx[1] = 4;
-            else if (connections[1]) iconIdx[1] = 10;
-            else iconIdx[1] = 18;
-        }
-        {
-            if (connections[6]) iconIdx[2] = 5;
-            else if (connections[2] && connections[3]) iconIdx[2] = 15;
-            else if (connections[2]) iconIdx[2] = 7;
-            else if (connections[3]) iconIdx[2] = 13;
-            else iconIdx[2] = 19;
-        }
-        {
-            if (connections[5]) iconIdx[3] = 6;
-            else if (connections[1] && connections[2]) iconIdx[3] = 16;
-            else if (connections[1]) iconIdx[3] = 14;
-            else if (connections[2]) iconIdx[3] = 8;
-            else iconIdx[3] = 20;
-        }
+        // 输出写入传入的 iconIdxOut
+        iconIdxOut[0] = connections[7] ? 1
+            : (connections[3] && connections[0]) ? 11 : (connections[3]) ? 9 : (connections[0]) ? 3 : 17;
 
+        iconIdxOut[1] = connections[4] ? 2
+            : (connections[0] && connections[1]) ? 12 : (connections[0]) ? 4 : (connections[1]) ? 10 : 18;
+
+        iconIdxOut[2] = connections[6] ? 5
+            : (connections[2] && connections[3]) ? 15 : (connections[2]) ? 7 : (connections[3]) ? 13 : 19;
+
+        iconIdxOut[3] = connections[5] ? 6
+            : (connections[1] && connections[2]) ? 16 : (connections[1]) ? 14 : (connections[2]) ? 8 : 20;
     }
 
     private static IIcon getIcon(IBlockAccess blockAccess, int x, int y, int z, ForgeDirection forgeDirection) {
@@ -811,10 +824,6 @@ public class Textures {
         }
         return null;
     }
-
-    private static final boolean[] connections = new boolean[8];
-
-    private static final int[] iconIdx = new int[4];
 
     private static final ForgeDirection[][] forgeDirections = new ForgeDirection[][] {
         { ForgeDirection.NORTH, ForgeDirection.EAST, ForgeDirection.SOUTH, ForgeDirection.WEST }, // DOWN -Y
