@@ -37,7 +37,7 @@ public abstract class MixinRenderBlocks {
      */
     @Inject(method = "renderFaceYNeg", at = @At("HEAD"), cancellable = true)
     private void redirect$renderFaceYNeg(Block block, double x, double y, double z, IIcon iIcon, CallbackInfo ci) {
-        if (blockAccess == null) return;
+        if (blockAccess == null || iIcon == null) return;
 
         String iconName = iIcon.getIconName();
         int firstColon = iconName.indexOf(':');
@@ -69,7 +69,7 @@ public abstract class MixinRenderBlocks {
      */
     @Inject(method = "renderFaceYPos", at = @At("HEAD"), cancellable = true)
     private void redirect$renderFaceYPos(Block block, double x, double y, double z, IIcon iIcon, CallbackInfo ci) {
-        if (blockAccess == null) return;
+        if (blockAccess == null || iIcon == null) return;
 
         String iconName = iIcon.getIconName();
         int firstColon = iconName.indexOf(':');
@@ -94,7 +94,7 @@ public abstract class MixinRenderBlocks {
      */
     @Inject(method = "renderFaceZNeg", at = @At("HEAD"), cancellable = true)
     private void redirect$renderFaceZNeg(Block block, double x, double y, double z, IIcon iIcon, CallbackInfo ci) {
-        if (blockAccess == null) return;
+        if (blockAccess == null || iIcon == null) return;
 
         String iconName = iIcon.getIconName();
         int firstColon = iconName.indexOf(':');
@@ -126,7 +126,7 @@ public abstract class MixinRenderBlocks {
      */
     @Inject(method = "renderFaceZPos", at = @At("HEAD"), cancellable = true)
     private void redirect$renderFaceZPos(Block block, double x, double y, double z, IIcon iIcon, CallbackInfo ci) {
-        if (blockAccess == null) return;
+        if (blockAccess == null || iIcon == null) return;
 
         String iconName = iIcon.getIconName();
         int firstColon = iconName.indexOf(':');
@@ -158,7 +158,7 @@ public abstract class MixinRenderBlocks {
      */
     @Inject(method = "renderFaceXNeg", at = @At("HEAD"), cancellable = true)
     private void redirect$renderFaceXNeg(Block block, double x, double y, double z, IIcon iIcon, CallbackInfo ci) {
-        if (blockAccess == null) return;
+        if (blockAccess == null || iIcon == null) return;
 
         String iconName = iIcon.getIconName();
         int firstColon = iconName.indexOf(':');
@@ -190,7 +190,7 @@ public abstract class MixinRenderBlocks {
      */
     @Inject(method = "renderFaceXPos", at = @At("HEAD"), cancellable = true)
     private void redirect$renderFaceXPos(Block block, double x, double y, double z, IIcon iIcon, CallbackInfo ci) {
-        if (blockAccess == null) return;
+        if (blockAccess == null || iIcon == null) return;
 
         String iconName = iIcon.getIconName();
         int firstColon = iconName.indexOf(':');
