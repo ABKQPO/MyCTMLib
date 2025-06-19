@@ -22,6 +22,8 @@ import gregtech.common.render.GTCopiedBlockTextureRender;
 public class Textures {
 
     public static Map<String, CTMIconManager> ctmIconMap = new HashMap<>();
+    public static final ThreadLocal<int[]> threadLocalIconIdx = ThreadLocal.withInitial(() -> new int[4]);
+    public static final ThreadLocal<boolean[]> threadLocalConnections = ThreadLocal.withInitial(() -> new boolean[8]);
 
     public static boolean contain(String icon) {
         int firstColon = icon.indexOf(':');
@@ -51,11 +53,14 @@ public class Textures {
                     .replace(":", "&");
         }
 
-        int[] iconIdx = new int[4];
+        int[] iconIdx = threadLocalIconIdx.get();
+
         buildConnect(blockAccess, (int) x, (int) y, (int) z, iIcon, forgeDirection, iconIdx);
 
         CTMIconManager manager = ctmIconMap.get(icon);
-        if (!manager.hasInited()) manager.init();
+        if (!manager.hasInited()) {
+            manager.init();
+        }
 
         float offset = 1e-3f;
         switch (forgeDirection) {
@@ -69,6 +74,7 @@ public class Textures {
                 return false;
             }
         }
+
         return true;
     }
 
@@ -752,16 +758,16 @@ public class Textures {
 
     /**
      * 根据某个方向上的四个相邻方块判断连接情况，并生成连接纹理的四个象限的 iconIdx。
-     * <p>
+     *
      * connections[0-3]：表示主方向四周是否连接。
      * connections[4-7]：表示对角线是否连接（需要两个邻居都连接才视为连接）。
-     * <p>
+     *
      * iconIdx[0-3]：表示象限使用的纹理索引，按逆时针顺序：左上、右上、右下、左下。
      */
     private static void buildConnect(IBlockAccess blockAccess, int x, int y, int z, IIcon iIcon,
         ForgeDirection forgeDirection, int[] iconIdxOut) {
 
-        boolean[] connections = new boolean[8];
+        boolean[] connections = threadLocalConnections.get();
         ForgeDirection[] forgeDirections1 = forgeDirections[forgeDirection.ordinal()];
 
         for (int i = 0; i < 4; i++) {
@@ -788,10 +794,11 @@ public class Textures {
                     forgeDirection);
                 connections[i] = ic != null && ic.getIconName()
                     .equals(iIcon.getIconName());
-            } else connections[i] = false;
+            } else {
+                connections[i] = false;
+            }
         }
 
-        // 输出写入传入的 iconIdxOut
         iconIdxOut[0] = connections[7] ? 1
             : (connections[3] && connections[0]) ? 11 : (connections[3]) ? 9 : (connections[0]) ? 3 : 17;
 
