@@ -772,14 +772,6 @@ public class Textures {
      * <p>
      * iconIdx[0-3]：表示象限使用的纹理索引，按逆时针顺序：左上、右上、右下、左下。
      */
-    /**
-     * 根据某个方向上的四个相邻方块判断连接情况，并生成连接纹理的四个象限的 iconIdx。
-     *
-     * connections[0-3]：表示主方向四周是否连接。
-     * connections[4-7]：表示对角线是否连接（需要两个邻居都连接才视为连接）。
-     *
-     * iconIdx[0-3]：表示象限使用的纹理索引，按逆时针顺序：左上、右上、右下、左下。
-     */
     private static void buildConnect(IBlockAccess blockAccess, int x, int y, int z, IIcon iIcon,
         ForgeDirection forgeDirection, int[] iconIdxOut) {
 
