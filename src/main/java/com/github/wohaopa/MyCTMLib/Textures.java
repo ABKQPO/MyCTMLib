@@ -822,7 +822,7 @@ public class Textures {
                 for (ITexture texture : iTextures) {
                     if (texture instanceof GTCopiedBlockTextureRender gtCopiedBlockTextureRender) {
                         return gtCopiedBlockTextureRender.getBlock()
-                            .getIcon(forgeDirection.ordinal(), gtCopiedBlockTextureRender.getMeta());
+                            .getIcon(forgeDirection.ordinal(), (int) gtCopiedBlockTextureRender.getMeta());
                     }
                 }
             }
