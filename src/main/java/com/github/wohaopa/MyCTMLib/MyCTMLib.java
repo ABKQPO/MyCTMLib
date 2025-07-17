@@ -12,7 +12,7 @@ import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 
-@Mod(modid = MyCTMLib.MODID, version = Tags.VERSION, name = "MyCTMLib", acceptedMinecraftVersions = "[1.7.10]")
+@Mod(modid = MyCTMLib.MODID, version = "1.0", name = "MyCTMLib", acceptedMinecraftVersions = "[1.7.10]")
 public class MyCTMLib {
 
     public static final String MODID = "MyCTMLib";
