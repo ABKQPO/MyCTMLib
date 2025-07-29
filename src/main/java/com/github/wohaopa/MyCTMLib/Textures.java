@@ -12,7 +12,6 @@ import net.minecraft.util.IIcon;
 import net.minecraft.world.IBlockAccess;
 import net.minecraftforge.common.util.ForgeDirection;
 
-import gregtech.api.GregTechAPI;
 import gregtech.api.interfaces.ITexture;
 import gregtech.api.interfaces.tileentity.ITexturedTileEntity;
 import gregtech.common.blocks.BlockMachines;
@@ -840,17 +839,4 @@ public class Textures {
         { ForgeDirection.UP, ForgeDirection.SOUTH, ForgeDirection.DOWN, ForgeDirection.NORTH }, // WEST -X
         { ForgeDirection.UP, ForgeDirection.NORTH, ForgeDirection.DOWN, ForgeDirection.SOUTH } // EAST +X
     };
-
-    public static void register(String[] list) {
-        GregTechAPI.sGTBlockIconload.add(() -> {
-            for (String s : list) {
-                if (s != null && !s.trim()
-                    .isEmpty() && !s.startsWith("#") && !s.startsWith("//")) {
-                    IIcon icon2 = GregTechAPI.sBlockIcons.registerIcon(s + "_ctm");
-                    IIcon icon1 = GregTechAPI.sBlockIcons.registerIcon(s);
-                    ctmIconMap.put(s, new CTMIconManager(icon1, icon2));
-                }
-            }
-        });
-    }
 }
