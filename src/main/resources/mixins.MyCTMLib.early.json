@@ -7,9 +7,11 @@
   "compatibilityLevel": "JAVA_8",
   "mixins": [],
   "client": [
+    "SimpleResourceAccessor",
     "MixinRenderBlocks",
     "MixinTextureMap",
-    "SimpleResourceAccessor"
+    "MixinSimpleReloadableResourceManager",
+    "MixinSimpleReloadableResourceManagerAccessor"
   ],
   "server": []
 }
