@@ -5,13 +5,9 @@
   "refmap": "mixins.MyCTMLib.refmap.json",
   "target": "@env(DEFAULT)",
   "compatibilityLevel": "JAVA_8",
-  "mixins": [],
-  "client": [
-    "SimpleResourceAccessor",
-    "MixinRenderBlocks",
-    "MixinTextureMap",
-    "MixinSimpleReloadableResourceManager",
-    "MixinSimpleReloadableResourceManagerAccessor"
+  "mixins": [
+    "GTRenderedTextureAccessor"
   ],
+  "client": [],
   "server": []
 }

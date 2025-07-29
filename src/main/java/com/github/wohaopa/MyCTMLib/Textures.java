@@ -7,15 +7,11 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockAir;
 import net.minecraft.client.renderer.RenderBlocks;
 import net.minecraft.client.renderer.Tessellator;
-import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.IIcon;
 import net.minecraft.world.IBlockAccess;
 import net.minecraftforge.common.util.ForgeDirection;
 
-import gregtech.api.interfaces.ITexture;
-import gregtech.api.interfaces.tileentity.ITexturedTileEntity;
-import gregtech.common.blocks.BlockMachines;
-import gregtech.common.render.GTCopiedBlockTextureRender;
+import cpw.mods.fml.common.Loader;
 
 @SuppressWarnings("DuplicatedCode")
 public class Textures {
@@ -811,24 +807,19 @@ public class Textures {
             : (connections[1] && connections[2]) ? 16 : (connections[1]) ? 14 : (connections[2]) ? 8 : 20;
     }
 
-    private static IIcon getIcon(IBlockAccess blockAccess, int x, int y, int z, ForgeDirection forgeDirection) {
+    public static IIcon getIcon(IBlockAccess blockAccess, int x, int y, int z, ForgeDirection direction) {
         Block block = blockAccess.getBlock(x, y, z);
-        if (block instanceof BlockAir) return null;
-        if (block instanceof BlockMachines) {
-            TileEntity tileEntity = blockAccess.getTileEntity(x, y, z);
-            if (tileEntity instanceof ITexturedTileEntity texturedTileEntity) {
-                ITexture[] iTextures = texturedTileEntity.getTexture(block, forgeDirection);
-                for (ITexture texture : iTextures) {
-                    if (texture instanceof GTCopiedBlockTextureRender gtCopiedBlockTextureRender) {
-                        return gtCopiedBlockTextureRender.getBlock()
-                            .getIcon(forgeDirection.ordinal(), (int) gtCopiedBlockTextureRender.getMeta());
-                    }
-                }
+        if (block == null || block instanceof BlockAir) return null;
+
+        if (Loader.isModLoaded("gregtech")) {
+            try {
+                return GTIntegrationHelper.getIcon(blockAccess, x, y, z, direction);
+            } catch (Throwable t) {
+                return null;
             }
-        } else {
-            return block.getIcon(blockAccess, x, y, z, forgeDirection.ordinal());
         }
-        return null;
+
+        return block.getIcon(blockAccess, x, y, z, direction.ordinal());
     }
 
     private static final ForgeDirection[][] forgeDirections = new ForgeDirection[][] {
