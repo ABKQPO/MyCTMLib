@@ -192,7 +192,7 @@ public class MyCTMLib {
 
     @Mod.EventHandler
     public void init(FMLInitializationEvent event) {
-        Textures.register(textures);
+        // Textures.register(textures);
     }
 
     @SubscribeEvent
