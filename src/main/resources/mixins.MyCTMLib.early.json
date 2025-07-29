@@ -5,11 +5,10 @@
   "refmap": "mixins.MyCTMLib.refmap.json",
   "target": "@env(DEFAULT)",
   "compatibilityLevel": "JAVA_8",
-  "mixins": [
-    "MixinRenderBlocks"
-  ],
+  "mixins": [],
   "client": [
-    "MixinTextureMap"
+    "MixinTextureMap",
+    "MixinRenderBlocks"
   ],
   "server": []
 }
