@@ -19,7 +19,6 @@ public class MyCTMLib {
 
     public static final String MODID = "MyCTMLib";
     public static final Logger LOG = LogManager.getLogger(MODID);
-    public String[] textures;
     public static boolean debugMode = false;
     public Configuration configuration;
 

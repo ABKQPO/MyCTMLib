@@ -57,7 +57,7 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
             }
 
             if (resource instanceof SimpleResource simple && resource.getMetadata("myctmlib") != null) {
-                JsonObject mcmetaJson = simple.mcmetaJson;
+                JsonObject mcmetaJson = ((SimpleResourceAccessor) simple).getMcmetaJson();
 
                 JsonObject ctmObj = mcmetaJson.getAsJsonObject("myctmlib");
                 String connectTexture = ctmObj.getAsJsonPrimitive("connection")
