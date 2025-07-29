@@ -5,7 +5,11 @@ import static com.github.wohaopa.MyCTMLib.Textures.ctmIconMap;
 import java.util.Map;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.texture.*;
+import net.minecraft.client.renderer.texture.AbstractTexture;
+import net.minecraft.client.renderer.texture.IIconRegister;
+import net.minecraft.client.renderer.texture.ITickableTextureObject;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.client.resources.IResource;
 import net.minecraft.client.resources.SimpleResource;
 import net.minecraft.util.IIcon;
@@ -73,6 +77,6 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
 
                 cir.setReturnValue(base);
             }
-        } catch (Exception e) {}
+        } catch (Exception ignored) {}
     }
 }
