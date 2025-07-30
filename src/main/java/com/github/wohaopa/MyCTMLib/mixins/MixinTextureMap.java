@@ -23,10 +23,13 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import com.github.wohaopa.MyCTMLib.CTMIconManager;
+import com.github.wohaopa.MyCTMLib.ICTMIconManagerHolder;
+import com.github.wohaopa.MyCTMLib.MyCTMLib;
 import com.google.gson.JsonObject;
 
 @Mixin(TextureMap.class)
-public abstract class MixinTextureMap extends AbstractTexture implements ITickableTextureObject, IIconRegister {
+public abstract class MixinTextureMap extends AbstractTexture
+    implements ITickableTextureObject, IIconRegister, ICTMIconManagerHolder {
 
     @Shadow
     @Final
@@ -56,6 +59,10 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
                         .replace(":", "&");
             }
 
+            if (textureName.startsWith("gregtech:iconsets/MACHINE_CASING_STABLE_TITANIUM")) {
+                MyCTMLib.LOG.warn(textureName);
+            }
+
             ResourceLocation res = completeResourceLocation(new ResourceLocation(textureName), 0);
             IResource resource = Minecraft.getMinecraft()
                 .getResourceManager()
@@ -82,7 +89,9 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
                 TextureAtlasSprite ctm = new TextureAtlasSprite(connectTexture);
                 mapRegisteredSprites.put(connectTexture, ctm);
 
-                ctmIconMap.put(textureName, new CTMIconManager(base, ctm));
+                CTMIconManager manager = new CTMIconManager(base, null);
+                ((ICTMIconManagerHolder) ctm).setTextureName(textureName);
+                ctmIconMap.put(textureName, manager);
 
                 cir.setReturnValue(base);
             }

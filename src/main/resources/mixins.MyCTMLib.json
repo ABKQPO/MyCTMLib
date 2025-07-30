@@ -8,6 +8,8 @@
   "mixins": [
     "MixinBlockMetaData"
   ],
-  "client": [],
+  "client": [
+    "MixinTextureAtlasSprite"
+  ],
   "server": []
 }

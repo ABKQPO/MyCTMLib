@@ -14,13 +14,29 @@ import cpw.mods.fml.relauncher.SideOnly;
 public class CTMIconManager {
 
     // 存储所有子图块图标（索引 1 ~ 20）
-    private final IIcon[] icons = new CTMIcon[21];
+    public IIcon[] icons = new CTMIcon[21];
 
     // 主纹理图（通常为 4x4）
-    private final IIcon icon;
+    public IIcon icon;
 
     // 小型图（通常为 2x2，用于特殊边角等）
-    private final IIcon iconSmall;
+    public IIcon iconSmall;
+
+    public IIcon getIcon() {
+        return icon;
+    }
+
+    public void setIcon(IIcon icon) {
+        this.icon = icon;
+    }
+
+    public IIcon getIconSmall() {
+        return iconSmall;
+    }
+
+    public void setIconSmall(IIcon iconSmall) {
+        this.iconSmall = iconSmall;
+    }
 
     /**
      * 构造函数，提供用于裁切的主图标与小图标。
