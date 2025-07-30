@@ -47,6 +47,15 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
         cancellable = true)
     private void onRegisterIcon(String textureName, CallbackInfoReturnable<IIcon> cir) {
         try {
+            int firstColon = textureName.indexOf(':');
+            int secondColon = textureName.indexOf(':', firstColon + 1);
+
+            if (secondColon != -1) {
+                textureName = textureName.substring(0, secondColon) + "&"
+                    + textureName.substring(secondColon + 1)
+                        .replace(":", "&");
+            }
+
             ResourceLocation res = completeResourceLocation(new ResourceLocation(textureName), 0);
             IResource resource = Minecraft.getMinecraft()
                 .getResourceManager()

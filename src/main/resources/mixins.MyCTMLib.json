@@ -5,7 +5,9 @@
   "refmap": "mixins.MyCTMLib.refmap.json",
   "target": "@env(DEFAULT)",
   "compatibilityLevel": "JAVA_8",
-  "mixins": [],
+  "mixins": [
+    "MixinBlockMetaData"
+  ],
   "client": [],
   "server": []
 }
