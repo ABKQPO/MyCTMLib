@@ -26,7 +26,9 @@ public class MyCTMLib {
     public void preInit(FMLPreInitializationEvent event) {
 
         ((MixinSimpleReloadableResourceManagerAccessor) Minecraft.getMinecraft()).getMetadataSerializer()
-            .registerMetadataSectionType(new MyCTMLibMetadataSectionSerializer(), MyCTMLibMetadataSection.class);
+            .registerMetadataSectionType(
+                new MyCTMLibMetadataSectionSerializer(),
+                MyCTMLibMetadataSectionSerializer.MyCTMLibMetadataSection.class);
 
         FMLCommonHandler.instance()
             .bus()

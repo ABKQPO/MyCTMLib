@@ -2,8 +2,10 @@ package com.github.wohaopa.MyCTMLib;
 
 import java.lang.reflect.Type;
 
+import net.minecraft.client.resources.data.IMetadataSection;
 import net.minecraft.client.resources.data.IMetadataSectionSerializer;
 
+import com.github.bsideup.jabel.Desugar;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -28,4 +30,8 @@ public class MyCTMLibMetadataSectionSerializer implements IMetadataSectionSerial
     public String getSectionName() {
         return "myctmlib";
     }
+
+    @Desugar
+    public record MyCTMLibMetadataSection(String connection) implements IMetadataSection {}
+
 }
