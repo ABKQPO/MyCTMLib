@@ -759,7 +759,7 @@ public class Textures {
      * <p>
      * iconIdx[0-3]：表示象限使用的纹理索引，按逆时针顺序：左上、右上、右下、左下。
      */
-    private static void buildConnect(IBlockAccess blockAccess, int x, int y, int z, IIcon iIcon,
+    public static void buildConnect(IBlockAccess blockAccess, int x, int y, int z, IIcon iIcon,
         ForgeDirection forgeDirection, int[] iconIdxOut) {
 
         boolean[] connections = threadLocalConnections.get();
