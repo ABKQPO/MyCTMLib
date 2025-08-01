@@ -2,7 +2,7 @@ package com.github.wohaopa.MyCTMLib;
 
 import java.util.HashMap;
 import java.util.Map;
-import com.gtnewhorizon.gtnhlib.client.renderer.TessellatorManager;
+
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockAir;
 import net.minecraft.client.renderer.RenderBlocks;
@@ -10,6 +10,8 @@ import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.util.IIcon;
 import net.minecraft.world.IBlockAccess;
 import net.minecraftforge.common.util.ForgeDirection;
+
+import com.gtnewhorizon.gtnhlib.client.renderer.TessellatorManager;
 
 import cpw.mods.fml.common.Loader;
 
@@ -19,6 +21,7 @@ public class Textures {
     public static Map<String, CTMIconManager> ctmIconMap = new HashMap<>();
     public static final ThreadLocal<int[]> threadLocalIconIdx = ThreadLocal.withInitial(() -> new int[4]);
     public static final ThreadLocal<boolean[]> threadLocalConnections = ThreadLocal.withInitial(() -> new boolean[8]);
+
     public static boolean contain(String icon) {
         int firstColon = icon.indexOf(':');
         int secondColon = icon.indexOf(':', firstColon + 1);
