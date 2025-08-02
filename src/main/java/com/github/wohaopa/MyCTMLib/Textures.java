@@ -805,7 +805,7 @@ public class Textures {
 
         if (Loader.isModLoaded("gregtech")) {
             try {
-                return GTIntegrationHelper.getIcon(blockAccess, x, y, z, direction);
+                return GTNHIntegrationHelper.getIcon(blockAccess, x, y, z, direction);
             } catch (Throwable t) {
                 return null;
             }
