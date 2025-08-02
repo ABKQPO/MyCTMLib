@@ -2,6 +2,7 @@ package com.github.wohaopa.MyCTMLib;
 
 import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.IIcon;
 import net.minecraft.world.IBlockAccess;
@@ -9,6 +10,7 @@ import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
 import com.github.wohaopa.MyCTMLib.mixins.GTRenderedTextureAccessor;
+import com.gtnewhorizon.gtnhlib.client.renderer.TessellatorManager;
 
 import gregtech.api.interfaces.IBlockWithClientMeta;
 import gregtech.api.interfaces.IBlockWithTextures;
@@ -20,7 +22,11 @@ import gregtech.common.blocks.BlockMachines;
 import gregtech.common.render.GTCopiedBlockTextureRender;
 import gregtech.common.render.GTRenderedTexture;
 
-public class GTIntegrationHelper {
+public class GTNHIntegrationHelper {
+
+    public static Tessellator getGTNHLibTessellator() {
+        return TessellatorManager.get();
+    }
 
     public static IIcon getIcon(IBlockAccess blockAccess, int x, int y, int z, ForgeDirection forgeDirection) {
         Block block = blockAccess.getBlock(x, y, z);

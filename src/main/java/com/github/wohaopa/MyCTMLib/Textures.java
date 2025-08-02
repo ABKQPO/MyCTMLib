@@ -11,8 +11,6 @@ import net.minecraft.util.IIcon;
 import net.minecraft.world.IBlockAccess;
 import net.minecraftforge.common.util.ForgeDirection;
 
-import com.gtnewhorizon.gtnhlib.client.renderer.TessellatorManager;
-
 import cpw.mods.fml.common.Loader;
 
 @SuppressWarnings("DuplicatedCode")
@@ -77,7 +75,8 @@ public class Textures {
 
     private static void renderFaceYNeg(RenderBlocks renderBlocks, double x, double y, double z, CTMIconManager manager,
         int[] iconIdxOut) {
-        Tessellator tessellator = TessellatorManager.get();
+        Tessellator tessellator = Loader.isModLoaded("gtnhlib") ? GTNHIntegrationHelper.getGTNHLibTessellator()
+            : Tessellator.instance;
         for (int i = 0; i < 2; i++) for (int j = 0; j < 2; j++) {
             IIcon iIcon = manager.getIcon(iconIdxOut[i + j * 2]);
             double minU = iIcon.getInterpolatedU(renderBlocks.renderMinX * 16.0D);
@@ -181,7 +180,8 @@ public class Textures {
 
     private static void renderFaceYPos(RenderBlocks renderBlocks, double x, double y, double z, CTMIconManager manager,
         int[] iconIdxOut) {
-        Tessellator tessellator = TessellatorManager.get();
+        Tessellator tessellator = Loader.isModLoaded("gtnhlib") ? GTNHIntegrationHelper.getGTNHLibTessellator()
+            : Tessellator.instance;
         for (int i = 0; i < 2; i++) for (int j = 0; j < 2; j++) {
 
             IIcon iIcon = manager.getIcon(iconIdxOut[i + j * 2]);
@@ -287,7 +287,8 @@ public class Textures {
 
     private static void renderFaceZNeg(RenderBlocks renderBlocks, double x, double y, double z, CTMIconManager manager,
         int[] iconIdxOut) {
-        Tessellator tessellator = TessellatorManager.get();
+        Tessellator tessellator = Loader.isModLoaded("gtnhlib") ? GTNHIntegrationHelper.getGTNHLibTessellator()
+            : Tessellator.instance;
         for (int i = 0; i < 2; i++) for (int j = 0; j < 2; j++) {
             IIcon iIcon = manager.getIcon(iconIdxOut[i + j * 2]);
 
@@ -405,7 +406,8 @@ public class Textures {
 
     private static void renderFaceZPos(RenderBlocks renderBlocks, double x, double y, double z, CTMIconManager manager,
         int[] iconIdxOut) {
-        Tessellator tessellator = TessellatorManager.get();
+        Tessellator tessellator = Loader.isModLoaded("gtnhlib") ? GTNHIntegrationHelper.getGTNHLibTessellator()
+            : Tessellator.instance;
         for (int i = 0; i < 2; i++) for (int j = 0; j < 2; j++) {
 
             IIcon iIcon = manager.getIcon(iconIdxOut[i + j * 2]);
@@ -521,7 +523,8 @@ public class Textures {
 
     private static void renderFaceXNeg(RenderBlocks renderBlocks, double x, double y, double z, CTMIconManager manager,
         int[] iconIdxOut) {
-        Tessellator tessellator = TessellatorManager.get();
+        Tessellator tessellator = Loader.isModLoaded("gtnhlib") ? GTNHIntegrationHelper.getGTNHLibTessellator()
+            : Tessellator.instance;
         for (int i = 0; i < 2; i++) for (int j = 0; j < 2; j++) {
 
             IIcon iIcon = manager.getIcon(iconIdxOut[i * 2 + j]);
@@ -637,7 +640,8 @@ public class Textures {
 
     private static void renderFaceXPos(RenderBlocks renderBlocks, double x, double y, double z, CTMIconManager manager,
         int[] iconIdxOut) {
-        Tessellator tessellator = TessellatorManager.get();
+        Tessellator tessellator = Loader.isModLoaded("gtnhlib") ? GTNHIntegrationHelper.getGTNHLibTessellator()
+            : Tessellator.instance;
         for (int i = 0; i < 2; i++) for (int j = 0; j < 2; j++) {
 
             IIcon iIcon = manager.getIcon(iconIdxOut[i * 2 + j]);
@@ -815,7 +819,7 @@ public class Textures {
 
         if (Loader.isModLoaded("gregtech")) {
             try {
-                return GTIntegrationHelper.getIcon(blockAccess, x, y, z, direction);
+                return GTNHIntegrationHelper.getIcon(blockAccess, x, y, z, direction);
             } catch (Throwable t) {
                 return null;
             }

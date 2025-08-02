@@ -36,4 +36,5 @@
 dependencies {
     runtimeOnlyNonPublishable("com.github.GTNewHorizons:NotEnoughItems:2.7.62-GTNH:dev")
     implementation('com.github.GTNewHorizons:GT5-Unofficial:5.09.51.382:dev')
+    implementation files("build/angelica-1.0.0-beta49-dev.jar")
 }
