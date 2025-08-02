@@ -1,7 +1,7 @@
 package com.github.wohaopa.MyCTMLib;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockAir;
@@ -16,7 +16,7 @@ import cpw.mods.fml.common.Loader;
 @SuppressWarnings("DuplicatedCode")
 public class Textures {
 
-    public static Map<String, CTMIconManager> ctmIconMap = new HashMap<>();
+    public static Map<String, CTMIconManager> ctmIconMap = new ConcurrentHashMap<>();
     public static final ThreadLocal<int[]> threadLocalIconIdx = ThreadLocal.withInitial(() -> new int[4]);
     public static final ThreadLocal<boolean[]> threadLocalConnections = ThreadLocal.withInitial(() -> new boolean[8]);
 
