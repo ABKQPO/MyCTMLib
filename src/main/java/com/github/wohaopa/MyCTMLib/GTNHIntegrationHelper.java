@@ -2,17 +2,24 @@ package com.github.wohaopa.MyCTMLib;
 
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockAir;
+import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.IIcon;
 import net.minecraft.world.IBlockAccess;
 import net.minecraftforge.common.util.ForgeDirection;
+
+import com.gtnewhorizon.gtnhlib.client.renderer.TessellatorManager;
 
 import gregtech.api.interfaces.ITexture;
 import gregtech.api.interfaces.tileentity.ITexturedTileEntity;
 import gregtech.common.blocks.BlockMachines;
 import gregtech.common.render.GTCopiedBlockTextureRender;
 
-public class GTIntegrationHelper {
+public class GTNHIntegrationHelper {
+
+    public static Tessellator getGTNHLibTessellator() {
+        return TessellatorManager.get();
+    }
 
     public static IIcon getIcon(IBlockAccess blockAccess, int x, int y, int z, ForgeDirection forgeDirection) {
         Block block = blockAccess.getBlock(x, y, z);

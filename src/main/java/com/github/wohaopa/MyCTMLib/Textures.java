@@ -1,7 +1,7 @@
 package com.github.wohaopa.MyCTMLib;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockAir;
@@ -16,7 +16,7 @@ import cpw.mods.fml.common.Loader;
 @SuppressWarnings("DuplicatedCode")
 public class Textures {
 
-    public static Map<String, CTMIconManager> ctmIconMap = new HashMap<>();
+    public static Map<String, CTMIconManager> ctmIconMap = new ConcurrentHashMap<>();
     public static final ThreadLocal<int[]> threadLocalIconIdx = ThreadLocal.withInitial(() -> new int[4]);
     public static final ThreadLocal<boolean[]> threadLocalConnections = ThreadLocal.withInitial(() -> new boolean[8]);
 
@@ -75,7 +75,8 @@ public class Textures {
 
     private static void renderFaceYNeg(RenderBlocks renderBlocks, double x, double y, double z, CTMIconManager manager,
         int[] iconIdxOut) {
-        Tessellator tessellator = Tessellator.instance;
+        Tessellator tessellator = Loader.isModLoaded("gtnhlib") ? GTNHIntegrationHelper.getGTNHLibTessellator()
+            : Tessellator.instance;
         for (int i = 0; i < 2; i++) for (int j = 0; j < 2; j++) {
             IIcon iIcon = manager.getIcon(iconIdxOut[i + j * 2]);
             double minU = iIcon.getInterpolatedU(renderBlocks.renderMinX * 16.0D);
@@ -179,7 +180,8 @@ public class Textures {
 
     private static void renderFaceYPos(RenderBlocks renderBlocks, double x, double y, double z, CTMIconManager manager,
         int[] iconIdxOut) {
-        Tessellator tessellator = Tessellator.instance;
+        Tessellator tessellator = Loader.isModLoaded("gtnhlib") ? GTNHIntegrationHelper.getGTNHLibTessellator()
+            : Tessellator.instance;
         for (int i = 0; i < 2; i++) for (int j = 0; j < 2; j++) {
 
             IIcon iIcon = manager.getIcon(iconIdxOut[i + j * 2]);
@@ -285,7 +287,8 @@ public class Textures {
 
     private static void renderFaceZNeg(RenderBlocks renderBlocks, double x, double y, double z, CTMIconManager manager,
         int[] iconIdxOut) {
-        Tessellator tessellator = Tessellator.instance;
+        Tessellator tessellator = Loader.isModLoaded("gtnhlib") ? GTNHIntegrationHelper.getGTNHLibTessellator()
+            : Tessellator.instance;
         for (int i = 0; i < 2; i++) for (int j = 0; j < 2; j++) {
             IIcon iIcon = manager.getIcon(iconIdxOut[i + j * 2]);
 
@@ -403,7 +406,8 @@ public class Textures {
 
     private static void renderFaceZPos(RenderBlocks renderBlocks, double x, double y, double z, CTMIconManager manager,
         int[] iconIdxOut) {
-        Tessellator tessellator = Tessellator.instance;
+        Tessellator tessellator = Loader.isModLoaded("gtnhlib") ? GTNHIntegrationHelper.getGTNHLibTessellator()
+            : Tessellator.instance;
         for (int i = 0; i < 2; i++) for (int j = 0; j < 2; j++) {
 
             IIcon iIcon = manager.getIcon(iconIdxOut[i + j * 2]);
@@ -519,7 +523,8 @@ public class Textures {
 
     private static void renderFaceXNeg(RenderBlocks renderBlocks, double x, double y, double z, CTMIconManager manager,
         int[] iconIdxOut) {
-        Tessellator tessellator = Tessellator.instance;
+        Tessellator tessellator = Loader.isModLoaded("gtnhlib") ? GTNHIntegrationHelper.getGTNHLibTessellator()
+            : Tessellator.instance;
         for (int i = 0; i < 2; i++) for (int j = 0; j < 2; j++) {
 
             IIcon iIcon = manager.getIcon(iconIdxOut[i * 2 + j]);
@@ -635,7 +640,8 @@ public class Textures {
 
     private static void renderFaceXPos(RenderBlocks renderBlocks, double x, double y, double z, CTMIconManager manager,
         int[] iconIdxOut) {
-        Tessellator tessellator = Tessellator.instance;
+        Tessellator tessellator = Loader.isModLoaded("gtnhlib") ? GTNHIntegrationHelper.getGTNHLibTessellator()
+            : Tessellator.instance;
         for (int i = 0; i < 2; i++) for (int j = 0; j < 2; j++) {
 
             IIcon iIcon = manager.getIcon(iconIdxOut[i * 2 + j]);
@@ -813,7 +819,7 @@ public class Textures {
 
         if (Loader.isModLoaded("gregtech")) {
             try {
-                return GTIntegrationHelper.getIcon(blockAccess, x, y, z, direction);
+                return GTNHIntegrationHelper.getIcon(blockAccess, x, y, z, direction);
             } catch (Throwable t) {
                 return null;
             }
