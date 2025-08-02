@@ -73,10 +73,74 @@ public class Textures {
         return true;
     }
 
+    private static int[][] vertex = { { 0, 0 }, { 1, 0 }, { 1, 1 }, { 0, 1 } };
+
+    private static void setAO(float[][][] matrix, Tessellator tessellator, int i, int j, int index) {
+        int x_offset = vertex[index][0];
+        int y_offset = vertex[index][1];
+        tessellator.setColorOpaque_F(
+            matrix[0][i + x_offset][j + y_offset],
+            matrix[1][i + x_offset][j + y_offset],
+            matrix[2][i + x_offset][j + y_offset]);
+        tessellator.setBrightness((int) matrix[3][i + x_offset][j + y_offset]);
+    }
+
+    private static final ThreadLocal<float[][][]> interpolationMatrix = ThreadLocal
+        .withInitial(() -> { return new float[4][3][3]; });
+
+    private static void fillInterpolationMatrix(float[][] array, float valTopLeft, float valTopRight,
+        float valBottomLeft, float valBottomRight) {
+
+        array[0][0] = valTopLeft;
+        array[1][0] = (valTopLeft + valTopRight) / 2;
+        array[2][0] = valTopRight;
+
+        array[0][2] = valBottomLeft;
+        array[1][2] = (valBottomLeft + valBottomRight) / 2;
+        array[2][2] = valBottomRight;
+
+        array[0][1] = (array[0][0] + array[0][2]) / 2;
+        array[1][1] = (array[1][0] + array[1][2]) / 2;
+        array[2][1] = (array[2][0] + array[2][2]) / 2;
+    }
+
+    private static void fillInterpolationMatrix(float[][][] matrix, RenderBlocks renderBlocks) {
+        float[][] red = matrix[0];
+        fillInterpolationMatrix(
+            red,
+            renderBlocks.colorRedTopLeft,
+            renderBlocks.colorRedTopRight,
+            renderBlocks.colorRedBottomLeft,
+            renderBlocks.colorRedBottomRight);
+        float[][] green = matrix[1];
+        fillInterpolationMatrix(
+            green,
+            renderBlocks.colorGreenTopLeft,
+            renderBlocks.colorGreenTopRight,
+            renderBlocks.colorGreenBottomLeft,
+            renderBlocks.colorGreenBottomRight);
+        float[][] blue = matrix[2];
+        fillInterpolationMatrix(
+            blue,
+            renderBlocks.colorBlueTopLeft,
+            renderBlocks.colorBlueTopRight,
+            renderBlocks.colorBlueBottomLeft,
+            renderBlocks.colorBlueBottomRight);
+        float[][] bright = matrix[3];
+        fillInterpolationMatrix(
+            bright,
+            renderBlocks.brightnessTopLeft,
+            renderBlocks.brightnessTopRight,
+            renderBlocks.brightnessBottomLeft,
+            renderBlocks.brightnessBottomRight);
+    }
+
     private static void renderFaceYNeg(RenderBlocks renderBlocks, double x, double y, double z, CTMIconManager manager,
         int[] iconIdxOut) {
         Tessellator tessellator = Loader.isModLoaded("gtnhlib") ? GTNHIntegrationHelper.getGTNHLibTessellator()
             : Tessellator.instance;
+        float[][][] matrix = interpolationMatrix.get();
+        if (renderBlocks.enableAO) fillInterpolationMatrix(matrix, renderBlocks);
         for (int i = 0; i < 2; i++) for (int j = 0; j < 2; j++) {
             IIcon iIcon = manager.getIcon(iconIdxOut[i + j * 2]);
             double minU = iIcon.getInterpolatedU(renderBlocks.renderMinX * 16.0D);
@@ -145,29 +209,14 @@ public class Textures {
             }
 
             if (renderBlocks.enableAO) {
-                tessellator.setColorOpaque_F(
-                    renderBlocks.colorRedTopLeft,
-                    renderBlocks.colorGreenTopLeft,
-                    renderBlocks.colorBlueTopLeft);
-                tessellator.setBrightness(renderBlocks.brightnessTopLeft);
+
+                setAO(matrix, tessellator, i, 1 - j, 0);
                 tessellator.addVertexWithUV(minX, minY, maxZ, d8, d10);
-                tessellator.setColorOpaque_F(
-                    renderBlocks.colorRedBottomLeft,
-                    renderBlocks.colorGreenBottomLeft,
-                    renderBlocks.colorBlueBottomLeft);
-                tessellator.setBrightness(renderBlocks.brightnessBottomLeft);
+                setAO(matrix, tessellator, i, 1 - j, 3);
                 tessellator.addVertexWithUV(minX, minY, minZ, minU, minV);
-                tessellator.setColorOpaque_F(
-                    renderBlocks.colorRedBottomRight,
-                    renderBlocks.colorGreenBottomRight,
-                    renderBlocks.colorBlueBottomRight);
-                tessellator.setBrightness(renderBlocks.brightnessBottomRight);
+                setAO(matrix, tessellator, i, 1 - j, 2);
                 tessellator.addVertexWithUV(maxX, minY, minZ, d7, d9);
-                tessellator.setColorOpaque_F(
-                    renderBlocks.colorRedTopRight,
-                    renderBlocks.colorGreenTopRight,
-                    renderBlocks.colorBlueTopRight);
-                tessellator.setBrightness(renderBlocks.brightnessTopRight);
+                setAO(matrix, tessellator, i, 1 - j, 1);
                 tessellator.addVertexWithUV(maxX, minY, maxZ, maxU, maxV);
             } else {
                 tessellator.addVertexWithUV(minX, minY, maxZ, d8, d10);
@@ -182,6 +231,8 @@ public class Textures {
         int[] iconIdxOut) {
         Tessellator tessellator = Loader.isModLoaded("gtnhlib") ? GTNHIntegrationHelper.getGTNHLibTessellator()
             : Tessellator.instance;
+        float[][][] matrix = interpolationMatrix.get();
+        if (renderBlocks.enableAO) fillInterpolationMatrix(matrix, renderBlocks);
         for (int i = 0; i < 2; i++) for (int j = 0; j < 2; j++) {
 
             IIcon iIcon = manager.getIcon(iconIdxOut[i + j * 2]);
@@ -251,29 +302,17 @@ public class Textures {
             }
 
             if (renderBlocks.enableAO) {
-                tessellator.setColorOpaque_F(
-                    renderBlocks.colorRedTopLeft,
-                    renderBlocks.colorGreenTopLeft,
-                    renderBlocks.colorBlueTopLeft);
-                tessellator.setBrightness(renderBlocks.brightnessTopLeft);
+
+                setAO(matrix, tessellator, 1 - i, 1 - j, 0);
                 tessellator.addVertexWithUV(maxX, maxY, maxZ, maxU, maxV);
-                tessellator.setColorOpaque_F(
-                    renderBlocks.colorRedBottomLeft,
-                    renderBlocks.colorGreenBottomLeft,
-                    renderBlocks.colorBlueBottomLeft);
-                tessellator.setBrightness(renderBlocks.brightnessBottomLeft);
+
+                setAO(matrix, tessellator, 1 - i, 1 - j, 3);
                 tessellator.addVertexWithUV(maxX, maxY, minZ, d7, d9);
-                tessellator.setColorOpaque_F(
-                    renderBlocks.colorRedBottomRight,
-                    renderBlocks.colorGreenBottomRight,
-                    renderBlocks.colorBlueBottomRight);
-                tessellator.setBrightness(renderBlocks.brightnessBottomRight);
+
+                setAO(matrix, tessellator, 1 - i, 1 - j, 2);
                 tessellator.addVertexWithUV(minX, maxY, minZ, minU, minV);
-                tessellator.setColorOpaque_F(
-                    renderBlocks.colorRedTopRight,
-                    renderBlocks.colorGreenTopRight,
-                    renderBlocks.colorBlueTopRight);
-                tessellator.setBrightness(renderBlocks.brightnessTopRight);
+
+                setAO(matrix, tessellator, 1 - i, 1 - j, 1);
                 tessellator.addVertexWithUV(minX, maxY, maxZ, d8, d10);
             } else {
                 tessellator.addVertexWithUV(maxX, maxY, maxZ, maxU, maxV);
@@ -289,6 +328,8 @@ public class Textures {
         int[] iconIdxOut) {
         Tessellator tessellator = Loader.isModLoaded("gtnhlib") ? GTNHIntegrationHelper.getGTNHLibTessellator()
             : Tessellator.instance;
+        float[][][] matrix = interpolationMatrix.get();
+        if (renderBlocks.enableAO) fillInterpolationMatrix(matrix, renderBlocks);
         for (int i = 0; i < 2; i++) for (int j = 0; j < 2; j++) {
             IIcon iIcon = manager.getIcon(iconIdxOut[i + j * 2]);
 
@@ -371,29 +412,14 @@ public class Textures {
             }
 
             if (renderBlocks.enableAO) {
-                tessellator.setColorOpaque_F(
-                    renderBlocks.colorRedTopLeft,
-                    renderBlocks.colorGreenTopLeft,
-                    renderBlocks.colorBlueTopLeft);
-                tessellator.setBrightness(renderBlocks.brightnessTopLeft);
+
+                setAO(matrix, tessellator, j, 1 - i, 0);
                 tessellator.addVertexWithUV(d11, d14, d15, d7, d9);
-                tessellator.setColorOpaque_F(
-                    renderBlocks.colorRedBottomLeft,
-                    renderBlocks.colorGreenBottomLeft,
-                    renderBlocks.colorBlueBottomLeft);
-                tessellator.setBrightness(renderBlocks.brightnessBottomLeft);
+                setAO(matrix, tessellator, j, 1 - i, 3);
                 tessellator.addVertexWithUV(d12, d14, d15, d3, d5);
-                tessellator.setColorOpaque_F(
-                    renderBlocks.colorRedBottomRight,
-                    renderBlocks.colorGreenBottomRight,
-                    renderBlocks.colorBlueBottomRight);
-                tessellator.setBrightness(renderBlocks.brightnessBottomRight);
+                setAO(matrix, tessellator, j, 1 - i, 2);
                 tessellator.addVertexWithUV(d12, d13, d15, d8, d10);
-                tessellator.setColorOpaque_F(
-                    renderBlocks.colorRedTopRight,
-                    renderBlocks.colorGreenTopRight,
-                    renderBlocks.colorBlueTopRight);
-                tessellator.setBrightness(renderBlocks.brightnessTopRight);
+                setAO(matrix, tessellator, j, 1 - i, 1);
                 tessellator.addVertexWithUV(d11, d13, d15, d4, d6);
             } else {
                 tessellator.addVertexWithUV(d11, d14, d15, d7, d9);
@@ -408,6 +434,8 @@ public class Textures {
         int[] iconIdxOut) {
         Tessellator tessellator = Loader.isModLoaded("gtnhlib") ? GTNHIntegrationHelper.getGTNHLibTessellator()
             : Tessellator.instance;
+        float[][][] matrix = interpolationMatrix.get();
+        if (renderBlocks.enableAO) fillInterpolationMatrix(matrix, renderBlocks);
         for (int i = 0; i < 2; i++) for (int j = 0; j < 2; j++) {
 
             IIcon iIcon = manager.getIcon(iconIdxOut[i + j * 2]);
@@ -488,29 +516,14 @@ public class Textures {
             }
 
             if (renderBlocks.enableAO) {
-                tessellator.setColorOpaque_F(
-                    renderBlocks.colorRedTopLeft,
-                    renderBlocks.colorGreenTopLeft,
-                    renderBlocks.colorBlueTopLeft);
-                tessellator.setBrightness(renderBlocks.brightnessTopLeft);
+
+                setAO(matrix, tessellator, i, j, 0);
                 tessellator.addVertexWithUV(d11, d14, d15, d3, d5);
-                tessellator.setColorOpaque_F(
-                    renderBlocks.colorRedBottomLeft,
-                    renderBlocks.colorGreenBottomLeft,
-                    renderBlocks.colorBlueBottomLeft);
-                tessellator.setBrightness(renderBlocks.brightnessBottomLeft);
+                setAO(matrix, tessellator, i, j, 3);
                 tessellator.addVertexWithUV(d11, d13, d15, d8, d10);
-                tessellator.setColorOpaque_F(
-                    renderBlocks.colorRedBottomRight,
-                    renderBlocks.colorGreenBottomRight,
-                    renderBlocks.colorBlueBottomRight);
-                tessellator.setBrightness(renderBlocks.brightnessBottomRight);
+                setAO(matrix, tessellator, i, j, 2);
                 tessellator.addVertexWithUV(d12, d13, d15, d4, d6);
-                tessellator.setColorOpaque_F(
-                    renderBlocks.colorRedTopRight,
-                    renderBlocks.colorGreenTopRight,
-                    renderBlocks.colorBlueTopRight);
-                tessellator.setBrightness(renderBlocks.brightnessTopRight);
+                setAO(matrix, tessellator, i, j, 1);
                 tessellator.addVertexWithUV(d12, d14, d15, d7, d9);
             } else {
                 tessellator.addVertexWithUV(d11, d14, d15, d3, d5);
@@ -525,6 +538,8 @@ public class Textures {
         int[] iconIdxOut) {
         Tessellator tessellator = Loader.isModLoaded("gtnhlib") ? GTNHIntegrationHelper.getGTNHLibTessellator()
             : Tessellator.instance;
+        float[][][] matrix = interpolationMatrix.get();
+        if (renderBlocks.enableAO) fillInterpolationMatrix(matrix, renderBlocks);
         for (int i = 0; i < 2; i++) for (int j = 0; j < 2; j++) {
 
             IIcon iIcon = manager.getIcon(iconIdxOut[i * 2 + j]);
@@ -605,29 +620,14 @@ public class Textures {
             }
 
             if (renderBlocks.enableAO) {
-                tessellator.setColorOpaque_F(
-                    renderBlocks.colorRedTopLeft,
-                    renderBlocks.colorGreenTopLeft,
-                    renderBlocks.colorBlueTopLeft);
-                tessellator.setBrightness(renderBlocks.brightnessTopLeft);
+                setAO(matrix, tessellator, i, 1 - j, 0);
+
                 tessellator.addVertexWithUV(d11, d13, d15, d7, d9);
-                tessellator.setColorOpaque_F(
-                    renderBlocks.colorRedBottomLeft,
-                    renderBlocks.colorGreenBottomLeft,
-                    renderBlocks.colorBlueBottomLeft);
-                tessellator.setBrightness(renderBlocks.brightnessBottomLeft);
+                setAO(matrix, tessellator, i, 1 - j, 3);
                 tessellator.addVertexWithUV(d11, d13, d14, d3, d5);
-                tessellator.setColorOpaque_F(
-                    renderBlocks.colorRedBottomRight,
-                    renderBlocks.colorGreenBottomRight,
-                    renderBlocks.colorBlueBottomRight);
-                tessellator.setBrightness(renderBlocks.brightnessBottomRight);
+                setAO(matrix, tessellator, i, 1 - j, 2);
                 tessellator.addVertexWithUV(d11, d12, d14, d8, d10);
-                tessellator.setColorOpaque_F(
-                    renderBlocks.colorRedTopRight,
-                    renderBlocks.colorGreenTopRight,
-                    renderBlocks.colorBlueTopRight);
-                tessellator.setBrightness(renderBlocks.brightnessTopRight);
+                setAO(matrix, tessellator, i, 1 - j, 1);
                 tessellator.addVertexWithUV(d11, d12, d15, d4, d6);
             } else {
                 tessellator.addVertexWithUV(d11, d13, d15, d7, d9);
@@ -642,6 +642,8 @@ public class Textures {
         int[] iconIdxOut) {
         Tessellator tessellator = Loader.isModLoaded("gtnhlib") ? GTNHIntegrationHelper.getGTNHLibTessellator()
             : Tessellator.instance;
+        float[][][] matrix = interpolationMatrix.get();
+        if (renderBlocks.enableAO) fillInterpolationMatrix(matrix, renderBlocks);
         for (int i = 0; i < 2; i++) for (int j = 0; j < 2; j++) {
 
             IIcon iIcon = manager.getIcon(iconIdxOut[i * 2 + j]);
@@ -724,29 +726,13 @@ public class Textures {
             }
 
             if (renderBlocks.enableAO) {
-                tessellator.setColorOpaque_F(
-                    renderBlocks.colorRedTopLeft,
-                    renderBlocks.colorGreenTopLeft,
-                    renderBlocks.colorBlueTopLeft);
-                tessellator.setBrightness(renderBlocks.brightnessTopLeft);
+                setAO(matrix, tessellator, 1 - i, j, 0);
                 tessellator.addVertexWithUV(d11, d12, d15, d8, d10);
-                tessellator.setColorOpaque_F(
-                    renderBlocks.colorRedBottomLeft,
-                    renderBlocks.colorGreenBottomLeft,
-                    renderBlocks.colorBlueBottomLeft);
-                tessellator.setBrightness(renderBlocks.brightnessBottomLeft);
+                setAO(matrix, tessellator, 1 - i, j, 3);
                 tessellator.addVertexWithUV(d11, d12, d14, d4, d6);
-                tessellator.setColorOpaque_F(
-                    renderBlocks.colorRedBottomRight,
-                    renderBlocks.colorGreenBottomRight,
-                    renderBlocks.colorBlueBottomRight);
-                tessellator.setBrightness(renderBlocks.brightnessBottomRight);
+                setAO(matrix, tessellator, 1 - i, j, 2);
                 tessellator.addVertexWithUV(d11, d13, d14, d7, d9);
-                tessellator.setColorOpaque_F(
-                    renderBlocks.colorRedTopRight,
-                    renderBlocks.colorGreenTopRight,
-                    renderBlocks.colorBlueTopRight);
-                tessellator.setBrightness(renderBlocks.brightnessTopRight);
+                setAO(matrix, tessellator, 1 - i, j, 1);
                 tessellator.addVertexWithUV(d11, d13, d15, d3, d5);
             } else {
                 tessellator.addVertexWithUV(d11, d12, d15, d8, d10);
@@ -819,7 +805,7 @@ public class Textures {
 
         if (Loader.isModLoaded("gregtech")) {
             try {
-                return GTNHIntegrationHelper.getIcon(blockAccess, x, y, z, direction);
+                return GTIntegrationHelper.getIcon(blockAccess, x, y, z, direction);
             } catch (Throwable t) {
                 return null;
             }
