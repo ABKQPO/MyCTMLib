@@ -17,8 +17,21 @@ import cpw.mods.fml.common.Loader;
 public class Textures {
 
     public static Map<String, CTMIconManager> ctmIconMap = new ConcurrentHashMap<>();
+
+    public static final int[][] vertex = { { 0, 0 }, { 1, 0 }, { 1, 1 }, { 0, 1 } };
+    public static final ForgeDirection[][] forgeDirections = new ForgeDirection[][] {
+        { ForgeDirection.NORTH, ForgeDirection.EAST, ForgeDirection.SOUTH, ForgeDirection.WEST }, // DOWN -Y
+        { ForgeDirection.NORTH, ForgeDirection.EAST, ForgeDirection.SOUTH, ForgeDirection.WEST }, // UP +Y
+        { ForgeDirection.UP, ForgeDirection.WEST, ForgeDirection.DOWN, ForgeDirection.EAST }, // NORTH -Z
+        { ForgeDirection.UP, ForgeDirection.EAST, ForgeDirection.DOWN, ForgeDirection.WEST }, // SOUTH +Z
+        { ForgeDirection.UP, ForgeDirection.SOUTH, ForgeDirection.DOWN, ForgeDirection.NORTH }, // WEST -X
+        { ForgeDirection.UP, ForgeDirection.NORTH, ForgeDirection.DOWN, ForgeDirection.SOUTH } // EAST +X
+    };
+
     public static final ThreadLocal<int[]> threadLocalIconIdx = ThreadLocal.withInitial(() -> new int[4]);
     public static final ThreadLocal<boolean[]> threadLocalConnections = ThreadLocal.withInitial(() -> new boolean[8]);
+    public static final ThreadLocal<float[][][]> threadInterpolationMatrix = ThreadLocal
+        .withInitial(() -> new float[4][3][3]);
 
     public static boolean contain(String icon) {
         int firstColon = icon.indexOf(':');
@@ -73,10 +86,69 @@ public class Textures {
         return true;
     }
 
-    private static void renderFaceYNeg(RenderBlocks renderBlocks, double x, double y, double z, CTMIconManager manager,
+    public static void setAO(float[][][] matrix, Tessellator tessellator, int i, int j, int index) {
+        int x_offset = vertex[index][0];
+        int y_offset = vertex[index][1];
+        tessellator.setColorOpaque_F(
+            matrix[0][i + x_offset][j + y_offset],
+            matrix[1][i + x_offset][j + y_offset],
+            matrix[2][i + x_offset][j + y_offset]);
+        tessellator.setBrightness((int) matrix[3][i + x_offset][j + y_offset]);
+    }
+
+    public static void fillInterpolationMatrix(float[][] array, float valTopLeft, float valTopRight,
+        float valBottomLeft, float valBottomRight) {
+
+        array[0][0] = valTopLeft;
+        array[1][0] = (valTopLeft + valTopRight) / 2;
+        array[2][0] = valTopRight;
+
+        array[0][2] = valBottomLeft;
+        array[1][2] = (valBottomLeft + valBottomRight) / 2;
+        array[2][2] = valBottomRight;
+
+        array[0][1] = (array[0][0] + array[0][2]) / 2;
+        array[1][1] = (array[1][0] + array[1][2]) / 2;
+        array[2][1] = (array[2][0] + array[2][2]) / 2;
+    }
+
+    public static void fillInterpolationMatrix(float[][][] matrix, RenderBlocks renderBlocks) {
+        float[][] red = matrix[0];
+        fillInterpolationMatrix(
+            red,
+            renderBlocks.colorRedTopLeft,
+            renderBlocks.colorRedTopRight,
+            renderBlocks.colorRedBottomLeft,
+            renderBlocks.colorRedBottomRight);
+        float[][] green = matrix[1];
+        fillInterpolationMatrix(
+            green,
+            renderBlocks.colorGreenTopLeft,
+            renderBlocks.colorGreenTopRight,
+            renderBlocks.colorGreenBottomLeft,
+            renderBlocks.colorGreenBottomRight);
+        float[][] blue = matrix[2];
+        fillInterpolationMatrix(
+            blue,
+            renderBlocks.colorBlueTopLeft,
+            renderBlocks.colorBlueTopRight,
+            renderBlocks.colorBlueBottomLeft,
+            renderBlocks.colorBlueBottomRight);
+        float[][] bright = matrix[3];
+        fillInterpolationMatrix(
+            bright,
+            renderBlocks.brightnessTopLeft,
+            renderBlocks.brightnessTopRight,
+            renderBlocks.brightnessBottomLeft,
+            renderBlocks.brightnessBottomRight);
+    }
+
+    public static void renderFaceYNeg(RenderBlocks renderBlocks, double x, double y, double z, CTMIconManager manager,
         int[] iconIdxOut) {
         Tessellator tessellator = Loader.isModLoaded("gtnhlib") ? GTNHIntegrationHelper.getGTNHLibTessellator()
             : Tessellator.instance;
+        float[][][] matrix = threadInterpolationMatrix.get();
+        if (renderBlocks.enableAO) fillInterpolationMatrix(matrix, renderBlocks);
         for (int i = 0; i < 2; i++) for (int j = 0; j < 2; j++) {
             IIcon iIcon = manager.getIcon(iconIdxOut[i + j * 2]);
             double minU = iIcon.getInterpolatedU(renderBlocks.renderMinX * 16.0D);
@@ -145,29 +217,14 @@ public class Textures {
             }
 
             if (renderBlocks.enableAO) {
-                tessellator.setColorOpaque_F(
-                    renderBlocks.colorRedTopLeft,
-                    renderBlocks.colorGreenTopLeft,
-                    renderBlocks.colorBlueTopLeft);
-                tessellator.setBrightness(renderBlocks.brightnessTopLeft);
+
+                setAO(matrix, tessellator, i, 1 - j, 0);
                 tessellator.addVertexWithUV(minX, minY, maxZ, d8, d10);
-                tessellator.setColorOpaque_F(
-                    renderBlocks.colorRedBottomLeft,
-                    renderBlocks.colorGreenBottomLeft,
-                    renderBlocks.colorBlueBottomLeft);
-                tessellator.setBrightness(renderBlocks.brightnessBottomLeft);
+                setAO(matrix, tessellator, i, 1 - j, 3);
                 tessellator.addVertexWithUV(minX, minY, minZ, minU, minV);
-                tessellator.setColorOpaque_F(
-                    renderBlocks.colorRedBottomRight,
-                    renderBlocks.colorGreenBottomRight,
-                    renderBlocks.colorBlueBottomRight);
-                tessellator.setBrightness(renderBlocks.brightnessBottomRight);
+                setAO(matrix, tessellator, i, 1 - j, 2);
                 tessellator.addVertexWithUV(maxX, minY, minZ, d7, d9);
-                tessellator.setColorOpaque_F(
-                    renderBlocks.colorRedTopRight,
-                    renderBlocks.colorGreenTopRight,
-                    renderBlocks.colorBlueTopRight);
-                tessellator.setBrightness(renderBlocks.brightnessTopRight);
+                setAO(matrix, tessellator, i, 1 - j, 1);
                 tessellator.addVertexWithUV(maxX, minY, maxZ, maxU, maxV);
             } else {
                 tessellator.addVertexWithUV(minX, minY, maxZ, d8, d10);
@@ -178,10 +235,12 @@ public class Textures {
         }
     }
 
-    private static void renderFaceYPos(RenderBlocks renderBlocks, double x, double y, double z, CTMIconManager manager,
+    public static void renderFaceYPos(RenderBlocks renderBlocks, double x, double y, double z, CTMIconManager manager,
         int[] iconIdxOut) {
         Tessellator tessellator = Loader.isModLoaded("gtnhlib") ? GTNHIntegrationHelper.getGTNHLibTessellator()
             : Tessellator.instance;
+        float[][][] matrix = threadInterpolationMatrix.get();
+        if (renderBlocks.enableAO) fillInterpolationMatrix(matrix, renderBlocks);
         for (int i = 0; i < 2; i++) for (int j = 0; j < 2; j++) {
 
             IIcon iIcon = manager.getIcon(iconIdxOut[i + j * 2]);
@@ -251,29 +310,17 @@ public class Textures {
             }
 
             if (renderBlocks.enableAO) {
-                tessellator.setColorOpaque_F(
-                    renderBlocks.colorRedTopLeft,
-                    renderBlocks.colorGreenTopLeft,
-                    renderBlocks.colorBlueTopLeft);
-                tessellator.setBrightness(renderBlocks.brightnessTopLeft);
+
+                setAO(matrix, tessellator, 1 - i, 1 - j, 0);
                 tessellator.addVertexWithUV(maxX, maxY, maxZ, maxU, maxV);
-                tessellator.setColorOpaque_F(
-                    renderBlocks.colorRedBottomLeft,
-                    renderBlocks.colorGreenBottomLeft,
-                    renderBlocks.colorBlueBottomLeft);
-                tessellator.setBrightness(renderBlocks.brightnessBottomLeft);
+
+                setAO(matrix, tessellator, 1 - i, 1 - j, 3);
                 tessellator.addVertexWithUV(maxX, maxY, minZ, d7, d9);
-                tessellator.setColorOpaque_F(
-                    renderBlocks.colorRedBottomRight,
-                    renderBlocks.colorGreenBottomRight,
-                    renderBlocks.colorBlueBottomRight);
-                tessellator.setBrightness(renderBlocks.brightnessBottomRight);
+
+                setAO(matrix, tessellator, 1 - i, 1 - j, 2);
                 tessellator.addVertexWithUV(minX, maxY, minZ, minU, minV);
-                tessellator.setColorOpaque_F(
-                    renderBlocks.colorRedTopRight,
-                    renderBlocks.colorGreenTopRight,
-                    renderBlocks.colorBlueTopRight);
-                tessellator.setBrightness(renderBlocks.brightnessTopRight);
+
+                setAO(matrix, tessellator, 1 - i, 1 - j, 1);
                 tessellator.addVertexWithUV(minX, maxY, maxZ, d8, d10);
             } else {
                 tessellator.addVertexWithUV(maxX, maxY, maxZ, maxU, maxV);
@@ -285,10 +332,12 @@ public class Textures {
 
     }
 
-    private static void renderFaceZNeg(RenderBlocks renderBlocks, double x, double y, double z, CTMIconManager manager,
+    public static void renderFaceZNeg(RenderBlocks renderBlocks, double x, double y, double z, CTMIconManager manager,
         int[] iconIdxOut) {
         Tessellator tessellator = Loader.isModLoaded("gtnhlib") ? GTNHIntegrationHelper.getGTNHLibTessellator()
             : Tessellator.instance;
+        float[][][] matrix = threadInterpolationMatrix.get();
+        if (renderBlocks.enableAO) fillInterpolationMatrix(matrix, renderBlocks);
         for (int i = 0; i < 2; i++) for (int j = 0; j < 2; j++) {
             IIcon iIcon = manager.getIcon(iconIdxOut[i + j * 2]);
 
@@ -371,29 +420,14 @@ public class Textures {
             }
 
             if (renderBlocks.enableAO) {
-                tessellator.setColorOpaque_F(
-                    renderBlocks.colorRedTopLeft,
-                    renderBlocks.colorGreenTopLeft,
-                    renderBlocks.colorBlueTopLeft);
-                tessellator.setBrightness(renderBlocks.brightnessTopLeft);
+
+                setAO(matrix, tessellator, j, 1 - i, 0);
                 tessellator.addVertexWithUV(d11, d14, d15, d7, d9);
-                tessellator.setColorOpaque_F(
-                    renderBlocks.colorRedBottomLeft,
-                    renderBlocks.colorGreenBottomLeft,
-                    renderBlocks.colorBlueBottomLeft);
-                tessellator.setBrightness(renderBlocks.brightnessBottomLeft);
+                setAO(matrix, tessellator, j, 1 - i, 3);
                 tessellator.addVertexWithUV(d12, d14, d15, d3, d5);
-                tessellator.setColorOpaque_F(
-                    renderBlocks.colorRedBottomRight,
-                    renderBlocks.colorGreenBottomRight,
-                    renderBlocks.colorBlueBottomRight);
-                tessellator.setBrightness(renderBlocks.brightnessBottomRight);
+                setAO(matrix, tessellator, j, 1 - i, 2);
                 tessellator.addVertexWithUV(d12, d13, d15, d8, d10);
-                tessellator.setColorOpaque_F(
-                    renderBlocks.colorRedTopRight,
-                    renderBlocks.colorGreenTopRight,
-                    renderBlocks.colorBlueTopRight);
-                tessellator.setBrightness(renderBlocks.brightnessTopRight);
+                setAO(matrix, tessellator, j, 1 - i, 1);
                 tessellator.addVertexWithUV(d11, d13, d15, d4, d6);
             } else {
                 tessellator.addVertexWithUV(d11, d14, d15, d7, d9);
@@ -404,10 +438,12 @@ public class Textures {
         }
     }
 
-    private static void renderFaceZPos(RenderBlocks renderBlocks, double x, double y, double z, CTMIconManager manager,
+    public static void renderFaceZPos(RenderBlocks renderBlocks, double x, double y, double z, CTMIconManager manager,
         int[] iconIdxOut) {
         Tessellator tessellator = Loader.isModLoaded("gtnhlib") ? GTNHIntegrationHelper.getGTNHLibTessellator()
             : Tessellator.instance;
+        float[][][] matrix = threadInterpolationMatrix.get();
+        if (renderBlocks.enableAO) fillInterpolationMatrix(matrix, renderBlocks);
         for (int i = 0; i < 2; i++) for (int j = 0; j < 2; j++) {
 
             IIcon iIcon = manager.getIcon(iconIdxOut[i + j * 2]);
@@ -488,29 +524,14 @@ public class Textures {
             }
 
             if (renderBlocks.enableAO) {
-                tessellator.setColorOpaque_F(
-                    renderBlocks.colorRedTopLeft,
-                    renderBlocks.colorGreenTopLeft,
-                    renderBlocks.colorBlueTopLeft);
-                tessellator.setBrightness(renderBlocks.brightnessTopLeft);
+
+                setAO(matrix, tessellator, i, j, 0);
                 tessellator.addVertexWithUV(d11, d14, d15, d3, d5);
-                tessellator.setColorOpaque_F(
-                    renderBlocks.colorRedBottomLeft,
-                    renderBlocks.colorGreenBottomLeft,
-                    renderBlocks.colorBlueBottomLeft);
-                tessellator.setBrightness(renderBlocks.brightnessBottomLeft);
+                setAO(matrix, tessellator, i, j, 3);
                 tessellator.addVertexWithUV(d11, d13, d15, d8, d10);
-                tessellator.setColorOpaque_F(
-                    renderBlocks.colorRedBottomRight,
-                    renderBlocks.colorGreenBottomRight,
-                    renderBlocks.colorBlueBottomRight);
-                tessellator.setBrightness(renderBlocks.brightnessBottomRight);
+                setAO(matrix, tessellator, i, j, 2);
                 tessellator.addVertexWithUV(d12, d13, d15, d4, d6);
-                tessellator.setColorOpaque_F(
-                    renderBlocks.colorRedTopRight,
-                    renderBlocks.colorGreenTopRight,
-                    renderBlocks.colorBlueTopRight);
-                tessellator.setBrightness(renderBlocks.brightnessTopRight);
+                setAO(matrix, tessellator, i, j, 1);
                 tessellator.addVertexWithUV(d12, d14, d15, d7, d9);
             } else {
                 tessellator.addVertexWithUV(d11, d14, d15, d3, d5);
@@ -521,10 +542,12 @@ public class Textures {
         }
     }
 
-    private static void renderFaceXNeg(RenderBlocks renderBlocks, double x, double y, double z, CTMIconManager manager,
+    public static void renderFaceXNeg(RenderBlocks renderBlocks, double x, double y, double z, CTMIconManager manager,
         int[] iconIdxOut) {
         Tessellator tessellator = Loader.isModLoaded("gtnhlib") ? GTNHIntegrationHelper.getGTNHLibTessellator()
             : Tessellator.instance;
+        float[][][] matrix = threadInterpolationMatrix.get();
+        if (renderBlocks.enableAO) fillInterpolationMatrix(matrix, renderBlocks);
         for (int i = 0; i < 2; i++) for (int j = 0; j < 2; j++) {
 
             IIcon iIcon = manager.getIcon(iconIdxOut[i * 2 + j]);
@@ -605,29 +628,14 @@ public class Textures {
             }
 
             if (renderBlocks.enableAO) {
-                tessellator.setColorOpaque_F(
-                    renderBlocks.colorRedTopLeft,
-                    renderBlocks.colorGreenTopLeft,
-                    renderBlocks.colorBlueTopLeft);
-                tessellator.setBrightness(renderBlocks.brightnessTopLeft);
+                setAO(matrix, tessellator, i, 1 - j, 0);
+
                 tessellator.addVertexWithUV(d11, d13, d15, d7, d9);
-                tessellator.setColorOpaque_F(
-                    renderBlocks.colorRedBottomLeft,
-                    renderBlocks.colorGreenBottomLeft,
-                    renderBlocks.colorBlueBottomLeft);
-                tessellator.setBrightness(renderBlocks.brightnessBottomLeft);
+                setAO(matrix, tessellator, i, 1 - j, 3);
                 tessellator.addVertexWithUV(d11, d13, d14, d3, d5);
-                tessellator.setColorOpaque_F(
-                    renderBlocks.colorRedBottomRight,
-                    renderBlocks.colorGreenBottomRight,
-                    renderBlocks.colorBlueBottomRight);
-                tessellator.setBrightness(renderBlocks.brightnessBottomRight);
+                setAO(matrix, tessellator, i, 1 - j, 2);
                 tessellator.addVertexWithUV(d11, d12, d14, d8, d10);
-                tessellator.setColorOpaque_F(
-                    renderBlocks.colorRedTopRight,
-                    renderBlocks.colorGreenTopRight,
-                    renderBlocks.colorBlueTopRight);
-                tessellator.setBrightness(renderBlocks.brightnessTopRight);
+                setAO(matrix, tessellator, i, 1 - j, 1);
                 tessellator.addVertexWithUV(d11, d12, d15, d4, d6);
             } else {
                 tessellator.addVertexWithUV(d11, d13, d15, d7, d9);
@@ -638,10 +646,12 @@ public class Textures {
         }
     }
 
-    private static void renderFaceXPos(RenderBlocks renderBlocks, double x, double y, double z, CTMIconManager manager,
+    public static void renderFaceXPos(RenderBlocks renderBlocks, double x, double y, double z, CTMIconManager manager,
         int[] iconIdxOut) {
         Tessellator tessellator = Loader.isModLoaded("gtnhlib") ? GTNHIntegrationHelper.getGTNHLibTessellator()
             : Tessellator.instance;
+        float[][][] matrix = threadInterpolationMatrix.get();
+        if (renderBlocks.enableAO) fillInterpolationMatrix(matrix, renderBlocks);
         for (int i = 0; i < 2; i++) for (int j = 0; j < 2; j++) {
 
             IIcon iIcon = manager.getIcon(iconIdxOut[i * 2 + j]);
@@ -724,29 +734,13 @@ public class Textures {
             }
 
             if (renderBlocks.enableAO) {
-                tessellator.setColorOpaque_F(
-                    renderBlocks.colorRedTopLeft,
-                    renderBlocks.colorGreenTopLeft,
-                    renderBlocks.colorBlueTopLeft);
-                tessellator.setBrightness(renderBlocks.brightnessTopLeft);
+                setAO(matrix, tessellator, 1 - i, j, 0);
                 tessellator.addVertexWithUV(d11, d12, d15, d8, d10);
-                tessellator.setColorOpaque_F(
-                    renderBlocks.colorRedBottomLeft,
-                    renderBlocks.colorGreenBottomLeft,
-                    renderBlocks.colorBlueBottomLeft);
-                tessellator.setBrightness(renderBlocks.brightnessBottomLeft);
+                setAO(matrix, tessellator, 1 - i, j, 3);
                 tessellator.addVertexWithUV(d11, d12, d14, d4, d6);
-                tessellator.setColorOpaque_F(
-                    renderBlocks.colorRedBottomRight,
-                    renderBlocks.colorGreenBottomRight,
-                    renderBlocks.colorBlueBottomRight);
-                tessellator.setBrightness(renderBlocks.brightnessBottomRight);
+                setAO(matrix, tessellator, 1 - i, j, 2);
                 tessellator.addVertexWithUV(d11, d13, d14, d7, d9);
-                tessellator.setColorOpaque_F(
-                    renderBlocks.colorRedTopRight,
-                    renderBlocks.colorGreenTopRight,
-                    renderBlocks.colorBlueTopRight);
-                tessellator.setBrightness(renderBlocks.brightnessTopRight);
+                setAO(matrix, tessellator, 1 - i, j, 1);
                 tessellator.addVertexWithUV(d11, d13, d15, d3, d5);
             } else {
                 tessellator.addVertexWithUV(d11, d12, d15, d8, d10);
@@ -759,13 +753,13 @@ public class Textures {
 
     /**
      * 根据某个方向上的四个相邻方块判断连接情况，并生成连接纹理的四个象限的 iconIdx。
-     *
+     * <p>
      * connections[0-3]：表示主方向四周是否连接。
      * connections[4-7]：表示对角线是否连接（需要两个邻居都连接才视为连接）。
-     *
+     * <p>
      * iconIdx[0-3]：表示象限使用的纹理索引，按逆时针顺序：左上、右上、右下、左下。
      */
-    private static void buildConnect(IBlockAccess blockAccess, int x, int y, int z, IIcon iIcon,
+    public static void buildConnect(IBlockAccess blockAccess, int x, int y, int z, IIcon iIcon,
         ForgeDirection forgeDirection, int[] iconIdxOut) {
 
         boolean[] connections = threadLocalConnections.get();
@@ -827,13 +821,4 @@ public class Textures {
 
         return block.getIcon(blockAccess, x, y, z, direction.ordinal());
     }
-
-    private static final ForgeDirection[][] forgeDirections = new ForgeDirection[][] {
-        { ForgeDirection.NORTH, ForgeDirection.EAST, ForgeDirection.SOUTH, ForgeDirection.WEST }, // DOWN -Y
-        { ForgeDirection.NORTH, ForgeDirection.EAST, ForgeDirection.SOUTH, ForgeDirection.WEST }, // UP +Y
-        { ForgeDirection.UP, ForgeDirection.WEST, ForgeDirection.DOWN, ForgeDirection.EAST }, // NORTH -Z
-        { ForgeDirection.UP, ForgeDirection.EAST, ForgeDirection.DOWN, ForgeDirection.WEST }, // SOUTH +Z
-        { ForgeDirection.UP, ForgeDirection.SOUTH, ForgeDirection.DOWN, ForgeDirection.NORTH }, // WEST -X
-        { ForgeDirection.UP, ForgeDirection.NORTH, ForgeDirection.DOWN, ForgeDirection.SOUTH } // EAST +X
-    };
 }
