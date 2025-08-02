@@ -17,8 +17,21 @@ import cpw.mods.fml.common.Loader;
 public class Textures {
 
     public static Map<String, CTMIconManager> ctmIconMap = new ConcurrentHashMap<>();
+
+    public static final int[][] vertex = { { 0, 0 }, { 1, 0 }, { 1, 1 }, { 0, 1 } };
+    public static final ForgeDirection[][] forgeDirections = new ForgeDirection[][] {
+        { ForgeDirection.NORTH, ForgeDirection.EAST, ForgeDirection.SOUTH, ForgeDirection.WEST }, // DOWN -Y
+        { ForgeDirection.NORTH, ForgeDirection.EAST, ForgeDirection.SOUTH, ForgeDirection.WEST }, // UP +Y
+        { ForgeDirection.UP, ForgeDirection.WEST, ForgeDirection.DOWN, ForgeDirection.EAST }, // NORTH -Z
+        { ForgeDirection.UP, ForgeDirection.EAST, ForgeDirection.DOWN, ForgeDirection.WEST }, // SOUTH +Z
+        { ForgeDirection.UP, ForgeDirection.SOUTH, ForgeDirection.DOWN, ForgeDirection.NORTH }, // WEST -X
+        { ForgeDirection.UP, ForgeDirection.NORTH, ForgeDirection.DOWN, ForgeDirection.SOUTH } // EAST +X
+    };
+
     public static final ThreadLocal<int[]> threadLocalIconIdx = ThreadLocal.withInitial(() -> new int[4]);
     public static final ThreadLocal<boolean[]> threadLocalConnections = ThreadLocal.withInitial(() -> new boolean[8]);
+    public static final ThreadLocal<float[][][]> threadInterpolationMatrix = ThreadLocal
+        .withInitial(() -> new float[4][3][3]);
 
     public static boolean contain(String icon) {
         int firstColon = icon.indexOf(':');
@@ -73,9 +86,7 @@ public class Textures {
         return true;
     }
 
-    private static int[][] vertex = { { 0, 0 }, { 1, 0 }, { 1, 1 }, { 0, 1 } };
-
-    private static void setAO(float[][][] matrix, Tessellator tessellator, int i, int j, int index) {
+    public static void setAO(float[][][] matrix, Tessellator tessellator, int i, int j, int index) {
         int x_offset = vertex[index][0];
         int y_offset = vertex[index][1];
         tessellator.setColorOpaque_F(
@@ -85,10 +96,7 @@ public class Textures {
         tessellator.setBrightness((int) matrix[3][i + x_offset][j + y_offset]);
     }
 
-    private static final ThreadLocal<float[][][]> interpolationMatrix = ThreadLocal
-        .withInitial(() -> { return new float[4][3][3]; });
-
-    private static void fillInterpolationMatrix(float[][] array, float valTopLeft, float valTopRight,
+    public static void fillInterpolationMatrix(float[][] array, float valTopLeft, float valTopRight,
         float valBottomLeft, float valBottomRight) {
 
         array[0][0] = valTopLeft;
@@ -104,7 +112,7 @@ public class Textures {
         array[2][1] = (array[2][0] + array[2][2]) / 2;
     }
 
-    private static void fillInterpolationMatrix(float[][][] matrix, RenderBlocks renderBlocks) {
+    public static void fillInterpolationMatrix(float[][][] matrix, RenderBlocks renderBlocks) {
         float[][] red = matrix[0];
         fillInterpolationMatrix(
             red,
@@ -135,11 +143,11 @@ public class Textures {
             renderBlocks.brightnessBottomRight);
     }
 
-    private static void renderFaceYNeg(RenderBlocks renderBlocks, double x, double y, double z, CTMIconManager manager,
+    public static void renderFaceYNeg(RenderBlocks renderBlocks, double x, double y, double z, CTMIconManager manager,
         int[] iconIdxOut) {
         Tessellator tessellator = Loader.isModLoaded("gtnhlib") ? GTNHIntegrationHelper.getGTNHLibTessellator()
             : Tessellator.instance;
-        float[][][] matrix = interpolationMatrix.get();
+        float[][][] matrix = threadInterpolationMatrix.get();
         if (renderBlocks.enableAO) fillInterpolationMatrix(matrix, renderBlocks);
         for (int i = 0; i < 2; i++) for (int j = 0; j < 2; j++) {
             IIcon iIcon = manager.getIcon(iconIdxOut[i + j * 2]);
@@ -227,11 +235,11 @@ public class Textures {
         }
     }
 
-    private static void renderFaceYPos(RenderBlocks renderBlocks, double x, double y, double z, CTMIconManager manager,
+    public static void renderFaceYPos(RenderBlocks renderBlocks, double x, double y, double z, CTMIconManager manager,
         int[] iconIdxOut) {
         Tessellator tessellator = Loader.isModLoaded("gtnhlib") ? GTNHIntegrationHelper.getGTNHLibTessellator()
             : Tessellator.instance;
-        float[][][] matrix = interpolationMatrix.get();
+        float[][][] matrix = threadInterpolationMatrix.get();
         if (renderBlocks.enableAO) fillInterpolationMatrix(matrix, renderBlocks);
         for (int i = 0; i < 2; i++) for (int j = 0; j < 2; j++) {
 
@@ -324,11 +332,11 @@ public class Textures {
 
     }
 
-    private static void renderFaceZNeg(RenderBlocks renderBlocks, double x, double y, double z, CTMIconManager manager,
+    public static void renderFaceZNeg(RenderBlocks renderBlocks, double x, double y, double z, CTMIconManager manager,
         int[] iconIdxOut) {
         Tessellator tessellator = Loader.isModLoaded("gtnhlib") ? GTNHIntegrationHelper.getGTNHLibTessellator()
             : Tessellator.instance;
-        float[][][] matrix = interpolationMatrix.get();
+        float[][][] matrix = threadInterpolationMatrix.get();
         if (renderBlocks.enableAO) fillInterpolationMatrix(matrix, renderBlocks);
         for (int i = 0; i < 2; i++) for (int j = 0; j < 2; j++) {
             IIcon iIcon = manager.getIcon(iconIdxOut[i + j * 2]);
@@ -430,11 +438,11 @@ public class Textures {
         }
     }
 
-    private static void renderFaceZPos(RenderBlocks renderBlocks, double x, double y, double z, CTMIconManager manager,
+    public static void renderFaceZPos(RenderBlocks renderBlocks, double x, double y, double z, CTMIconManager manager,
         int[] iconIdxOut) {
         Tessellator tessellator = Loader.isModLoaded("gtnhlib") ? GTNHIntegrationHelper.getGTNHLibTessellator()
             : Tessellator.instance;
-        float[][][] matrix = interpolationMatrix.get();
+        float[][][] matrix = threadInterpolationMatrix.get();
         if (renderBlocks.enableAO) fillInterpolationMatrix(matrix, renderBlocks);
         for (int i = 0; i < 2; i++) for (int j = 0; j < 2; j++) {
 
@@ -534,11 +542,11 @@ public class Textures {
         }
     }
 
-    private static void renderFaceXNeg(RenderBlocks renderBlocks, double x, double y, double z, CTMIconManager manager,
+    public static void renderFaceXNeg(RenderBlocks renderBlocks, double x, double y, double z, CTMIconManager manager,
         int[] iconIdxOut) {
         Tessellator tessellator = Loader.isModLoaded("gtnhlib") ? GTNHIntegrationHelper.getGTNHLibTessellator()
             : Tessellator.instance;
-        float[][][] matrix = interpolationMatrix.get();
+        float[][][] matrix = threadInterpolationMatrix.get();
         if (renderBlocks.enableAO) fillInterpolationMatrix(matrix, renderBlocks);
         for (int i = 0; i < 2; i++) for (int j = 0; j < 2; j++) {
 
@@ -638,11 +646,11 @@ public class Textures {
         }
     }
 
-    private static void renderFaceXPos(RenderBlocks renderBlocks, double x, double y, double z, CTMIconManager manager,
+    public static void renderFaceXPos(RenderBlocks renderBlocks, double x, double y, double z, CTMIconManager manager,
         int[] iconIdxOut) {
         Tessellator tessellator = Loader.isModLoaded("gtnhlib") ? GTNHIntegrationHelper.getGTNHLibTessellator()
             : Tessellator.instance;
-        float[][][] matrix = interpolationMatrix.get();
+        float[][][] matrix = threadInterpolationMatrix.get();
         if (renderBlocks.enableAO) fillInterpolationMatrix(matrix, renderBlocks);
         for (int i = 0; i < 2; i++) for (int j = 0; j < 2; j++) {
 
@@ -813,13 +821,4 @@ public class Textures {
 
         return block.getIcon(blockAccess, x, y, z, direction.ordinal());
     }
-
-    private static final ForgeDirection[][] forgeDirections = new ForgeDirection[][] {
-        { ForgeDirection.NORTH, ForgeDirection.EAST, ForgeDirection.SOUTH, ForgeDirection.WEST }, // DOWN -Y
-        { ForgeDirection.NORTH, ForgeDirection.EAST, ForgeDirection.SOUTH, ForgeDirection.WEST }, // UP +Y
-        { ForgeDirection.UP, ForgeDirection.WEST, ForgeDirection.DOWN, ForgeDirection.EAST }, // NORTH -Z
-        { ForgeDirection.UP, ForgeDirection.EAST, ForgeDirection.DOWN, ForgeDirection.WEST }, // SOUTH +Z
-        { ForgeDirection.UP, ForgeDirection.SOUTH, ForgeDirection.DOWN, ForgeDirection.NORTH }, // WEST -X
-        { ForgeDirection.UP, ForgeDirection.NORTH, ForgeDirection.DOWN, ForgeDirection.SOUTH } // EAST +X
-    };
 }
