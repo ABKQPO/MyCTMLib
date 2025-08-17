@@ -2,6 +2,7 @@ package com.github.wohaopa.MyCTMLib.mixins;
 
 import static com.github.wohaopa.MyCTMLib.Textures.ctmIconMap;
 
+import java.io.IOException;
 import java.util.Map;
 
 import net.minecraft.client.Minecraft;
@@ -23,6 +24,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import com.github.wohaopa.MyCTMLib.CTMIconManager;
+import com.github.wohaopa.MyCTMLib.InterpolatedIcon;
 import com.google.gson.JsonObject;
 
 @Mixin(TextureMap.class)
@@ -56,26 +58,57 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
                 return;
             }
 
-            if (resource instanceof SimpleResource simple && resource.getMetadata("myctmlib") != null) {
-                JsonObject mcmetaJson = ((SimpleResourceAccessor) simple).getMcmetaJson();
+            if (resource instanceof SimpleResource simple) {
 
-                JsonObject ctmObj = mcmetaJson.getAsJsonObject("myctmlib");
-                String connectTexture = ctmObj.getAsJsonPrimitive("connection")
-                    .getAsString();
+                if (simple.getMetadata("myctmlib") != null) {
+                    TextureAtlasSprite currentBase = new TextureAtlasSprite(textureName);
+                    mapRegisteredSprites.put(textureName, currentBase);
 
-                connectTexture = connectTexture.replace("minecraft:", "")
-                    .replace("textures/blocks/", "")
-                    .replace(".png", "");
+                    if (simple.getMetadata("animation") != null) {
+                        JsonObject animationObj = simple.mcmetaJson.getAsJsonObject("animation");
+                        if (animationObj.has("interpolate") && animationObj.getAsJsonPrimitive("interpolate")
+                            .getAsBoolean()) {
+                            InterpolatedIcon interpolatedIcon = new InterpolatedIcon(textureName);
+                            mapRegisteredSprites.put(textureName, interpolatedIcon);
+                            currentBase = interpolatedIcon;
+                        }
+                    }
 
-                TextureAtlasSprite base = new TextureAtlasSprite(textureName);
-                mapRegisteredSprites.put(textureName, base);
+                    JsonObject ctmObj = simple.mcmetaJson.getAsJsonObject("myctmlib");
+                    String connectTexture = ctmObj.getAsJsonPrimitive("connection")
+                        .getAsString();
 
-                TextureAtlasSprite ctm = new TextureAtlasSprite(connectTexture);
-                mapRegisteredSprites.put(connectTexture, ctm);
+                    String connectTextureName = connectTexture.replace("minecraft:", "")
+                        .replace("textures/blocks/", "")
+                        .replace(".png", "");
 
-                ctmIconMap.put(textureName, new CTMIconManager(base, ctm));
+                    TextureAtlasSprite currentCTM = new TextureAtlasSprite(connectTextureName);
+                    mapRegisteredSprites.put(connectTextureName, currentCTM);
 
-                cir.setReturnValue(base);
+                    try {
+                        ResourceLocation resCTM = completeResourceLocation(new ResourceLocation(connectTexture), 0);
+                        IResource resourceCTM = Minecraft.getMinecraft()
+                            .getResourceManager()
+                            .getResource(resCTM);
+
+                        if (resourceCTM instanceof SimpleResource simpleCTM) {
+                            if (simpleCTM.getMetadata("animation") != null) {
+                                JsonObject animationObjCTM = simpleCTM.mcmetaJson.getAsJsonObject("animation");
+                                if (animationObjCTM.has("interpolate")
+                                    && animationObjCTM.getAsJsonPrimitive("interpolate")
+                                        .getAsBoolean()) {
+                                    InterpolatedIcon interpolatedIconCTM = new InterpolatedIcon(connectTextureName);
+                                    mapRegisteredSprites.put(connectTextureName, interpolatedIconCTM);
+
+                                    currentCTM = interpolatedIconCTM;
+                                }
+                            }
+                        }
+                    } catch (IOException ignored) {}
+
+                    ctmIconMap.put(textureName, new CTMIconManager(currentBase, currentCTM));
+                    cir.setReturnValue(currentBase);
+                }
             }
         } catch (Exception ignored) {}
     }

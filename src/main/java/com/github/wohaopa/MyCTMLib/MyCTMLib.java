@@ -6,15 +6,13 @@ import net.minecraftforge.common.config.Configuration;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import com.github.wohaopa.MyCTMLib.mixins.MixinSimpleReloadableResourceManagerAccessor;
-
 import cpw.mods.fml.client.event.ConfigChangedEvent;
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.Mod;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 
-@Mod(modid = MyCTMLib.MODID, version = "v1.1.3_27x", name = "MyCTMLib", acceptedMinecraftVersions = "[1.7.10]")
+@Mod(modid = MyCTMLib.MODID, version = "v1.1.4_27x", name = "MyCTMLib", acceptedMinecraftVersions = "[1.7.10]")
 public class MyCTMLib {
 
     public static final String MODID = "MyCTMLib";
@@ -25,10 +23,9 @@ public class MyCTMLib {
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event) {
 
-        ((MixinSimpleReloadableResourceManagerAccessor) Minecraft.getMinecraft()).getMetadataSerializer()
-            .registerMetadataSectionType(
-                new MyCTMLibMetadataSectionSerializer(),
-                MyCTMLibMetadataSectionSerializer.MyCTMLibMetadataSection.class);
+        Minecraft.getMinecraft().metadataSerializer_.registerMetadataSectionType(
+            new MyCTMLibMetadataSectionSerializer(),
+            MyCTMLibMetadataSectionSerializer.MyCTMLibMetadataSection.class);
 
         FMLCommonHandler.instance()
             .bus()
