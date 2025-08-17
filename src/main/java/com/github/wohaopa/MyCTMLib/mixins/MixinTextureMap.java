@@ -108,7 +108,7 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
                     } catch (IOException ignored) {}
 
                     ctmIconMap.put(textureName, new CTMIconManager(currentBase, currentCTM));
-                    cir.setReturnValue(currentCTM);
+                    cir.setReturnValue(currentBase);
                 }
             }
         } catch (Exception ignored) {}
