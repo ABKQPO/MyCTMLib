@@ -56,15 +56,15 @@ public abstract class MixinBlockMetaData extends BlockBase {
                 if (resource instanceof SimpleResource simple) {
 
                     if (simple.getMetadata("myctmlib") != null) {
-                        TextureAtlasSprite currentBase = new TextureAtlasSprite(textureName);
-                        ((TextureMap) iconRegister).setTextureEntry(textureName, currentBase);
+                        TextureAtlasSprite currentBase = new TextureAtlasSprite(subName);
+                        ((TextureMap) iconRegister).setTextureEntry(subName, currentBase);
 
                         if (simple.getMetadata("animation") != null) {
                             JsonObject animationObj = simple.mcmetaJson.getAsJsonObject("animation");
                             if (animationObj.has("interpolate") && animationObj.getAsJsonPrimitive("interpolate")
                                 .getAsBoolean()) {
-                                InterpolatedIcon interpolatedIcon = new InterpolatedIcon(textureName);
-                                ((TextureMap) iconRegister).setTextureEntry(textureName, interpolatedIcon);
+                                InterpolatedIcon interpolatedIcon = new InterpolatedIcon(subName);
+                                ((TextureMap) iconRegister).setTextureEntry(subName, interpolatedIcon);
                                 currentBase = interpolatedIcon;
                             }
                         }
@@ -102,7 +102,7 @@ public abstract class MixinBlockMetaData extends BlockBase {
                             }
                         } catch (IOException ignored) {}
 
-                        ctmIconMap.put(textureName, new CTMIconManager(currentBase, currentCTM));
+                        ctmIconMap.put(subName, new CTMIconManager(currentBase, currentCTM));
                     }
                 }
             } catch (Exception ignored) {}
