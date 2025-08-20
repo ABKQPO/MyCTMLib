@@ -65,7 +65,8 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
                     mapRegisteredSprites.put(textureName, currentBase);
 
                     if (simple.getMetadata("animation") != null) {
-                        JsonObject animationObj = simple.mcmetaJson.getAsJsonObject("animation");
+                        JsonObject animationObj = ((SimpleResourceAccessor) simple).getMcMetaJson()
+                            .getAsJsonObject("animation");
                         if (animationObj.has("interpolate") && animationObj.getAsJsonPrimitive("interpolate")
                             .getAsBoolean()) {
                             InterpolatedIcon interpolatedIcon = new InterpolatedIcon(textureName);
@@ -74,7 +75,8 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
                         }
                     }
 
-                    JsonObject ctmObj = simple.mcmetaJson.getAsJsonObject("myctmlib");
+                    JsonObject ctmObj = ((SimpleResourceAccessor) simple).getMcMetaJson()
+                        .getAsJsonObject("myctmlib");
                     String connectTexture = ctmObj.getAsJsonPrimitive("connection")
                         .getAsString();
 
@@ -93,7 +95,8 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
 
                         if (resourceCTM instanceof SimpleResource simpleCTM) {
                             if (simpleCTM.getMetadata("animation") != null) {
-                                JsonObject animationObjCTM = simpleCTM.mcmetaJson.getAsJsonObject("animation");
+                                JsonObject animationObjCTM = ((SimpleResourceAccessor) simpleCTM).getMcMetaJson()
+                                    .getAsJsonObject("animation");
                                 if (animationObjCTM.has("interpolate")
                                     && animationObjCTM.getAsJsonPrimitive("interpolate")
                                         .getAsBoolean()) {

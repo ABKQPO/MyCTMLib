@@ -8,6 +8,7 @@
   "mixins": [],
   "client": [
     "MinecraftAccessor",
+    "SimpleResourceAccessor",
     "MixinRenderBlocks",
     "MixinTextureMap",
     "MixinSimpleReloadableResourceManager",
