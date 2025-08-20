@@ -25,6 +25,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import com.github.wohaopa.MyCTMLib.CTMIconManager;
 import com.github.wohaopa.MyCTMLib.InterpolatedIcon;
+import com.github.wohaopa.MyCTMLib.NewTextureAtlasSprite;
 import com.google.gson.JsonObject;
 
 @Mixin(TextureMap.class)
@@ -61,7 +62,7 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
             if (resource instanceof SimpleResource simple) {
 
                 if (simple.getMetadata("myctmlib") != null) {
-                    TextureAtlasSprite currentBase = AccessorTextureAtlasSprite.newInstance(textureName);
+                    TextureAtlasSprite currentBase = new NewTextureAtlasSprite(textureName);
                     mapRegisteredSprites.put(textureName, currentBase);
 
                     if (simple.getMetadata("animation") != null) {
@@ -84,7 +85,7 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
                         .replace("textures/blocks/", "")
                         .replace(".png", "");
 
-                    TextureAtlasSprite currentCTM = AccessorTextureAtlasSprite.newInstance(connectTextureName);
+                    TextureAtlasSprite currentCTM = new NewTextureAtlasSprite(connectTextureName);
                     mapRegisteredSprites.put(connectTextureName, currentCTM);
 
                     try {
