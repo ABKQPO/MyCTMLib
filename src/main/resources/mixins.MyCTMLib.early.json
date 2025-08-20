@@ -7,12 +7,13 @@
   "compatibilityLevel": "JAVA_8",
   "mixins": [],
   "client": [
-    "MinecraftAccessor",
-    "SimpleResourceAccessor",
+    "AccessorTextureAtlasSprite",
+    "AccessorSimpleReloadableResourceManager",
+    "AccessorMinecraft",
+    "AccessorSimpleResource",
     "MixinRenderBlocks",
     "MixinTextureMap",
-    "MixinSimpleReloadableResourceManager",
-    "MixinSimpleReloadableResourceManagerAccessor"
+    "MixinSimpleReloadableResourceManager"
   ],
   "server": []
 }

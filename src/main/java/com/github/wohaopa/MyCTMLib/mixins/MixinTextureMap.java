@@ -25,6 +25,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import com.github.wohaopa.MyCTMLib.CTMIconManager;
 import com.github.wohaopa.MyCTMLib.InterpolatedIcon;
+import com.github.wohaopa.MyCTMLib.NewTextureAtlasSprite;
 import com.google.gson.JsonObject;
 
 @Mixin(TextureMap.class)
@@ -61,11 +62,11 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
             if (resource instanceof SimpleResource simple) {
 
                 if (simple.getMetadata("myctmlib") != null) {
-                    TextureAtlasSprite currentBase = new TextureAtlasSprite(textureName);
+                    TextureAtlasSprite currentBase = new NewTextureAtlasSprite(textureName);
                     mapRegisteredSprites.put(textureName, currentBase);
 
                     if (simple.getMetadata("animation") != null) {
-                        JsonObject animationObj = ((SimpleResourceAccessor) simple).getMcmetaJson()
+                        JsonObject animationObj = ((AccessorSimpleResource) simple).getMcmetaJson()
                             .getAsJsonObject("animation");
                         if (animationObj.has("interpolate") && animationObj.getAsJsonPrimitive("interpolate")
                             .getAsBoolean()) {
@@ -75,7 +76,7 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
                         }
                     }
 
-                    JsonObject ctmObj = ((SimpleResourceAccessor) simple).getMcmetaJson()
+                    JsonObject ctmObj = ((AccessorSimpleResource) simple).getMcmetaJson()
                         .getAsJsonObject("myctmlib");
                     String connectTexture = ctmObj.getAsJsonPrimitive("connection")
                         .getAsString();
@@ -85,7 +86,7 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
                         .replace("textures/blocks/", "")
                         .replace(".png", "");
 
-                    TextureAtlasSprite currentCTM = new TextureAtlasSprite(connectTextureName);
+                    TextureAtlasSprite currentCTM = new NewTextureAtlasSprite(connectTextureName);
                     mapRegisteredSprites.put(connectTextureName, currentCTM);
 
                     try {
@@ -96,7 +97,7 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
 
                         if (resourceCTM instanceof SimpleResource simpleCTM) {
                             if (simpleCTM.getMetadata("animation") != null) {
-                                JsonObject animationObjCTM = ((SimpleResourceAccessor) simpleCTM).getMcmetaJson()
+                                JsonObject animationObjCTM = ((AccessorSimpleResource) simpleCTM).getMcmetaJson()
                                     .getAsJsonObject("animation");
                                 if (animationObjCTM.has("interpolate")
                                     && animationObjCTM.getAsJsonPrimitive("interpolate")

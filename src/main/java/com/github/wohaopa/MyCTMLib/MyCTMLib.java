@@ -6,7 +6,7 @@ import net.minecraftforge.common.config.Configuration;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import com.github.wohaopa.MyCTMLib.mixins.MinecraftAccessor;
+import com.github.wohaopa.MyCTMLib.mixins.AccessorMinecraft;
 
 import cpw.mods.fml.client.event.ConfigChangedEvent;
 import cpw.mods.fml.common.FMLCommonHandler;
@@ -25,7 +25,7 @@ public class MyCTMLib {
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event) {
 
-        ((MinecraftAccessor) Minecraft.getMinecraft()).getMetadataSerializer()
+        ((AccessorMinecraft) Minecraft.getMinecraft()).getMetadataSerializer()
             .registerMetadataSectionType(
                 new MyCTMLibMetadataSectionSerializer(),
                 MyCTMLibMetadataSectionSerializer.MyCTMLibMetadataSection.class);

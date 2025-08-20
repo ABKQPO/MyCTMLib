@@ -8,7 +8,7 @@ import org.spongepowered.asm.mixin.Mutable;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
 @Mixin(Minecraft.class)
-public interface MixinSimpleReloadableResourceManagerAccessor {
+public interface AccessorSimpleReloadableResourceManager {
 
     @Accessor("metadataSerializer_")
     @Mutable

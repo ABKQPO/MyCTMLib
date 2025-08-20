@@ -7,7 +7,7 @@ import gregtech.api.interfaces.IIconContainer;
 import gregtech.common.render.GTRenderedTexture;
 
 @Mixin(value = GTRenderedTexture.class, remap = false)
-public interface GTRenderedTextureAccessor {
+public interface AccessorGTRenderedTexture {
 
     @Accessor("mIconContainer")
     IIconContainer getIconContainer();

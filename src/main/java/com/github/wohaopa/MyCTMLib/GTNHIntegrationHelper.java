@@ -9,7 +9,7 @@ import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
-import com.github.wohaopa.MyCTMLib.mixins.GTRenderedTextureAccessor;
+import com.github.wohaopa.MyCTMLib.mixins.AccessorGTRenderedTexture;
 import com.gtnewhorizon.gtnhlib.client.renderer.TessellatorManager;
 
 import gregtech.api.interfaces.IBlockWithClientMeta;
@@ -56,7 +56,7 @@ public class GTNHIntegrationHelper {
                             return gtCopiedBlockTextureRender.getBlock()
                                 .getIcon(forgeDirection.ordinal(), blockMetadata);
                         } else if (selectedTexture instanceof GTRenderedTexture gtRenderedTexture) {
-                            IIconContainer container = ((GTRenderedTextureAccessor) gtRenderedTexture)
+                            IIconContainer container = ((AccessorGTRenderedTexture) gtRenderedTexture)
                                 .getIconContainer();
                             if (container != null) {
                                 return container.getIcon();
