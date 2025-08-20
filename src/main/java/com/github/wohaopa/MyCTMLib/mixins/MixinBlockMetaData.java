@@ -60,7 +60,8 @@ public abstract class MixinBlockMetaData extends BlockBase {
                         ((TextureMap) iconRegister).setTextureEntry(subName, currentBase);
 
                         if (simple.getMetadata("animation") != null) {
-                            JsonObject animationObj = simple.mcmetaJson.getAsJsonObject("animation");
+                            JsonObject animationObj = ((SimpleResourceAccessor) simple).getMcmetaJson()
+                                .getAsJsonObject("animation");
                             if (animationObj.has("interpolate") && animationObj.getAsJsonPrimitive("interpolate")
                                 .getAsBoolean()) {
                                 InterpolatedIcon interpolatedIcon = new InterpolatedIcon(subName);
@@ -69,7 +70,8 @@ public abstract class MixinBlockMetaData extends BlockBase {
                             }
                         }
 
-                        JsonObject ctmObj = simple.mcmetaJson.getAsJsonObject("myctmlib");
+                        JsonObject ctmObj = ((SimpleResourceAccessor) simple).getMcmetaJson()
+                            .getAsJsonObject("myctmlib");
                         String connectTexture = ctmObj.getAsJsonPrimitive("connection")
                             .getAsString();
                         if (connectTexture.isEmpty()) return;
@@ -89,7 +91,8 @@ public abstract class MixinBlockMetaData extends BlockBase {
 
                             if (resourceCTM instanceof SimpleResource simpleCTM) {
                                 if (simpleCTM.getMetadata("animation") != null) {
-                                    JsonObject animationObjCTM = simpleCTM.mcmetaJson.getAsJsonObject("animation");
+                                    JsonObject animationObjCTM = ((SimpleResourceAccessor) simpleCTM).getMcmetaJson()
+                                        .getAsJsonObject("animation");
                                     if (animationObjCTM.has("interpolate")
                                         && animationObjCTM.getAsJsonPrimitive("interpolate")
                                             .getAsBoolean()) {

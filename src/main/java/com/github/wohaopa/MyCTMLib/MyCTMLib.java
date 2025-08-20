@@ -14,7 +14,7 @@ import cpw.mods.fml.common.Mod;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 
-@Mod(modid = MyCTMLib.MODID, version = "v1.1.5_28x_hotfix", name = "MyCTMLib", acceptedMinecraftVersions = "[1.7.10]")
+@Mod(modid = MyCTMLib.MODID, version = "v1.1.6_28x", name = "MyCTMLib", acceptedMinecraftVersions = "[1.7.10]")
 public class MyCTMLib {
 
     public static final String MODID = "MyCTMLib";
