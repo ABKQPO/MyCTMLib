@@ -8,7 +8,7 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 import com.google.gson.JsonObject;
 
 @Mixin(SimpleResource.class)
-public interface SimpleResourceAccessor {
+public interface AccessorSimpleResource {
 
     @Accessor("mcmetaJson")
     JsonObject getMcMetaJson();

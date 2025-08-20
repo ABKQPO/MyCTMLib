@@ -61,11 +61,11 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
             if (resource instanceof SimpleResource simple) {
 
                 if (simple.getMetadata("myctmlib") != null) {
-                    TextureAtlasSprite currentBase = new TextureAtlasSprite(textureName);
+                    TextureAtlasSprite currentBase = AccessorTextureAtlasSprite.newInstance(textureName);
                     mapRegisteredSprites.put(textureName, currentBase);
 
                     if (simple.getMetadata("animation") != null) {
-                        JsonObject animationObj = ((SimpleResourceAccessor) simple).getMcMetaJson()
+                        JsonObject animationObj = ((AccessorSimpleResource) simple).getMcMetaJson()
                             .getAsJsonObject("animation");
                         if (animationObj.has("interpolate") && animationObj.getAsJsonPrimitive("interpolate")
                             .getAsBoolean()) {
@@ -75,7 +75,7 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
                         }
                     }
 
-                    JsonObject ctmObj = ((SimpleResourceAccessor) simple).getMcMetaJson()
+                    JsonObject ctmObj = ((AccessorSimpleResource) simple).getMcMetaJson()
                         .getAsJsonObject("myctmlib");
                     String connectTexture = ctmObj.getAsJsonPrimitive("connection")
                         .getAsString();
@@ -84,7 +84,7 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
                         .replace("textures/blocks/", "")
                         .replace(".png", "");
 
-                    TextureAtlasSprite currentCTM = new TextureAtlasSprite(connectTextureName);
+                    TextureAtlasSprite currentCTM = AccessorTextureAtlasSprite.newInstance(connectTextureName);
                     mapRegisteredSprites.put(connectTextureName, currentCTM);
 
                     try {
@@ -95,7 +95,7 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
 
                         if (resourceCTM instanceof SimpleResource simpleCTM) {
                             if (simpleCTM.getMetadata("animation") != null) {
-                                JsonObject animationObjCTM = ((SimpleResourceAccessor) simpleCTM).getMcMetaJson()
+                                JsonObject animationObjCTM = ((AccessorSimpleResource) simpleCTM).getMcMetaJson()
                                     .getAsJsonObject("animation");
                                 if (animationObjCTM.has("interpolate")
                                     && animationObjCTM.getAsJsonPrimitive("interpolate")
