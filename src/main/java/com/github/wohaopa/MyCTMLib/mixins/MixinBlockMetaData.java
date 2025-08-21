@@ -1,8 +1,10 @@
 package com.github.wohaopa.MyCTMLib.mixins;
 
-import static com.github.wohaopa.MyCTMLib.Textures.ctmIconMap;
+import static com.github.wohaopa.MyCTMLib.Textures.*;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import net.minecraft.block.material.Material;
 import net.minecraft.client.Minecraft;
@@ -22,6 +24,8 @@ import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 import com.github.wohaopa.MyCTMLib.CTMIconManager;
 import com.github.wohaopa.MyCTMLib.InterpolatedIcon;
 import com.github.wohaopa.MyCTMLib.NewTextureAtlasSprite;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import ic2.core.IC2;
@@ -106,6 +110,21 @@ public abstract class MixinBlockMetaData extends BlockBase {
                                 }
                             }
                         } catch (IOException ignored) {}
+
+                        List<String> equivalents = new ArrayList<>();
+                        if (ctmObj.has("equivalents")) {
+                            JsonArray arr = ctmObj.getAsJsonArray("equivalents");
+                            for (JsonElement el : arr) {
+                                String eq = el.getAsString()
+                                    .replace("minecraft:", "")
+                                    .replace("textures/blocks/", "")
+                                    .replace(".png", "");
+                                equivalents.add(eq);
+                            }
+                        }
+                        if (!equivalents.isEmpty()) {
+                            ctmReplaceMap.put(subName, equivalents.toArray(new String[0]));
+                        }
 
                         ctmIconMap.put(subName, new CTMIconManager(currentBase, currentCTM));
                     }
