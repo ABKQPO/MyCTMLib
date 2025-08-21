@@ -17,6 +17,7 @@ import cpw.mods.fml.common.Loader;
 public class Textures {
 
     public static Map<String, CTMIconManager> ctmIconMap = new ConcurrentHashMap<>();
+    public static Map<String, String[]> ctmReplaceMap = new ConcurrentHashMap<>();
 
     public static final int[][] vertex = { { 0, 0 }, { 1, 0 }, { 1, 1 }, { 0, 1 } };
     public static final ForgeDirection[][] forgeDirections = new ForgeDirection[][] {
@@ -772,8 +773,7 @@ public class Textures {
                 y + forgeDirections1[i].offsetY,
                 z + forgeDirections1[i].offsetZ,
                 forgeDirection);
-            connections[i] = i2 != null && i2.getIconName()
-                .equals(iIcon.getIconName());
+            connections[i] = isIconMatch(i2, iIcon);
         }
 
         for (int i = 4; i < 8; i++) {
@@ -787,8 +787,7 @@ public class Textures {
                     y + forgeDirections1[i1].offsetY + forgeDirections1[i2].offsetY,
                     z + forgeDirections1[i1].offsetZ + forgeDirections1[i2].offsetZ,
                     forgeDirection);
-                connections[i] = ic != null && ic.getIconName()
-                    .equals(iIcon.getIconName());
+                connections[i] = isIconMatch(ic, iIcon);
             } else {
                 connections[i] = false;
             }
@@ -805,6 +804,34 @@ public class Textures {
 
         iconIdxOut[3] = connections[5] ? 6
             : (connections[1] && connections[2]) ? 16 : (connections[1]) ? 14 : (connections[2]) ? 8 : 20;
+    }
+
+    public static boolean isIconMatch(IIcon target, IIcon candidate) {
+        if (target == null || candidate == null) return false;
+
+        String targetName = target.getIconName();
+        String candidateName = candidate.getIconName();
+
+        if (targetName.equals(candidateName)) return true;
+
+        for (Map.Entry<String, String[]> entry : ctmReplaceMap.entrySet()) {
+            String key = entry.getKey();
+            String[] values = entry.getValue();
+
+            boolean targetInGroup = targetName.equals(key);
+            boolean candidateInGroup = candidateName.equals(key);
+
+            for (String v : values) {
+                if (v.equals(targetName)) targetInGroup = true;
+                if (v.equals(candidateName)) candidateInGroup = true;
+            }
+
+            if (targetInGroup && candidateInGroup) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public static IIcon getIcon(IBlockAccess blockAccess, int x, int y, int z, ForgeDirection direction) {
