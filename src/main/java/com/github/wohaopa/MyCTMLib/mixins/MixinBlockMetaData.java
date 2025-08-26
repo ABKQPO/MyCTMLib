@@ -59,8 +59,10 @@ public abstract class MixinBlockMetaData extends BlockBase {
                     .getResource(res);
 
                 if (resource instanceof SimpleResource simple) {
-
                     if (simple.getMetadata("myctmlib") != null) {
+                        subName = subName.replace("minecraft:", "")
+                            .replace("textures/blocks/", "")
+                            .replace(".png", "");
                         TextureAtlasSprite currentBase = new NewTextureAtlasSprite(subName);
                         ((TextureMap) iconRegister).setTextureEntry(subName, currentBase);
 
@@ -124,7 +126,6 @@ public abstract class MixinBlockMetaData extends BlockBase {
                         if (!equivalents.isEmpty()) {
                             ctmReplaceMap.put(subName, equivalents.toArray(new String[0]));
                         }
-
                         ctmIconMap.put(subName, new CTMIconManager(currentBase, currentCTM));
                     }
                 }
