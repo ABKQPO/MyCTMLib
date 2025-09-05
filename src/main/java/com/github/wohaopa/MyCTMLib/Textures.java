@@ -814,20 +814,17 @@ public class Textures {
 
         if (targetName.equals(candidateName)) return true;
 
-        for (Map.Entry<String, String[]> entry : ctmReplaceMap.entrySet()) {
-            String key = entry.getKey();
-            String[] values = entry.getValue();
-
-            boolean targetInGroup = targetName.equals(key);
-            boolean candidateInGroup = candidateName.equals(key);
-
-            for (String v : values) {
-                if (v.equals(targetName)) targetInGroup = true;
-                if (v.equals(candidateName)) candidateInGroup = true;
+        String[] targetGroup = ctmReplaceMap.get(targetName);
+        if (targetGroup != null) {
+            for (String v : targetGroup) {
+                if (v.equals(candidateName)) return true;
             }
+        }
 
-            if (targetInGroup && candidateInGroup) {
-                return true;
+        String[] candidateGroup = ctmReplaceMap.get(candidateName);
+        if (candidateGroup != null) {
+            for (String v : candidateGroup) {
+                if (v.equals(targetName)) return true;
             }
         }
 
