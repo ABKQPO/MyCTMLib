@@ -26,11 +26,14 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import com.github.wohaopa.MyCTMLib.CTMIconManager;
+import com.github.wohaopa.MyCTMLib.GTNHIntegrationHelper;
 import com.github.wohaopa.MyCTMLib.InterpolatedIcon;
 import com.github.wohaopa.MyCTMLib.NewTextureAtlasSprite;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+
+import cpw.mods.fml.common.Loader;
 
 @Mixin(TextureMap.class)
 public abstract class MixinTextureMap extends AbstractTexture implements ITickableTextureObject, IIconRegister {
@@ -89,6 +92,22 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
                     String connectTextureName = connectTexture.replace("minecraft:", "")
                         .replace("textures/blocks/", "")
                         .replace(".png", "");
+
+                    if ((connectTextureName.endsWith("MACHINE_CASING_FUSION_ctm")
+                        || connectTexture.endsWith("MACHINE_CASING_FUSION_2_ctm")) && Loader.isModLoaded("gregtech")) {
+                        GTNHIntegrationHelper.setBlockCasings4CTM(false);
+                    }
+
+                    if ((connectTextureName.endsWith("MACHINE_CASING_FUSION_3_ctm")
+                        || connectTexture.endsWith("MACHINE_CASING_FUSION_4_ctm")
+                        || connectTexture.endsWith("MACHINE_CASING_FUSION_5_ctm")) && Loader.isModLoaded("gregtech")) {
+                        GTNHIntegrationHelper.setGregtechMetaCasingBlocks3CTM(false);
+                    }
+
+                    if (connectTextureName.endsWith("_ctm") && connectTexture.contains("BoronSilicateGlass")
+                        && Loader.isModLoaded("gregtech")) {
+                        GTNHIntegrationHelper.setBWBlocksGlassCTM(false);
+                    }
 
                     TextureAtlasSprite currentCTM = new NewTextureAtlasSprite(connectTextureName);
                     mapRegisteredSprites.put(connectTextureName, currentCTM);
