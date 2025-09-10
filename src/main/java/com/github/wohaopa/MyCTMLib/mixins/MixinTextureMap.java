@@ -26,7 +26,6 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import com.github.wohaopa.MyCTMLib.CTMIconManager;
-import com.github.wohaopa.MyCTMLib.GTNHIntegrationHelper;
 import com.github.wohaopa.MyCTMLib.InterpolatedIcon;
 import com.github.wohaopa.MyCTMLib.NewTextureAtlasSprite;
 import com.google.gson.JsonArray;
@@ -92,20 +91,21 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
                         .replace("textures/blocks/", "")
                         .replace(".png", "");
 
-                    if ((connectTextureName.endsWith("MACHINE_CASING_FUSION_ctm")
-                        || connectTexture.endsWith("MACHINE_CASING_FUSION_2_ctm")) && Loader.isModLoaded("gregtech")) {
-                        GTNHIntegrationHelper.setBlockCasings4CTM(false);
-                    }
-
-                    if ((connectTextureName.endsWith("MACHINE_CASING_FUSION_3_ctm")
-                        || connectTexture.endsWith("MACHINE_CASING_FUSION_4_ctm")
-                        || connectTexture.endsWith("MACHINE_CASING_FUSION_5_ctm")) && Loader.isModLoaded("gregtech")) {
-                        GTNHIntegrationHelper.setGregtechMetaCasingBlocks3CTM(false);
-                    }
-
-                    if (connectTextureName.endsWith("_ctm") && connectTexture.contains("BoronSilicateGlass")
+                    if (connectTextureName.startsWith("gregtech:iconsets/MACHINE_CASING_FUSION_")
+                        && connectTexture.endsWith("_ctm")
                         && Loader.isModLoaded("gregtech")) {
-                        GTNHIntegrationHelper.setBWBlocksGlassCTM(false);
+                        gtBlockCasings4CTM = true;
+                    }
+
+                    if (connectTextureName.startsWith("miscutils:iconsets/MACHINE_CASING_FUSION_")
+                        && connectTexture.endsWith("_ctm")
+                        && Loader.isModLoaded("gregtech")) {
+                        gtGregtechMetaCasingBlocks3CTM = true;
+                    }
+
+                    if (connectTexture.contains("BoronSilicateGlass") && connectTextureName.endsWith("_ctm")
+                        && Loader.isModLoaded("gregtech")) {
+                        gtBWBlocksGlassCTM = true;
                     }
 
                     TextureAtlasSprite currentCTM = new NewTextureAtlasSprite(connectTextureName);
