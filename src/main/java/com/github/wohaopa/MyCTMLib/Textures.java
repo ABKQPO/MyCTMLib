@@ -18,6 +18,7 @@ public class Textures {
 
     public static Map<String, CTMIconManager> ctmIconMap = new ConcurrentHashMap<>();
     public static Map<String, String[]> ctmReplaceMap = new ConcurrentHashMap<>();
+    public static Map<String, String> ctmAltMap = new ConcurrentHashMap<>();
 
     public static boolean gtBlockCasings4CTM = false;
     public static boolean gtGregtechMetaCasingBlocks3CTM = false;
@@ -802,17 +803,74 @@ public class Textures {
             }
         }
 
-        iconIdxOut[0] = connections[7] ? 1
-            : (connections[3] && connections[0]) ? 11 : (connections[3]) ? 9 : (connections[0]) ? 3 : 17;
+        boolean hasThird = ctmAltMap.containsKey(iIcon.getIconName());
 
-        iconIdxOut[1] = connections[4] ? 2
-            : (connections[0] && connections[1]) ? 12 : (connections[0]) ? 4 : (connections[1]) ? 10 : 18;
+        if (connections[7]) {
+            iconIdxOut[0] = 1;
+        } else if (connections[3] && connections[0]) {
+            iconIdxOut[0] = 11;
+        } else if (connections[3]) {
+            iconIdxOut[0] = 9;
+        } else if (connections[0]) {
+            iconIdxOut[0] = 3;
+        } else {
+            iconIdxOut[0] = 17;
+        }
 
-        iconIdxOut[2] = connections[6] ? 5
-            : (connections[2] && connections[3]) ? 15 : (connections[2]) ? 7 : (connections[3]) ? 13 : 19;
+        if (connections[4]) {
+            iconIdxOut[1] = 2;
+        } else if (connections[0] && connections[1]) {
+            iconIdxOut[1] = 12;
+        } else if (connections[0]) {
+            iconIdxOut[1] = 4;
+        } else if (connections[1]) {
+            iconIdxOut[1] = 10;
+        } else {
+            iconIdxOut[1] = 18;
+        }
 
-        iconIdxOut[3] = connections[5] ? 6
-            : (connections[1] && connections[2]) ? 16 : (connections[1]) ? 14 : (connections[2]) ? 8 : 20;
+        if (connections[6]) {
+            iconIdxOut[2] = 5;
+        } else if (connections[2] && connections[3]) {
+            iconIdxOut[2] = 15;
+        } else if (connections[2]) {
+            iconIdxOut[2] = 7;
+        } else if (connections[3]) {
+            iconIdxOut[2] = 13;
+        } else {
+            iconIdxOut[2] = 19;
+        }
+
+        if (connections[5]) {
+            iconIdxOut[3] = 6;
+        } else if (connections[1] && connections[2]) {
+            iconIdxOut[3] = 16;
+        } else if (connections[1]) {
+            iconIdxOut[3] = 14;
+        } else if (connections[2]) {
+            iconIdxOut[3] = 8;
+        } else {
+            iconIdxOut[3] = 20;
+        }
+
+        boolean allDefault = true;
+        for (int i = 0; i < 4; i++) {
+            if (iconIdxOut[i] < 17 || iconIdxOut[i] > 20) {
+                allDefault = false;
+                break;
+            }
+        }
+
+        if (!allDefault && hasThird) {
+            for (int i = 0; i < 4; i++) {
+                switch (iconIdxOut[i]) {
+                    case 17 -> iconIdxOut[i] = 21;
+                    case 18 -> iconIdxOut[i] = 22;
+                    case 19 -> iconIdxOut[i] = 23;
+                    case 20 -> iconIdxOut[i] = 24;
+                }
+            }
+        }
     }
 
     public static boolean isIconMatch(IIcon target, IIcon candidate) {

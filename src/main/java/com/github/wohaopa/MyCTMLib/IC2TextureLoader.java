@@ -18,72 +18,136 @@ import com.github.wohaopa.MyCTMLib.mixins.AccessorSimpleResource;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
+
+import cpw.mods.fml.common.Loader;
 
 public class IC2TextureLoader {
 
-    public static void handleTexture(IIconRegister iconRegister, String textureName) {
+    public static void handleTexture(IIconRegister iconRegister, String originName) {
         for (int side = 0; side < 6; ++side) {
             try {
-                String subName = textureName + "&" + side + ".png";
+                String textureName = originName + "&" + side + ".png";
 
-                ResourceLocation res = new ResourceLocation(subName);
+                TextureAtlasSprite currentCTM = null;
+                TextureAtlasSprite currentAlt = null;
+                ResourceLocation res = new ResourceLocation(textureName);
                 IResource resource = Minecraft.getMinecraft()
                     .getResourceManager()
                     .getResource(res);
 
                 if (resource instanceof SimpleResource simple) {
+
                     if (simple.getMetadata("myctmlib") != null) {
-                        subName = subName.replace("minecraft:", "")
-                            .replace("textures/blocks/", "")
-                            .replace(".png", "");
-                        TextureAtlasSprite currentBase = new NewTextureAtlasSprite(subName);
-                        ((TextureMap) iconRegister).setTextureEntry(subName, currentBase);
+                        TextureAtlasSprite currentBase = new NewTextureAtlasSprite(textureName);
+                        ((TextureMap) iconRegister).setTextureEntry(textureName, currentBase);
 
                         if (simple.getMetadata("animation") != null) {
                             JsonObject animationObj = ((AccessorSimpleResource) simple).getMcMetaJson()
                                 .getAsJsonObject("animation");
                             if (animationObj.has("interpolate") && animationObj.getAsJsonPrimitive("interpolate")
                                 .getAsBoolean()) {
-                                InterpolatedIcon interpolatedIcon = new InterpolatedIcon(subName);
-                                ((TextureMap) iconRegister).setTextureEntry(subName, interpolatedIcon);
+                                InterpolatedIcon interpolatedIcon = new InterpolatedIcon(textureName);
+                                ((TextureMap) iconRegister).setTextureEntry(textureName, interpolatedIcon);
                                 currentBase = interpolatedIcon;
                             }
                         }
 
                         JsonObject ctmObj = ((AccessorSimpleResource) simple).getMcMetaJson()
                             .getAsJsonObject("myctmlib");
-                        String connectTexture = ctmObj.getAsJsonPrimitive("connection")
-                            .getAsString();
-                        if (connectTexture.isEmpty()) return;
 
-                        String connectTextureName = connectTexture.replace("minecraft:", "")
-                            .replace("textures/blocks/", "")
-                            .replace(".png", "");
+                        JsonPrimitive connectionPrimitive = ctmObj.getAsJsonPrimitive("connection");
+                        String connectTexture = null;
+                        if (connectionPrimitive != null) {
+                            connectTexture = connectionPrimitive.getAsString();
+                        }
 
-                        TextureAtlasSprite currentCTM = new NewTextureAtlasSprite(connectTextureName);
-                        ((TextureMap) iconRegister).setTextureEntry(connectTextureName, currentCTM);
+                        if (connectTexture != null && !connectTexture.isEmpty()) {
+                            String connectTextureName = connectTexture.replace("minecraft:", "")
+                                .replace("textures/blocks/", "")
+                                .replace(".png", "");
 
-                        try {
-                            ResourceLocation resCTM = new ResourceLocation(connectTexture);
-                            IResource resourceCTM = Minecraft.getMinecraft()
-                                .getResourceManager()
-                                .getResource(resCTM);
+                            if (connectTextureName.startsWith("gregtech:iconsets/MACHINE_CASING_FUSION_")
+                                && connectTexture.endsWith("_ctm")
+                                && Loader.isModLoaded("gregtech")) {
+                                gtBlockCasings4CTM = true;
+                            }
 
-                            if (resourceCTM instanceof SimpleResource simpleCTM) {
-                                if (simpleCTM.getMetadata("animation") != null) {
-                                    JsonObject animationObjCTM = ((AccessorSimpleResource) simpleCTM).getMcMetaJson()
-                                        .getAsJsonObject("animation");
-                                    if (animationObjCTM.has("interpolate")
-                                        && animationObjCTM.getAsJsonPrimitive("interpolate")
-                                            .getAsBoolean()) {
-                                        InterpolatedIcon interpolatedIconCTM = new InterpolatedIcon(connectTextureName);
-                                        ((TextureMap) iconRegister)
-                                            .setTextureEntry(connectTextureName, interpolatedIconCTM);
-                                        currentCTM = interpolatedIconCTM;
+                            if (connectTextureName.startsWith("miscutils:iconsets/MACHINE_CASING_FUSION_")
+                                && connectTexture.endsWith("_ctm")
+                                && Loader.isModLoaded("gregtech")) {
+                                gtGregtechMetaCasingBlocks3CTM = true;
+                            }
+
+                            if (connectTexture.contains("BoronSilicateGlass") && connectTextureName.endsWith("_ctm")
+                                && Loader.isModLoaded("gregtech")) {
+                                gtBWBlocksGlassCTM = true;
+                            }
+
+                            currentCTM = new NewTextureAtlasSprite(connectTextureName);
+                            ((TextureMap) iconRegister).setTextureEntry(connectTextureName, currentCTM);
+                            try {
+                                ResourceLocation resCTM = new ResourceLocation(connectTexture);
+                                IResource resourceCTM = Minecraft.getMinecraft()
+                                    .getResourceManager()
+                                    .getResource(resCTM);
+
+                                if (resourceCTM instanceof SimpleResource simpleCTM) {
+                                    if (simpleCTM.getMetadata("animation") != null) {
+                                        JsonObject animationObjCTM = ((AccessorSimpleResource) simpleCTM)
+                                            .getMcMetaJson()
+                                            .getAsJsonObject("animation");
+                                        if (animationObjCTM.has("interpolate")
+                                            && animationObjCTM.getAsJsonPrimitive("interpolate")
+                                                .getAsBoolean()) {
+                                            InterpolatedIcon interpolatedIconCTM = new InterpolatedIcon(
+                                                connectTextureName);
+                                            ((TextureMap) iconRegister)
+                                                .setTextureEntry(connectTextureName, interpolatedIconCTM);
+
+                                            currentCTM = interpolatedIconCTM;
+                                        }
                                     }
                                 }
-                            }
-                        } catch (IOException ignored) {}
+                            } catch (IOException ignored) {}
+                        }
+
+                        JsonPrimitive altPrimitive = ctmObj.getAsJsonPrimitive("alt");
+                        String altTexture = null;
+                        if (altPrimitive != null) {
+                            altTexture = altPrimitive.getAsString();
+                        }
+
+                        if (altTexture != null && !altTexture.isEmpty()) {
+                            String altTextureName = altTexture.replace("minecraft:", "")
+                                .replace("textures/blocks/", "")
+                                .replace(".png", "");
+                            currentAlt = new NewTextureAtlasSprite(altTextureName);
+                            ((TextureMap) iconRegister).setTextureEntry(altTextureName, currentAlt);
+                            try {
+                                ResourceLocation resAlt = new ResourceLocation(altTexture);
+                                IResource resourceAlt = Minecraft.getMinecraft()
+                                    .getResourceManager()
+                                    .getResource(resAlt);
+
+                                if (resourceAlt instanceof SimpleResource simpleAlt) {
+                                    if (simpleAlt.getMetadata("animation") != null) {
+                                        JsonObject animationObjAlt = ((AccessorSimpleResource) simpleAlt)
+                                            .getMcMetaJson()
+                                            .getAsJsonObject("animation");
+                                        if (animationObjAlt.has("interpolate")
+                                            && animationObjAlt.getAsJsonPrimitive("interpolate")
+                                                .getAsBoolean()) {
+                                            InterpolatedIcon interpolatedIconAlt = new InterpolatedIcon(altTextureName);
+                                            ((TextureMap) iconRegister)
+                                                .setTextureEntry(altTextureName, interpolatedIconAlt);
+
+                                            currentAlt = interpolatedIconAlt;
+                                        }
+                                    }
+                                }
+                            } catch (IOException ignored) {}
+                        }
 
                         List<String> equivalents = new ArrayList<>();
                         if (ctmObj.has("equivalents")) {
@@ -97,10 +161,14 @@ public class IC2TextureLoader {
                             }
                         }
                         if (!equivalents.isEmpty()) {
-                            ctmReplaceMap.put(subName, equivalents.toArray(new String[0]));
+                            ctmReplaceMap.put(textureName, equivalents.toArray(new String[0]));
                         }
-
-                        ctmIconMap.put(subName, new CTMIconManager(currentBase, currentCTM));
+                        if (currentAlt != null) {
+                            ctmIconMap.put(textureName, new CTMIconManager(currentBase, currentCTM, currentAlt));
+                            ctmAltMap.put(textureName, currentAlt.getIconName());
+                        } else if (currentCTM != null) {
+                            ctmIconMap.put(textureName, new CTMIconManager(currentBase, currentCTM));
+                        }
                     }
                 }
             } catch (Exception ignored) {}
