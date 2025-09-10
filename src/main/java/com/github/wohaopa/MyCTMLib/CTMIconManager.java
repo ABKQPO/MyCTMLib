@@ -23,12 +23,12 @@ public class CTMIconManager {
     public IIcon iconSmall;
 
     // ctm专用小型图（通常为 2x2，用于特殊CTM等）
-    public IIcon iconSmallCTMOnly;
+    public IIcon iconAlt;
 
-    public CTMIconManager(IIcon iconSmall, IIcon icon, IIcon iconThird) {
+    public CTMIconManager(IIcon iconSmall, IIcon icon, IIcon iconAlt) {
         this.icon = icon;
         this.iconSmall = iconSmall;
-        this.iconSmallCTMOnly = iconThird;
+        this.iconAlt = iconAlt;
     }
 
     /**
@@ -65,10 +65,10 @@ public class CTMIconManager {
         }
 
         // 构造CTM专用小图标：2x2 网格，索引从 21 到 25
-        if (iconSmallCTMOnly != null) {
+        if (iconAlt != null) {
             for (int i = 1; i <= 2; i++) {
                 for (int j = 0; j < 2; j++) {
-                    icons[i + j * 2 + 20] = new CTMIcon(iconSmallCTMOnly, 2, 2, i - 1, j);
+                    icons[i + j * 2 + 20] = new CTMIcon(iconAlt, 2, 2, i - 1, j);
                 }
             }
         }
