@@ -22,8 +22,7 @@ public class MixinSimpleReloadableResourceManager {
         ctmIconMap.clear();
         ctmAltMap.clear();
         ctmReplaceMap.clear();
-        if (Loader.isModLoaded("gregtech")) {
-            if (!isInit) return;
+        if (isInit && Loader.isModLoaded("gregtech")) {
             GTNHIntegrationHelper.setBlockCasings4CTM(true);
             GTNHIntegrationHelper.setGregtechMetaCasingBlocks3CTM(true);
             GTNHIntegrationHelper.setBWBlocksGlassCTM(true);
