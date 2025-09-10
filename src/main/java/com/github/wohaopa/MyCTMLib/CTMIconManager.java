@@ -14,13 +14,22 @@ import cpw.mods.fml.relauncher.SideOnly;
 public class CTMIconManager {
 
     // 存储所有子图块图标（索引 1 ~ 20）
-    private final IIcon[] icons = new CTMIcon[21];
+    public IIcon[] icons = new CTMIcon[25];
 
     // 主纹理图（通常为 4x4）
-    private final IIcon icon;
+    public IIcon icon;
 
     // 小型图（通常为 2x2，用于特殊边角等）
-    private final IIcon iconSmall;
+    public IIcon iconSmall;
+
+    // ctm专用小型图（通常为 2x2，用于特殊CTM等）
+    public IIcon iconAlt;
+
+    public CTMIconManager(IIcon iconSmall, IIcon icon, IIcon iconThird) {
+        this.icon = icon;
+        this.iconSmall = iconSmall;
+        this.iconAlt = iconThird;
+    }
 
     /**
      * 构造函数，提供用于裁切的主图标与小图标。
@@ -55,18 +64,27 @@ public class CTMIconManager {
             }
         }
 
+        // 构造CTM专用小图标：2x2 网格，索引从 21 到 25
+        if (iconAlt != null) {
+            for (int i = 1; i <= 2; i++) {
+                for (int j = 0; j < 2; j++) {
+                    icons[i + j * 2 + 20] = new CTMIcon(iconAlt, 2, 2, i - 1, j);
+                }
+            }
+        }
+
         inited = true;
     }
 
     /**
      * 获取子图标。
      *
-     * @param index 图标索引，范围为 1 到 20
+     * @param index 图标索引，范围为 1 到 25
      * @return 指定子图标
      * @throws RuntimeException 索引非法时抛出异常
      */
     public IIcon getIcon(int index) {
-        if (index > 0 && index < 21) return icons[index];
+        if (index > 0 && index < 25) return icons[index];
         throw new RuntimeException("Invalid index: " + index);
     }
 
