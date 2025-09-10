@@ -2,8 +2,6 @@ package com.github.wohaopa.MyCTMLib;
 
 import static com.github.wohaopa.MyCTMLib.MyCTMLib.*;
 
-import java.lang.reflect.Field;
-
 import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.Tessellator;
@@ -18,8 +16,6 @@ import com.github.wohaopa.MyCTMLib.mixins.BWBlocksGlass2Accessor;
 import com.github.wohaopa.MyCTMLib.mixins.BWBlocksGlassAccessor;
 import com.gtnewhorizon.gtnhlib.client.renderer.TessellatorManager;
 
-import bartworks.common.blocks.BWBlocksGlass;
-import bartworks.common.blocks.BWBlocksGlass2;
 import bartworks.common.loaders.ItemRegistry;
 import gregtech.api.interfaces.IBlockWithClientMeta;
 import gregtech.api.interfaces.IBlockWithTextures;
@@ -34,20 +30,6 @@ import gregtech.common.render.GTRenderedTexture;
 import gtPlusPlus.xmod.gregtech.common.blocks.GregtechMetaCasingBlocks3;
 
 public class GTNHIntegrationHelper {
-
-    public static Field connectedTexBWGlassField;
-    public static Field connectedTexBWGlass2Field;
-
-    static {
-        try {
-            connectedTexBWGlassField = BWBlocksGlass.class.getDeclaredField("connectedTex");
-            connectedTexBWGlassField.setAccessible(true);
-            connectedTexBWGlass2Field = BWBlocksGlass2.class.getDeclaredField("connectedTex");
-            connectedTexBWGlass2Field.setAccessible(true);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
 
     public static Tessellator getGTNHLibTessellator() {
         return TessellatorManager.get();
