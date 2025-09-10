@@ -19,6 +19,10 @@ public class Textures {
     public static Map<String, CTMIconManager> ctmIconMap = new ConcurrentHashMap<>();
     public static Map<String, String[]> ctmReplaceMap = new ConcurrentHashMap<>();
 
+    public static boolean gtBlockCasings4CTM = false;
+    public static boolean gtGregtechMetaCasingBlocks3CTM = false;
+    public static boolean gtBWBlocksGlassCTM = false;
+
     public static final int[][] vertex = { { 0, 0 }, { 1, 0 }, { 1, 1 }, { 0, 1 } };
     public static final ForgeDirection[][] forgeDirections = new ForgeDirection[][] {
         { ForgeDirection.NORTH, ForgeDirection.EAST, ForgeDirection.SOUTH, ForgeDirection.WEST }, // DOWN -Y
@@ -46,6 +50,11 @@ public class Textures {
 
         boolean result = ctmIconMap.containsKey(icon);
         if (MyCTMLib.debugMode) System.out.println("[CTM] contain(\"" + icon + "\") = " + result);
+        if (Loader.isModLoaded("gregtech")) {
+            if (gtBlockCasings4CTM) GTNHIntegrationHelper.setBlockCasings4CTM(false);
+            if (gtGregtechMetaCasingBlocks3CTM) GTNHIntegrationHelper.setGregtechMetaCasingBlocks3CTM(false);
+            if (gtBWBlocksGlassCTM) GTNHIntegrationHelper.setBWBlocksGlassCTM(false);
+        }
         return result;
     }
 
