@@ -25,10 +25,10 @@ public class CTMIconManager {
     // ctm专用小型图（通常为 2x2，用于特殊CTM等）
     public IIcon iconAlt;
 
-    public CTMIconManager(IIcon iconSmall, IIcon icon, IIcon iconThird) {
+    public CTMIconManager(IIcon iconSmall, IIcon icon, IIcon iconAlt) {
         this.icon = icon;
         this.iconSmall = iconSmall;
-        this.iconAlt = iconThird;
+        this.iconAlt = iconAlt;
     }
 
     /**
