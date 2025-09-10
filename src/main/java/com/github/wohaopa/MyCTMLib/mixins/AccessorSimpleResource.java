@@ -11,7 +11,7 @@ import com.google.gson.JsonObject;
 public interface AccessorSimpleResource {
 
     @Accessor("mcmetaJson")
-    JsonObject getMcmetaJson();
+    JsonObject getMcMetaJson();
 
     @Accessor("mcmetaJson")
     void setMcmetaJson(JsonObject json);

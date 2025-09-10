@@ -1,5 +1,7 @@
 package com.github.wohaopa.MyCTMLib;
 
+import static com.github.wohaopa.MyCTMLib.MyCTMLib.*;
+
 import java.lang.reflect.Field;
 
 import net.minecraft.block.Block;
@@ -12,6 +14,8 @@ import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
 import com.github.wohaopa.MyCTMLib.mixins.AccessorGTRenderedTexture;
+import com.github.wohaopa.MyCTMLib.mixins.BWBlocksGlass2Accessor;
+import com.github.wohaopa.MyCTMLib.mixins.BWBlocksGlassAccessor;
 import com.gtnewhorizon.gtnhlib.client.renderer.TessellatorManager;
 
 import bartworks.common.blocks.BWBlocksGlass;
@@ -114,23 +118,9 @@ public class GTNHIntegrationHelper {
         GregtechMetaCasingBlocks3.mConnectedMachineTextures = ctm;
     }
 
-    public static boolean isInit = false;
-
     public static void setBWBlocksGlassCTM(boolean ctm) {
-        try {
-            if (connectedTexBWGlassField == null) return;
-            if (!isInit) {
-                isInit = true;
-                return;
-            }
-            if (ItemRegistry.bw_realglas != null) {
-                connectedTexBWGlassField.set(ItemRegistry.bw_realglas, ctm);
-            }
-            if (ItemRegistry.bw_realglas2 != null) {
-                connectedTexBWGlass2Field.set(ItemRegistry.bw_realglas2, ctm);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        if (!isInit) return;
+        ((BWBlocksGlassAccessor) ItemRegistry.bw_realglas).setConnectedTex(ctm);
+        ((BWBlocksGlass2Accessor) ItemRegistry.bw_realglas2).setConnectedTex(ctm);
     }
 }

@@ -6,7 +6,9 @@
   "target": "@env(DEFAULT)",
   "compatibilityLevel": "JAVA_8",
   "mixins": [
-    "MixinBlockMetaData"
+    "MixinBlockMetaData",
+    "BWBlocksGlassAccessor",
+    "BWBlocksGlass2Accessor"
   ],
   "client": [],
   "server": []

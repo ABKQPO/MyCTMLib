@@ -11,12 +11,14 @@ import com.github.wohaopa.MyCTMLib.mixins.AccessorMinecraft;
 import cpw.mods.fml.client.event.ConfigChangedEvent;
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.Mod;
+import cpw.mods.fml.common.event.FMLLoadCompleteEvent;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 
-@Mod(modid = MyCTMLib.MODID, version = "v1.2.4_28x", name = "MyCTMLib", acceptedMinecraftVersions = "[1.7.10]")
+@Mod(modid = MyCTMLib.MODID, version = "v1.2.5_28x", name = "MyCTMLib", acceptedMinecraftVersions = "[1.7.10]")
 public class MyCTMLib {
 
+    public static boolean isInit = false;
     public static final String MODID = "MyCTMLib";
     public static final Logger LOG = LogManager.getLogger(MODID);
     public static boolean debugMode = false;
@@ -35,6 +37,11 @@ public class MyCTMLib {
             .register(this);
         configuration = new Configuration(event.getSuggestedConfigurationFile());
         loadConfig();
+    }
+
+    @Mod.EventHandler
+    public void completeInit(FMLLoadCompleteEvent event) {
+        isInit = true;
     }
 
     @SubscribeEvent
