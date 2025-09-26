@@ -99,7 +99,7 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
                             .replace("textures/blocks/", "")
                             .replace(".png", "");
 
-                        // 疑似测试代码
+                        // 修复代码
                         if (connectTextureName.startsWith("gregtech:iconsets/MACHINE_CASING_FUSION_")
                             && connectTexture.endsWith("_ctm")
                             && Loader.isModLoaded("gregtech")) {
