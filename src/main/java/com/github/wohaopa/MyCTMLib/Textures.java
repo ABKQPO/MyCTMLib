@@ -1,8 +1,10 @@
 package com.github.wohaopa.MyCTMLib;
 
 import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 
+import cpw.mods.fml.common.Loader;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockAir;
 import net.minecraft.client.renderer.RenderBlocks;
@@ -10,8 +12,6 @@ import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.util.IIcon;
 import net.minecraft.world.IBlockAccess;
 import net.minecraftforge.common.util.ForgeDirection;
-
-import cpw.mods.fml.common.Loader;
 
 @SuppressWarnings("DuplicatedCode")
 public class Textures {
@@ -50,7 +50,7 @@ public class Textures {
         }
 
         boolean result = ctmIconMap.containsKey(icon);
-        if (MyCTMLib.debugMode) System.out.println("[CTM] contain(\"" + icon + "\") = " + result);
+        // if (MyCTMLib.debugMode) System.out.println("[CTM] contain(\"" + icon + "\") = " + result);
         if (Loader.isModLoaded("gregtech")) {
             if (gtBlockCasings4CTM) GTNHIntegrationHelper.setBlockCasings4CTM(false);
             if (gtGregtechMetaCasingBlocks3CTM) GTNHIntegrationHelper.setGregtechMetaCasingBlocks3CTM(false);
@@ -79,6 +79,30 @@ public class Textures {
         CTMIconManager manager = ctmIconMap.get(icon);
         if (!manager.hasInited()) {
             manager.init();
+        }
+
+        // 检测是否支持随机纹理
+        if (manager.hasRandomIcons()) {
+
+            System.out.println("[CTM_Random_RenderWorldBlock] manager.hasRandomIcons() = true");
+            System.out.println(
+                "[CTM_Random_RenderWorldBlock] manager.getRandomIconManagers().length = "
+                    + manager.getRandomIconManagers().length);
+            // 根据世界位置计算随机索引
+            long worldSeed = 0; // 使用固定种子，确保相同位置总是选择相同的纹理
+            int blockX = (int) x;
+            int blockY = (int) y;
+            int blockZ = (int) z;
+
+            // 使用世界种子和方块位置生成随机种子，确保相同位置总是选择相同的纹理
+            long randomSeed = worldSeed + blockX *435L + blockY *357L + blockZ *299L;
+            Random random = new Random(randomSeed);
+
+            int randomIndex = random.nextInt(manager.getRandomIconManagers().length);
+            manager = manager.getRandomIconManagers()[randomIndex];
+            System.out.println("[CTM_Random_RenderWorldBlock] manager.IconName = " + manager.icon.getIconName());
+            System.out.println("[CTM_Random_RenderWorldBlock] manager.UV = " + manager.icon.getInterpolatedU(0) + ", " + manager.icon.getInterpolatedV(0));
+
         }
 
         float offset = 1e-3f;

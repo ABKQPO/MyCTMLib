@@ -1,6 +1,11 @@
 package com.github.wohaopa.MyCTMLib.mixins;
 
-import static com.github.wohaopa.MyCTMLib.Textures.*;
+import static com.github.wohaopa.MyCTMLib.Textures.ctmAltMap;
+import static com.github.wohaopa.MyCTMLib.Textures.ctmIconMap;
+import static com.github.wohaopa.MyCTMLib.Textures.ctmReplaceMap;
+import static com.github.wohaopa.MyCTMLib.Textures.gtBWBlocksGlassCTM;
+import static com.github.wohaopa.MyCTMLib.Textures.gtBlockCasings4CTM;
+import static com.github.wohaopa.MyCTMLib.Textures.gtGregtechMetaCasingBlocks3CTM;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -94,6 +99,9 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
                         connectTexture = connectionPrimitive.getAsString();
                     }
 
+                    // 随机纹理
+                    List<String> randomTextures = new ArrayList<>();
+
                     if (connectTexture != null && !connectTexture.isEmpty()) {
                         String connectTextureName = connectTexture.replace("minecraft:", "")
                             .replace("textures/blocks/", "")
@@ -140,6 +148,52 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
                                 }
                             }
                         } catch (IOException ignored) {}
+
+                        // 处理随机纹理，仅针对CTM纹理
+                        if (ctmObj.has("random")) {
+                            System.out.println("[CTM_Random_0] ctmObj.has(\"random\") = " + ctmObj.has("random"));
+                            JsonElement randomElement = ctmObj.get("random");
+
+                            if (randomElement.isJsonArray()) {
+                                // 处理数组格式：["texture1", "texture2", ...]
+                                JsonArray randomArray = randomElement.getAsJsonArray();
+                                for (JsonElement element : randomArray) {
+                                    String randomTextureName = element.getAsString()
+                                        .replace("minecraft:", "")
+                                        .replace("textures/blocks/", "")
+                                        .replace(".png", "");
+                                    randomTextures.add(randomTextureName);
+
+                                    // 创建并注册随机纹理
+                                    TextureAtlasSprite randomSprite = new NewTextureAtlasSprite(randomTextureName);
+                                    mapRegisteredSprites.put(randomTextureName, randomSprite);
+                                    System.out.println("[CTM_Random_1] randomTextureName = " + randomTextureName);
+                                }
+                            } else if (randomElement.isJsonPrimitive()) {
+                                // 处理字符串格式：范围 "1-8" 或单个数字 "5"
+                                String randomValue = randomElement.getAsString();
+                                if (randomValue.contains("-")) {
+                                    String[] parts = randomValue.split("-");
+                                    if (parts.length == 2) {
+                                        try {
+                                            int start = Integer.parseInt(parts[0]);
+                                            int end = Integer.parseInt(parts[1]);
+
+                                            // 生成随机纹理名称列表
+                                            for (int i = start; i <= end; i++) {
+                                                String randomTextureName = connectTextureName + "_" + i;
+                                                randomTextures.add(randomTextureName);
+
+                                                // 创建并注册随机纹理
+                                                TextureAtlasSprite randomSprite = new NewTextureAtlasSprite(
+                                                    randomTextureName);
+                                                mapRegisteredSprites.put(randomTextureName, randomSprite);
+                                            }
+                                        } catch (NumberFormatException e) {}
+                                    }
+                                }
+                            }
+                        }
                     }
 
                     JsonPrimitive altPrimitive = ctmObj.getAsJsonPrimitive("alt");
@@ -188,14 +242,39 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
                             equivalents.add(eq);
                         }
                     }
+
                     if (!equivalents.isEmpty()) {
                         ctmReplaceMap.put(textureName, equivalents.toArray(new String[0]));
                     }
+
+                    // 处理随机纹理数组，构造随机纹理对应的Manager数组
+                    IIcon[] randomIcons = null;
+                    if (!randomTextures.isEmpty()) {
+                        randomIcons = new IIcon[randomTextures.size()];
+                        for (int i = 0; i < randomTextures.size(); i++) {
+                            randomIcons[i] = mapRegisteredSprites.get(randomTextures.get(i));
+                        }
+                        System.out.println("[CTM_Random_2] randomIcons.Length = " + randomIcons.length);
+                    }
+
+                    // 创建基础CTMIconManager
+                    CTMIconManager ctmManager = new CTMIconManager(currentBase, currentCTM);
+
+                    // 使用setter方法设置属性
                     if (currentAlt != null) {
-                        ctmIconMap.put(textureName, new CTMIconManager(currentBase, currentCTM, currentAlt));
+                        ctmManager.setIconAlt(currentAlt);
                         ctmAltMap.put(textureName, currentAlt.getIconName());
-                    } else if (currentCTM != null) {
-                        ctmIconMap.put(textureName, new CTMIconManager(currentBase, currentCTM));
+                    }
+
+                    if (randomIcons != null) {
+                        ctmManager.setRandomIcons(randomIcons);
+                        System.out
+                            .println("[CTM_Random_3] ctmManager.randomIcon.Length = " + ctmManager.randomIcons.length);
+                    }
+
+                    // 添加到映射表
+                    if (currentCTM != null) {
+                        ctmIconMap.put(textureName, ctmManager);
                     }
                     cir.setReturnValue(currentBase);
                 }

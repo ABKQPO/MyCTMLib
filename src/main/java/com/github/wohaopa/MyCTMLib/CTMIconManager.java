@@ -25,25 +25,45 @@ public class CTMIconManager {
     // ctm专用小型图（通常为 2x2，用于特殊CTM等）
     public IIcon iconAlt;
 
-    public CTMIconManager(IIcon iconSmall, IIcon icon, IIcon iconAlt) {
-        this.icon = icon;
-        this.iconSmall = iconSmall;
-        this.iconAlt = iconAlt;
-    }
+    // 随机纹理数组
+    public IIcon[] randomIcons;
+
+    // 随机纹理管理器数组
+    public CTMIconManager[] randomIconManagers;
 
     /**
      * 构造函数，提供用于裁切的主图标与小图标。
      *
-     * @param iconSmall 用于 2x2 图块裁切的图标
-     * @param icon      用于 4x4 图块裁切的图标
+     * @param iconSmall   用于 2x2 图块裁切的图标
+     * @param icon        用于 4x4 图块裁切的图标
+     * @param iconAlt     替代图标（可选）
+     * @param randomIcons 随机纹理数组（可选）
      */
-    public CTMIconManager(IIcon iconSmall, IIcon icon) {
+    public CTMIconManager(IIcon iconSmall, IIcon icon, IIcon iconAlt, IIcon[] randomIcons) {
         this.icon = icon;
         this.iconSmall = iconSmall;
+        this.iconAlt = iconAlt;
+        this.randomIcons = randomIcons;
+    }
+
+    // 便捷构造函数
+    public CTMIconManager(IIcon iconSmall, IIcon icon) {
+        this(iconSmall, icon, null, null);
+    }
+
+    public CTMIconManager(IIcon iconSmall, IIcon icon, IIcon iconAlt) {
+        this(iconSmall, icon, iconAlt, null);
+    }
+
+    public CTMIconManager(IIcon iconSmall, IIcon icon, IIcon[] randomIcons) {
+        this(iconSmall, icon, null, randomIcons);
     }
 
     // 是否初始化完成
     private boolean inited = false;
+
+    // 是否具有随机图标
+    private boolean hasRandomIcons = false;
 
     /**
      * 初始化 CTM 图标，将 icon 和 iconSmall 切割成多个子图标。
@@ -95,6 +115,53 @@ public class CTMIconManager {
      */
     public boolean hasInited() {
         return inited;
+    }
+
+    /**
+     * 检查是否具有随机图标。
+     *
+     * @return 是否具有随机图标
+     */
+    public boolean hasRandomIcons() {
+        return hasRandomIcons;
+    }
+
+    /**
+     * 获取随机图标管理器数组。
+     *
+     * @return 随机图标管理器数组
+     */
+    public CTMIconManager[] getRandomIconManagers() {
+        return randomIconManagers;
+    }
+
+    // Setter方法
+    public void setIconSmall(IIcon iconSmall) {
+        this.iconSmall = iconSmall;
+    }
+
+    public void setIcon(IIcon icon) {
+        this.icon = icon;
+    }
+
+    public void setIconAlt(IIcon iconAlt) {
+        this.iconAlt = iconAlt;
+    }
+
+    public void setRandomIcons(IIcon[] randomIcons) {
+        this.randomIcons = randomIcons;
+        this.hasRandomIcons = true;
+
+        // 初始化随机纹理管理器
+        if (randomIcons != null && randomIcons.length > 0) {
+            System.out.println("[CTM_Random_init] randomIcons.Length = " + randomIcons.length);
+            randomIconManagers = new CTMIconManager[randomIcons.length];
+            for (int i = 0; i < randomIcons.length; i++) {
+                randomIconManagers[i] = new CTMIconManager(iconSmall, randomIcons[i]);
+                randomIconManagers[i].init();
+                System.out.println("[CTM_Random_init] randomIconManagers[i] = " + randomIconManagers[i]);
+            }
+        }
     }
 
     /**
