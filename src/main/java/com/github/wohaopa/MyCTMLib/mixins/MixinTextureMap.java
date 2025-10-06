@@ -1,8 +1,13 @@
 package com.github.wohaopa.MyCTMLib.mixins;
 
-import static com.github.wohaopa.MyCTMLib.Textures.*;
+import static com.github.wohaopa.MyCTMLib.Textures.ctmAltMap;
+import static com.github.wohaopa.MyCTMLib.Textures.ctmIconMap;
+import static com.github.wohaopa.MyCTMLib.Textures.ctmRandomMap;
+import static com.github.wohaopa.MyCTMLib.Textures.ctmReplaceMap;
+import static com.github.wohaopa.MyCTMLib.Textures.gtBWBlocksGlassCTM;
+import static com.github.wohaopa.MyCTMLib.Textures.gtBlockCasings4CTM;
+import static com.github.wohaopa.MyCTMLib.Textures.gtGregtechMetaCasingBlocks3CTM;
 
-import com.github.wohaopa.MyCTMLib.CTMConfig;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,6 +31,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import com.github.wohaopa.MyCTMLib.CTMConfig;
 import com.github.wohaopa.MyCTMLib.CTMIconManager;
 import com.github.wohaopa.MyCTMLib.InterpolatedIcon;
 import com.github.wohaopa.MyCTMLib.NewTextureAtlasSprite;
@@ -55,12 +61,10 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
         cancellable = true)
     private void onRegisterIcon(String textureName, CallbackInfoReturnable<IIcon> cir) {
         try {
+            TextureAtlasSprite currentBase = null;
             TextureAtlasSprite currentCTM = null;
             TextureAtlasSprite currentAlt = null;
-            ResourceLocation res = completeResourceLocation(new ResourceLocation(textureName), 0);
-            IResource resource = Minecraft.getMinecraft()
-                .getResourceManager()
-                .getResource(res);
+            IResource resource = getResourceFromTextureName(textureName);
 
             if (basePath.contains("textures\\items") || basePath.contains("textures/items")) {
                 return;
@@ -74,152 +78,102 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
                 return;
             }
 
-            TextureAtlasSprite currentBase = new NewTextureAtlasSprite(textureName);
-            mapRegisteredSprites.put(textureName, currentBase);
-
-            if (simple.getMetadata("animation") != null) {
-                JsonObject animationObj = ((AccessorSimpleResource) simple).getMcMetaJson()
-                    .getAsJsonObject("animation");
-                if (animationObj.has("interpolate") && animationObj.getAsJsonPrimitive("interpolate")
-                    .getAsBoolean()) {
-                    InterpolatedIcon interpolatedIcon = new InterpolatedIcon(textureName);
-                    mapRegisteredSprites.put(textureName, interpolatedIcon);
-                    currentBase = interpolatedIcon;
-                }
-            }
-
+            CTMIconManager.Builder builder = CTMIconManager.builder();
             JsonObject ctmObj = ((AccessorSimpleResource) simple).getMcMetaJson()
                 .getAsJsonObject("myctmlib");
-
             CTMConfig config = new CTMConfig(ctmObj);
 
+            currentBase = useInterpolation(simple) ? new InterpolatedIcon(textureName)
+                : new NewTextureAtlasSprite(textureName);
+            builder.setIconSmall(currentBase);
+            mapRegisteredSprites.put(textureName, currentBase);
+
+            
             if (config.connectionTexture != null) {
-                
+
                 // 修复代码
                 updateGTNHFlags(config.connectionTexture);
 
-                currentCTM = new NewTextureAtlasSprite(config.connectionTexture);
-                mapRegisteredSprites.put(config.connectionTexture, currentCTM);
                 try {
-                    ResourceLocation resCTM = completeResourceLocation(new ResourceLocation(ctmObj.getAsJsonPrimitive("connection").getAsString()), 0);
-                    IResource resourceCTM = Minecraft.getMinecraft()
-                        .getResourceManager()
-                        .getResource(resCTM);
+                    IResource resourceCTM = getResourceFromJson(ctmObj, "connection");
 
                     if (resourceCTM instanceof SimpleResource simpleCTM) {
-                        if (simpleCTM.getMetadata("animation") != null) {
-                            JsonObject animationObjCTM = ((AccessorSimpleResource) simpleCTM).getMcMetaJson()
-                                .getAsJsonObject("animation");
-                            if (animationObjCTM.has("interpolate") && animationObjCTM.getAsJsonPrimitive("interpolate")
-                                .getAsBoolean()) {
-                                InterpolatedIcon interpolatedIconCTM = new InterpolatedIcon(config.connectionTexture);
-                                mapRegisteredSprites.put(config.connectionTexture, interpolatedIconCTM);
-
-                                currentCTM = interpolatedIconCTM;
-                            }
-                        }
+                        currentCTM = useInterpolation(simpleCTM) ? new InterpolatedIcon(config.connectionTexture)
+                            : new NewTextureAtlasSprite(config.connectionTexture);
+                        mapRegisteredSprites.put(config.connectionTexture, currentCTM);
+                        builder.setIconCTM(currentCTM);
                     }
+
                 } catch (IOException ignored) {}
+            }
 
-                // 处理随机纹理，仅针对CTM纹理
-                if (!config.randomTextures.isEmpty()) {
-                    System.out.println("[CTM_Random_0] Found " + config.randomTextures.size() + " random textures");
+            if (!config.randomTextures.isEmpty()) {
+                
+                //对random和connection同时存在的情况处理
+                if (config.connectionTexture != null) {
                     List<String> processedTextures = config.randomTextures;
-
-                    // 生成randomManager数组
                     List<CTMIconManager> randomManagers = new ArrayList<>();
 
-                    for (String processedTexture : processedTextures) {
-                        // 如果包含"ctm"，查找对应的基础纹理
+                    for (String processedTexture : processedTextures) { 
+
                         if (processedTexture.contains("_ctm")) {
-                            // 生成对应的基础纹理名称（去掉_ctm）
                             String baseTextureName = processedTexture.replace("_ctm", "");
 
-                            // 在已处理的纹理中查找对应的基础纹理
+                            // 配对随机纹理（IconCTM和IconSmall）
                             if (processedTextures.contains(baseTextureName)) {
-                                System.out
-                                    .println("[CTM_Random_Pair] " + baseTextureName + " <-> " + processedTexture);
 
-                                // 创建并注册纹理
                                 TextureAtlasSprite baseSprite = new NewTextureAtlasSprite(baseTextureName);
-                                TextureAtlasSprite ctmSprite = new NewTextureAtlasSprite(processedTexture);
+                                TextureAtlasSprite randomSprite = new NewTextureAtlasSprite(processedTexture);
                                 mapRegisteredSprites.put(baseTextureName, baseSprite);
-                                mapRegisteredSprites.put(processedTexture, ctmSprite);
+                                mapRegisteredSprites.put(processedTexture, randomSprite);
 
-                                // 配对成功，创建CTMIconManager
-                                CTMIconManager.Builder builder = CTMIconManager.builder()
+                                CTMIconManager.Builder builderRandom = CTMIconManager.builder()
                                     .setIconSmall(baseSprite)
-                                    .setIconCTM(ctmSprite);
-                                if (currentAlt != null) {
-                                    builder.setIconAlt(currentAlt);
-                                }
-                                CTMIconManager randomManager = builder.buildAndInit();
+                                    .setIconCTM(randomSprite);
+                                
+                                CTMIconManager randomManager = builderRandom.buildAndInit();
                                 randomManagers.add(randomManager);
-
-                                System.out.println(
-                                    "[CTM_Random_Manager] Created manager for: " + baseTextureName
-                                        + " <-> "
-                                        + processedTexture);
                             }
                         }
                     }
 
-                    // 循环结束后，将randomManagers注册到ctmRandomMap
                     if (!randomManagers.isEmpty()) {
                         ctmRandomMap.put(textureName, randomManagers);
-                        System.out.println(
-                            "[CTM_Random_Register] Registered " + randomManagers.size()
-                                + " random managers for: "
-                                + textureName);
                     }
                 }
+
+                //单独的random字段处理
+                if (config.connectionTexture == null) {
+                    
+                }
+
+                
             }
 
             if (config.altTexture != null) {
-                currentAlt = new NewTextureAtlasSprite(config.altTexture);
-                mapRegisteredSprites.put(config.altTexture, currentAlt);
                 try {
-                    ResourceLocation resAlt = completeResourceLocation(new ResourceLocation(ctmObj.getAsJsonPrimitive("alt").getAsString()), 0);
-                    IResource resourceAlt = Minecraft.getMinecraft()
-                        .getResourceManager()
-                        .getResource(resAlt);
+                    IResource resourceAlt = getResourceFromJson(ctmObj, "alt");
 
                     if (resourceAlt instanceof SimpleResource simpleAlt) {
-                        if (simpleAlt.getMetadata("animation") != null) {
-                            JsonObject animationObjAlt = ((AccessorSimpleResource) simpleAlt).getMcMetaJson()
-                                .getAsJsonObject("animation");
-                            if (animationObjAlt.has("interpolate") && animationObjAlt.getAsJsonPrimitive("interpolate")
-                                .getAsBoolean()) {
-                                InterpolatedIcon interpolatedIconAlt = new InterpolatedIcon(config.altTexture);
-                                mapRegisteredSprites.put(config.altTexture, interpolatedIconAlt);
-
-                                currentAlt = interpolatedIconAlt;
-                            }
-                        }
+                        currentAlt = useInterpolation(simpleAlt) ? new InterpolatedIcon(config.altTexture)
+                            : new NewTextureAtlasSprite(config.altTexture);
+                        
+                        mapRegisteredSprites.put(config.altTexture, currentAlt);
+                        builder.setIconAlt(currentAlt);
+                        ctmAltMap.put(textureName, currentAlt.getIconName());
                     }
+
                 } catch (IOException ignored) {}
+
             }
 
             if (!config.equivalents.isEmpty()) {
                 ctmReplaceMap.put(textureName, config.equivalents.toArray(new String[0]));
             }
 
-            // 创建基础CTMIconManager
-            CTMIconManager.Builder builder = CTMIconManager.builder()
-                .setIconSmall(currentBase);
-            if (currentCTM != null) {
-                builder.setIconCTM(currentCTM);
-            }
-            if (currentAlt != null) {
-                builder.setIconAlt(currentAlt);
-                ctmAltMap.put(textureName, currentAlt.getIconName());
-            }
             CTMIconManager ctmManager = builder.build();
+            ctmIconMap.put(textureName, ctmManager);
 
-            // 添加到映射表
-            if (currentCTM != null) {
-                ctmIconMap.put(textureName, ctmManager);
-            }
             cir.setReturnValue(currentBase);
         } catch (Exception ignored) {}
     }
@@ -244,5 +198,43 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
             && Loader.isModLoaded("gregtech")) {
             gtBWBlocksGlassCTM = true;
         }
+    }
+
+    /**
+     * 判断是否应该使用插值纹理
+     */
+    private boolean useInterpolation(SimpleResource simple) {
+        if (simple.getMetadata("animation") == null) {
+            return false;
+        }
+
+        JsonObject animationObj = ((AccessorSimpleResource) simple).getMcMetaJson()
+            .getAsJsonObject("animation");
+        return animationObj.has("interpolate") && animationObj.getAsJsonPrimitive("interpolate")
+            .getAsBoolean();
+    }
+
+    /**
+     * 从JSON对象中获取资源
+     */
+    private IResource getResourceFromJson(JsonObject ctmObj, String fieldName) throws IOException {
+        ResourceLocation res = completeResourceLocation(
+            new ResourceLocation(
+                ctmObj.getAsJsonPrimitive(fieldName)
+                    .getAsString()),
+            0);
+        return Minecraft.getMinecraft()
+            .getResourceManager()
+            .getResource(res);
+    }
+
+    /**
+     * 从纹理名称获取资源
+     */
+    private IResource getResourceFromTextureName(String textureName) throws IOException {
+        ResourceLocation res = completeResourceLocation(new ResourceLocation(textureName), 0);
+        return Minecraft.getMinecraft()
+            .getResourceManager()
+            .getResource(res);
     }
 }

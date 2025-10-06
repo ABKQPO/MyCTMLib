@@ -13,13 +13,13 @@ import com.google.gson.JsonPrimitive;
  * 负责解析myctmlib.json配置文件中的各种配置项
  */
 public class CTMConfig {
-    
+
     // 解析结果
     public final String connectionTexture;
     public final String altTexture;
     public final List<String> randomTextures;
     public final List<String> equivalents;
-    
+
     public CTMConfig(JsonObject ctmObj) {
         // 解析所有配置
         this.connectionTexture = parseStringField(ctmObj, "connection");
@@ -27,8 +27,7 @@ public class CTMConfig {
         this.randomTextures = parseStringArray(ctmObj, "random");
         this.equivalents = parseStringArray(ctmObj, "equivalents");
     }
-    
-    
+
     // 解析方法
     private String parseStringField(JsonObject ctmObj, String fieldName) {
         JsonPrimitive primitive = ctmObj.getAsJsonPrimitive(fieldName);
@@ -41,29 +40,29 @@ public class CTMConfig {
         }
         return processTextureName(value);
     }
-    
+
     private List<String> parseStringArray(JsonObject ctmObj, String fieldName) {
         if (!ctmObj.has(fieldName)) {
             return new ArrayList<>();
         }
-        
+
         JsonElement element = ctmObj.get(fieldName);
         if (!element.isJsonArray()) {
             return new ArrayList<>();
         }
-        
+
         JsonArray array = element.getAsJsonArray();
         List<String> result = new ArrayList<>();
-        
+
         for (JsonElement el : array) {
             String originalValue = el.getAsString();
             String processedValue = processTextureName(originalValue);
             result.add(processedValue);
         }
-        
+
         return result;
     }
-    
+
     /**
      * 处理纹理名称，移除前缀和后缀
      */
@@ -73,4 +72,3 @@ public class CTMConfig {
             .replace(".png", "");
     }
 }
-
