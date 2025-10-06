@@ -181,12 +181,13 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
                                             mapRegisteredSprites.put(processedTexture, ctmSprite);
 
                                             // 配对成功，创建CTMIconManager
-                                            CTMIconManager randomManager = new CTMIconManager(baseSprite)
+                                            CTMIconManager.Builder builder = CTMIconManager.builder()
+                                                .setIconSmall(baseSprite)
                                                 .setIconCTM(ctmSprite);
                                             if (currentAlt != null) {
-                                                randomManager.setIconAlt(currentAlt);
+                                                builder.setIconAlt(currentAlt);
                                             }
-                                            randomManager.init();
+                                            CTMIconManager randomManager = builder.buildAndInit();
                                             randomManagers.add(randomManager);
 
                                             System.out.println(
@@ -261,16 +262,16 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
                     }
 
                     // 创建基础CTMIconManager
-                    CTMIconManager ctmManager = new CTMIconManager(currentBase);
+                    CTMIconManager.Builder builder = CTMIconManager.builder()
+                        .setIconSmall(currentBase);
                     if (currentCTM != null) {
-                        ctmManager.setIconCTM(currentCTM);
+                        builder.setIconCTM(currentCTM);
                     }
-
-                    // 使用setter方法设置属性
                     if (currentAlt != null) {
-                        ctmManager.setIconAlt(currentAlt);
+                        builder.setIconAlt(currentAlt);
                         ctmAltMap.put(textureName, currentAlt.getIconName());
                     }
+                    CTMIconManager ctmManager = builder.build();
 
                     // 添加到映射表
                     if (currentCTM != null) {

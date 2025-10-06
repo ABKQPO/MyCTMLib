@@ -53,8 +53,15 @@ public class CTMIconManager {
     
     // 环形图（通常为 10x10，用于特殊CTM等）
     public IIcon iconRing;
+    
     /**
-     * 构造函数
+     * 私有构造函数，通过Builder创建实例
+     */
+    private CTMIconManager() {
+    }
+
+    /**
+     * 构造函数 - 仅小图标（向后兼容）
      *
      * @param iconSmall 用于 2x2 图块裁切的图标
      */
@@ -117,25 +124,83 @@ public class CTMIconManager {
         return inited;
     }
 
-    // Setter方法
-    public CTMIconManager setIconSmall(IIcon iconSmall) {
-        this.iconSmall = iconSmall;
-        return this;
+
+    /**
+     * CTMIconManager的Builder类
+     */
+    public static class Builder {
+        private final CTMIconManager manager;
+
+        public Builder() {
+            this.manager = new CTMIconManager();
+        }
+
+        /**
+         * 设置CTM主图标
+         */
+        public Builder setIconCTM(IIcon iconCTM) {
+            manager.iconCTM = iconCTM;
+            return this;
+        }
+
+        /**
+         * 设置小图标
+         */
+        public Builder setIconSmall(IIcon iconSmall) {
+            manager.iconSmall = iconSmall;
+            return this;
+        }
+
+        /**
+         * 设置ALt图标
+         */
+        public Builder setIconAlt(IIcon iconAlt) {
+            manager.iconAlt = iconAlt;
+            return this;
+        }
+
+        /**
+         * 设置环形图标
+         */
+        public Builder setIconRing(IIcon iconRing) {
+            manager.iconRing = iconRing;
+            return this;
+        }
+
+        /**
+         * 设置检测直径
+         */
+        public Builder setDetectionDiameter(DetectionDiameter diameter) {
+            // 可以在这里添加检测直径相关的逻辑
+            return this;
+        }
+
+        /**
+         * 构建CTMIconManager实例
+         */
+        public CTMIconManager build() {
+            // 验证必需的图标
+            if (manager.iconSmall == null) {
+                throw new IllegalStateException("iconSmall is required");
+            }
+            return manager;
+        }
+
+        /**
+         * 构建并自动初始化CTMIconManager实例
+         */
+        public CTMIconManager buildAndInit() {
+            CTMIconManager result = build();
+            result.init();
+            return result;
+        }
     }
 
-    public CTMIconManager setIconCTM(IIcon icon) {
-        this.iconCTM = icon;
-        return this;
-    }
-
-    public CTMIconManager setIconAlt(IIcon iconAlt) {
-        this.iconAlt = iconAlt;
-        return this;
-    }
-
-    public CTMIconManager setIconRing(IIcon iconRing) {
-        this.iconRing = iconRing;
-        return this;
+    /**
+     * 创建Builder实例
+     */
+    public static Builder builder() {
+        return new Builder();
     }
 
     /**
