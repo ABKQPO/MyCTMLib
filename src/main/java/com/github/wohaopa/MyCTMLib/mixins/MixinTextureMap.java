@@ -181,7 +181,8 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
                                             mapRegisteredSprites.put(processedTexture, ctmSprite);
 
                                             // 配对成功，创建CTMIconManager
-                                            CTMIconManager randomManager = new CTMIconManager(baseSprite, ctmSprite);
+                                            CTMIconManager randomManager = new CTMIconManager(baseSprite)
+                                                .setIconCTM(ctmSprite);
                                             if (currentAlt != null) {
                                                 randomManager.setIconAlt(currentAlt);
                                             }
@@ -260,7 +261,10 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
                     }
 
                     // 创建基础CTMIconManager
-                    CTMIconManager ctmManager = new CTMIconManager(currentBase, currentCTM);
+                    CTMIconManager ctmManager = new CTMIconManager(currentBase);
+                    if (currentCTM != null) {
+                        ctmManager.setIconCTM(currentCTM);
+                    }
 
                     // 使用setter方法设置属性
                     if (currentAlt != null) {
