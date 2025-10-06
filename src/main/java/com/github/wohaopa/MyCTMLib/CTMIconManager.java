@@ -43,7 +43,7 @@ public class CTMIconManager {
     public IIcon[] icons = new CTMIcon[25];
 
     // 主纹理图（通常为 4x4）
-    public IIcon icon;
+    public IIcon iconCTM;
 
     // 小型图（通常为 2x2，用于特殊边角等）
     public IIcon iconSmall;
@@ -51,22 +51,15 @@ public class CTMIconManager {
     // ctm专用小型图（通常为 2x2，用于特殊CTM等）
     public IIcon iconAlt;
     
+    // 环形图（通常为 10x10，用于特殊CTM等）
+    public IIcon iconRing;
     /**
-     * 构造函数，提供用于裁切的主图标与小图标。
+     * 构造函数
      *
      * @param iconSmall 用于 2x2 图块裁切的图标
-     * @param icon      用于 4x4 图块裁切的图标
-     * @param iconAlt   替代图标（可选）
      */
-    public CTMIconManager(IIcon iconSmall, IIcon icon, IIcon iconAlt) {
-        this.icon = icon;
+    public CTMIconManager(IIcon iconSmall) {
         this.iconSmall = iconSmall;
-        this.iconAlt = iconAlt;
-    }
-
-    // 便捷构造函数
-    public CTMIconManager(IIcon iconSmall, IIcon icon) {
-        this(iconSmall, icon, null);
     }
 
     // 是否初始化完成
@@ -80,7 +73,7 @@ public class CTMIconManager {
         // 构造主纹理的子图标：4x4 网格，索引从 1 到 16（注意：下标 0 未使用）
         for (int i = 1; i <= 4; i++) {
             for (int j = 0; j < 4; j++) {
-                icons[i + j * 4] = new CTMIcon(icon, 4, 4, i - 1, j);
+                icons[i + j * 4] = new CTMIcon(iconCTM, 4, 4, i - 1, j);
             }
         }
 
@@ -125,16 +118,24 @@ public class CTMIconManager {
     }
 
     // Setter方法
-    public void setIconSmall(IIcon iconSmall) {
+    public CTMIconManager setIconSmall(IIcon iconSmall) {
         this.iconSmall = iconSmall;
+        return this;
     }
 
-    public void setIcon(IIcon icon) {
-        this.icon = icon;
+    public CTMIconManager setIconCTM(IIcon icon) {
+        this.iconCTM = icon;
+        return this;
     }
 
-    public void setIconAlt(IIcon iconAlt) {
+    public CTMIconManager setIconAlt(IIcon iconAlt) {
         this.iconAlt = iconAlt;
+        return this;
+    }
+
+    public CTMIconManager setIconRing(IIcon iconRing) {
+        this.iconRing = iconRing;
+        return this;
     }
 
     /**

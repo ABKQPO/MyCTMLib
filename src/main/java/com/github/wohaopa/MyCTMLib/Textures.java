@@ -102,11 +102,6 @@ public class Textures {
 
             int randomIndex = random.nextInt(randomManagers.size());
             manager = randomManagers.get(randomIndex);
-            System.out.println("[CTM_Random_RenderWorldBlock] Selected random manager: " + manager.icon.getIconName());
-            System.out.println(
-                "[CTM_Random_RenderWorldBlock] manager.UV = " + manager.icon.getInterpolatedU(0)
-                    + ", "
-                    + manager.icon.getInterpolatedV(0));
         }
 
         float offset = 1e-3f;
