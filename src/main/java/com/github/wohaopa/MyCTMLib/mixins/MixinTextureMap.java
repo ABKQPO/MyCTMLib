@@ -184,7 +184,7 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
                 ctmReplaceMap.put(textureName, config.equivalents.toArray(new String[0]));
             }
 
-            CTMIconManager ctmManager = builder.build();
+            CTMIconManager ctmManager = builder.buildAndInit();
             ctmIconMap.put(textureName, ctmManager);
 
             cir.setReturnValue(currentBase);

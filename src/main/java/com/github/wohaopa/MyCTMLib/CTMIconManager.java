@@ -56,6 +56,9 @@ public class CTMIconManager {
     // 环形图（通常为 10x10，用于特殊CTM等）
     public IIcon iconRing;
 
+    // 检测直径
+    public DetectionDiameter detectionDiameter = DetectionDiameter.DIAMETER_1;
+
     /**
      * 私有构造函数，通过Builder创建实例
      */
@@ -184,6 +187,16 @@ public class CTMIconManager {
             if (manager.iconSmall == null) {
                 throw new IllegalStateException("iconSmall is required");
             }
+            
+            // 根据图标类型自动设置检测直径
+            if (manager.iconCTM != null) {
+                manager.detectionDiameter = DetectionDiameter.DIAMETER_3; // 3x3类型
+            } else if (manager.iconRing != null) {
+                manager.detectionDiameter = DetectionDiameter.DIAMETER_5; // 5x5类型
+            } else {
+                manager.detectionDiameter = DetectionDiameter.DIAMETER_1; // 其余为1
+            }
+            
             return manager;
         }
 
