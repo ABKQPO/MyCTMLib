@@ -2,7 +2,6 @@ package com.github.wohaopa.MyCTMLib;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 
 import net.minecraft.block.Block;
@@ -96,11 +95,8 @@ public class Textures {
             int blockY = (int) y;
             int blockZ = (int) z;
 
-            // 使用世界种子和方块位置生成随机种子，确保相同位置总是选择相同的纹理
-            long randomSeed = worldSeed + blockX * 435L + blockY * 357L + blockZ * 299L;
-            Random random = new Random(randomSeed);
-
-            int randomIndex = random.nextInt(randomManagers.size());
+            // 使用优化的缓存随机数生成器
+            int randomIndex = PositionRandomCache.getRandomIndex(worldSeed, blockX, blockY, blockZ, randomManagers.size());
             manager = randomManagers.get(randomIndex);
         }
 
