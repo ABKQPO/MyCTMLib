@@ -76,11 +76,17 @@ public class Textures {
 
         int[] iconIdx = threadLocalIconIdx.get();
 
-        buildConnect(blockAccess, (int) x, (int) y, (int) z, iIcon, forgeDirection, iconIdx);
-
         CTMIconManager manager = ctmIconMap.get(icon);
         if (!manager.hasInited()) {
             manager.init();
+        }
+
+        // 如果检测直径为1，直接使用17-20，不需要buildConnect
+        if (manager.detectionDiameter == CTMIconManager.DetectionDiameter.DIAMETER_1) {
+            int baseIconIdx = 17 + (iconIdx[0] % 4);
+            iconIdx[0] = baseIconIdx;
+        } else {
+            buildConnect(blockAccess, (int) x, (int) y, (int) z, iIcon, forgeDirection, iconIdx);
         }
 
         // 检查是否有随机纹理管理器

@@ -18,11 +18,10 @@ public class CTMIconManager {
      */
     public enum DetectionDiameter {
 
-
         DIAMETER_1(1),
 
         DIAMETER_3(3),
-        
+
         DIAMETER_5(5);
 
         private final int value;
@@ -187,7 +186,7 @@ public class CTMIconManager {
             if (manager.iconSmall == null) {
                 throw new IllegalStateException("iconSmall is required");
             }
-            
+
             // 根据图标类型自动设置检测直径
             if (manager.iconCTM != null) {
                 manager.detectionDiameter = DetectionDiameter.DIAMETER_3; // 3x3类型
@@ -196,7 +195,7 @@ public class CTMIconManager {
             } else {
                 manager.detectionDiameter = DetectionDiameter.DIAMETER_1; // 其余为1
             }
-            
+
             return manager;
         }
 

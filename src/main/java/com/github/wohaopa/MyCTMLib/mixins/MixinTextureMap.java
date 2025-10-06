@@ -88,7 +88,6 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
             builder.setIconSmall(currentBase);
             mapRegisteredSprites.put(textureName, currentBase);
 
-            
             if (config.connectionTexture != null) {
 
                 // 修复代码
@@ -108,17 +107,17 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
             }
 
             if (!config.randomTextures.isEmpty()) {
-                
+
                 List<String> processedTextures = config.randomTextures;
-                List<CTMIconManager> randomManagers = new ArrayList<>();               
-                
-                //对random和connection同时存在的情况处理
+                List<CTMIconManager> randomManagers = new ArrayList<>();
+
+                // 对random和connection同时存在的情况处理
                 if (config.connectionTexture != null) {
-                    for (String processedTexture : processedTextures) { 
+                    for (String processedTexture : processedTextures) {
                         if (!processedTexture.contains("_ctm")) {
                             continue;
                         }
-                        
+
                         String baseTextureName = processedTexture.replace("_ctm", "");
 
                         // 配对随机纹理（IconCTM和IconSmall）
@@ -135,13 +134,12 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
                             CTMIconManager.builder()
                                 .setIconSmall(baseSprite)
                                 .setIconCTM(randomSprite)
-                                .buildAndInit()
-                        );
+                                .buildAndInit());
                     }
 
                 }
 
-                //单独的random字段处理
+                // 单独的random字段处理
                 if (config.connectionTexture == null) {
 
                     for (String processedTexture : processedTextures) {
@@ -152,15 +150,14 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
                             CTMIconManager.builder()
                                 .setIconSmall(currentBase)
                                 .setIconCTM(randomSprite)
-                                .buildAndInit()
-                        );
+                                .buildAndInit());
                     }
                 }
-                
+
                 if (!randomManagers.isEmpty()) {
                     ctmRandomMap.put(textureName, randomManagers);
                 }
-                
+
             }
 
             if (config.altTexture != null) {
@@ -170,7 +167,7 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
                     if (resourceAlt instanceof SimpleResource simpleAlt) {
                         currentAlt = useInterpolation(simpleAlt) ? new InterpolatedIcon(config.altTexture)
                             : new NewTextureAtlasSprite(config.altTexture);
-                        
+
                         mapRegisteredSprites.put(config.altTexture, currentAlt);
                         builder.setIconAlt(currentAlt);
                         ctmAltMap.put(textureName, currentAlt.getIconName());
