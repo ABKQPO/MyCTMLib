@@ -2,6 +2,7 @@ package com.github.wohaopa.MyCTMLib.mixins;
 
 import static com.github.wohaopa.MyCTMLib.Textures.*;
 
+import com.github.wohaopa.MyCTMLib.CTMConfig;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,10 +29,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import com.github.wohaopa.MyCTMLib.CTMIconManager;
 import com.github.wohaopa.MyCTMLib.InterpolatedIcon;
 import com.github.wohaopa.MyCTMLib.NewTextureAtlasSprite;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
 
 import cpw.mods.fml.common.Loader;
 
@@ -93,39 +91,17 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
             JsonObject ctmObj = ((AccessorSimpleResource) simple).getMcMetaJson()
                 .getAsJsonObject("myctmlib");
 
-            JsonPrimitive connectionPrimitive = ctmObj.getAsJsonPrimitive("connection");
-            String connectTexture = null;
-            if (connectionPrimitive != null) {
-                connectTexture = connectionPrimitive.getAsString();
-            }
+            CTMConfig config = new CTMConfig(ctmObj);
 
-            if (connectTexture != null && !connectTexture.isEmpty()) {
-                String connectTextureName = connectTexture.replace("minecraft:", "")
-                    .replace("textures/blocks/", "")
-                    .replace(".png", "");
-
+            if (config.connectionTexture != null) {
+                
                 // 修复代码
-                if (connectTextureName.startsWith("gregtech:iconsets/MACHINE_CASING_FUSION_")
-                    && connectTexture.endsWith("_ctm")
-                    && Loader.isModLoaded("gregtech")) {
-                    gtBlockCasings4CTM = true;
-                }
+                updateGTNHFlags(config.connectionTexture);
 
-                if (connectTextureName.startsWith("miscutils:iconsets/MACHINE_CASING_FUSION_")
-                    && connectTexture.endsWith("_ctm")
-                    && Loader.isModLoaded("gregtech")) {
-                    gtGregtechMetaCasingBlocks3CTM = true;
-                }
-
-                if (connectTexture.contains("BoronSilicateGlass") && connectTextureName.endsWith("_ctm")
-                    && Loader.isModLoaded("gregtech")) {
-                    gtBWBlocksGlassCTM = true;
-                }
-
-                currentCTM = new NewTextureAtlasSprite(connectTextureName);
-                mapRegisteredSprites.put(connectTextureName, currentCTM);
+                currentCTM = new NewTextureAtlasSprite(config.connectionTexture);
+                mapRegisteredSprites.put(config.connectionTexture, currentCTM);
                 try {
-                    ResourceLocation resCTM = completeResourceLocation(new ResourceLocation(connectTexture), 0);
+                    ResourceLocation resCTM = completeResourceLocation(new ResourceLocation(ctmObj.getAsJsonPrimitive("connection").getAsString()), 0);
                     IResource resourceCTM = Minecraft.getMinecraft()
                         .getResourceManager()
                         .getResource(resCTM);
@@ -136,8 +112,8 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
                                 .getAsJsonObject("animation");
                             if (animationObjCTM.has("interpolate") && animationObjCTM.getAsJsonPrimitive("interpolate")
                                 .getAsBoolean()) {
-                                InterpolatedIcon interpolatedIconCTM = new InterpolatedIcon(connectTextureName);
-                                mapRegisteredSprites.put(connectTextureName, interpolatedIconCTM);
+                                InterpolatedIcon interpolatedIconCTM = new InterpolatedIcon(config.connectionTexture);
+                                mapRegisteredSprites.put(config.connectionTexture, interpolatedIconCTM);
 
                                 currentCTM = interpolatedIconCTM;
                             }
@@ -146,88 +122,64 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
                 } catch (IOException ignored) {}
 
                 // 处理随机纹理，仅针对CTM纹理
-                if (ctmObj.has("random")) {
-                    System.out.println("[CTM_Random_0] ctmObj.has(\"random\") = " + ctmObj.has("random"));
-                    JsonElement randomElement = ctmObj.get("random");
+                if (!config.randomTextures.isEmpty()) {
+                    System.out.println("[CTM_Random_0] Found " + config.randomTextures.size() + " random textures");
+                    List<String> processedTextures = config.randomTextures;
 
-                    if (randomElement.isJsonArray()) {
-                        // 处理数组格式：["texture1", "texture2", ...]
-                        JsonArray randomArray = randomElement.getAsJsonArray();
+                    // 生成randomManager数组
+                    List<CTMIconManager> randomManagers = new ArrayList<>();
 
-                        // 统一处理名称
-                        List<String> processedTextures = new ArrayList<>();
-                        for (JsonElement element : randomArray) {
-                            String processedName = element.getAsString()
-                                .replace("minecraft:", "")
-                                .replace("textures/blocks/", "")
-                                .replace(".png", "");
-                            processedTextures.add(processedName);
-                        }
+                    for (String processedTexture : processedTextures) {
+                        // 如果包含"ctm"，查找对应的基础纹理
+                        if (processedTexture.contains("_ctm")) {
+                            // 生成对应的基础纹理名称（去掉_ctm）
+                            String baseTextureName = processedTexture.replace("_ctm", "");
 
-                        // 生成randomManager数组
-                        List<CTMIconManager> randomManagers = new ArrayList<>();
+                            // 在已处理的纹理中查找对应的基础纹理
+                            if (processedTextures.contains(baseTextureName)) {
+                                System.out
+                                    .println("[CTM_Random_Pair] " + baseTextureName + " <-> " + processedTexture);
 
-                        for (String processedTexture : processedTextures) {
-                            // 如果包含"ctm"，查找对应的基础纹理
-                            if (processedTexture.contains("_ctm")) {
-                                // 生成对应的基础纹理名称（去掉_ctm）
-                                String baseTextureName = processedTexture.replace("_ctm", "");
+                                // 创建并注册纹理
+                                TextureAtlasSprite baseSprite = new NewTextureAtlasSprite(baseTextureName);
+                                TextureAtlasSprite ctmSprite = new NewTextureAtlasSprite(processedTexture);
+                                mapRegisteredSprites.put(baseTextureName, baseSprite);
+                                mapRegisteredSprites.put(processedTexture, ctmSprite);
 
-                                // 在已处理的纹理中查找对应的基础纹理
-                                if (processedTextures.contains(baseTextureName)) {
-                                    System.out
-                                        .println("[CTM_Random_Pair] " + baseTextureName + " <-> " + processedTexture);
-
-                                    // 创建并注册纹理
-                                    TextureAtlasSprite baseSprite = new NewTextureAtlasSprite(baseTextureName);
-                                    TextureAtlasSprite ctmSprite = new NewTextureAtlasSprite(processedTexture);
-                                    mapRegisteredSprites.put(baseTextureName, baseSprite);
-                                    mapRegisteredSprites.put(processedTexture, ctmSprite);
-
-                                    // 配对成功，创建CTMIconManager
-                                    CTMIconManager.Builder builder = CTMIconManager.builder()
-                                        .setIconSmall(baseSprite)
-                                        .setIconCTM(ctmSprite);
-                                    if (currentAlt != null) {
-                                        builder.setIconAlt(currentAlt);
-                                    }
-                                    CTMIconManager randomManager = builder.buildAndInit();
-                                    randomManagers.add(randomManager);
-
-                                    System.out.println(
-                                        "[CTM_Random_Manager] Created manager for: " + baseTextureName
-                                            + " <-> "
-                                            + processedTexture);
+                                // 配对成功，创建CTMIconManager
+                                CTMIconManager.Builder builder = CTMIconManager.builder()
+                                    .setIconSmall(baseSprite)
+                                    .setIconCTM(ctmSprite);
+                                if (currentAlt != null) {
+                                    builder.setIconAlt(currentAlt);
                                 }
+                                CTMIconManager randomManager = builder.buildAndInit();
+                                randomManagers.add(randomManager);
+
+                                System.out.println(
+                                    "[CTM_Random_Manager] Created manager for: " + baseTextureName
+                                        + " <-> "
+                                        + processedTexture);
                             }
                         }
+                    }
 
-                        // 循环结束后，将randomManagers注册到ctmRandomMap
-                        if (!randomManagers.isEmpty()) {
-                            ctmRandomMap.put(textureName, randomManagers);
-                            System.out.println(
-                                "[CTM_Random_Register] Registered " + randomManagers.size()
-                                    + " random managers for: "
-                                    + textureName);
-                        }
+                    // 循环结束后，将randomManagers注册到ctmRandomMap
+                    if (!randomManagers.isEmpty()) {
+                        ctmRandomMap.put(textureName, randomManagers);
+                        System.out.println(
+                            "[CTM_Random_Register] Registered " + randomManagers.size()
+                                + " random managers for: "
+                                + textureName);
                     }
                 }
             }
 
-            JsonPrimitive altPrimitive = ctmObj.getAsJsonPrimitive("alt");
-            String altTexture = null;
-            if (altPrimitive != null) {
-                altTexture = altPrimitive.getAsString();
-            }
-
-            if (altTexture != null && !altTexture.isEmpty()) {
-                String altTextureName = altTexture.replace("minecraft:", "")
-                    .replace("textures/blocks/", "")
-                    .replace(".png", "");
-                currentAlt = new NewTextureAtlasSprite(altTextureName);
-                mapRegisteredSprites.put(altTextureName, currentAlt);
+            if (config.altTexture != null) {
+                currentAlt = new NewTextureAtlasSprite(config.altTexture);
+                mapRegisteredSprites.put(config.altTexture, currentAlt);
                 try {
-                    ResourceLocation resAlt = completeResourceLocation(new ResourceLocation(altTexture), 0);
+                    ResourceLocation resAlt = completeResourceLocation(new ResourceLocation(ctmObj.getAsJsonPrimitive("alt").getAsString()), 0);
                     IResource resourceAlt = Minecraft.getMinecraft()
                         .getResourceManager()
                         .getResource(resAlt);
@@ -238,8 +190,8 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
                                 .getAsJsonObject("animation");
                             if (animationObjAlt.has("interpolate") && animationObjAlt.getAsJsonPrimitive("interpolate")
                                 .getAsBoolean()) {
-                                InterpolatedIcon interpolatedIconAlt = new InterpolatedIcon(altTextureName);
-                                mapRegisteredSprites.put(altTextureName, interpolatedIconAlt);
+                                InterpolatedIcon interpolatedIconAlt = new InterpolatedIcon(config.altTexture);
+                                mapRegisteredSprites.put(config.altTexture, interpolatedIconAlt);
 
                                 currentAlt = interpolatedIconAlt;
                             }
@@ -248,20 +200,8 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
                 } catch (IOException ignored) {}
             }
 
-            List<String> equivalents = new ArrayList<>();
-            if (ctmObj.has("equivalents")) {
-                JsonArray arr = ctmObj.getAsJsonArray("equivalents");
-                for (JsonElement el : arr) {
-                    String eq = el.getAsString()
-                        .replace("minecraft:", "")
-                        .replace("textures/blocks/", "")
-                        .replace(".png", "");
-                    equivalents.add(eq);
-                }
-            }
-
-            if (!equivalents.isEmpty()) {
-                ctmReplaceMap.put(textureName, equivalents.toArray(new String[0]));
+            if (!config.equivalents.isEmpty()) {
+                ctmReplaceMap.put(textureName, config.equivalents.toArray(new String[0]));
             }
 
             // 创建基础CTMIconManager
@@ -282,5 +222,27 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
             }
             cir.setReturnValue(currentBase);
         } catch (Exception ignored) {}
+    }
+
+    /**
+     * 修复代码所用的方法，移动到这里
+     */
+    private void updateGTNHFlags(String connectionTexture) {
+        if (connectionTexture.startsWith("gregtech:iconsets/MACHINE_CASING_FUSION_")
+            && connectionTexture.endsWith("_ctm")
+            && Loader.isModLoaded("gregtech")) {
+            gtBlockCasings4CTM = true;
+        }
+
+        if (connectionTexture.startsWith("miscutils:iconsets/MACHINE_CASING_FUSION_")
+            && connectionTexture.endsWith("_ctm")
+            && Loader.isModLoaded("gregtech")) {
+            gtGregtechMetaCasingBlocks3CTM = true;
+        }
+
+        if (connectionTexture.contains("BoronSilicateGlass") && connectionTexture.endsWith("_ctm")
+            && Loader.isModLoaded("gregtech")) {
+            gtBWBlocksGlassCTM = true;
+        }
     }
 }
