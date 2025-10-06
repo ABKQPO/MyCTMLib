@@ -1,9 +1,8 @@
 package com.github.wohaopa.MyCTMLib;
 
-import net.minecraft.util.IIcon;
-
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
+import net.minecraft.util.IIcon;
 
 /**
  * 管理连接纹理（CTM）的图块图标，用于从主纹理图中裁切子区域以实现连纹渲染。
@@ -12,6 +11,33 @@ import cpw.mods.fml.relauncher.SideOnly;
  * 下标为 0 的图标未使用。
  */
 public class CTMIconManager {
+
+    /**
+     * 检测直径枚举，定义CTM纹理检测的范围大小。
+     */
+    public enum DetectionDiameter {
+        /** 直径1 - 最小检测范围 */
+        DIAMETER_1(1),
+        /** 直径3 - 中等检测范围 */
+        DIAMETER_3(3),
+        /** 直径5 - 最大检测范围 */
+        DIAMETER_5(5);
+
+        private final int value;
+
+        DetectionDiameter(int value) {
+            this.value = value;
+        }
+
+        /**
+         * 获取检测直径的数值。
+         *
+         * @return 直径值
+         */
+        public int getValue() {
+            return value;
+        }
+    }
 
     // 存储所有子图块图标（索引 1 ~ 20）
     public IIcon[] icons = new CTMIcon[25];
@@ -24,7 +50,7 @@ public class CTMIconManager {
 
     // ctm专用小型图（通常为 2x2，用于特殊CTM等）
     public IIcon iconAlt;
-
+    
     /**
      * 构造函数，提供用于裁切的主图标与小图标。
      *
