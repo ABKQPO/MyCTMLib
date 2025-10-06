@@ -96,7 +96,8 @@ public class Textures {
             int blockZ = (int) z;
 
             // 使用优化的缓存随机数生成器
-            int randomIndex = PositionRandomCache.getRandomIndex(worldSeed, blockX, blockY, blockZ, randomManagers.size());
+            int randomIndex = PositionRandomCache
+                .getRandomIndex(worldSeed, blockX, blockY, blockZ, randomManagers.size());
             manager = randomManagers.get(randomIndex);
         }
 
