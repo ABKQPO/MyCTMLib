@@ -18,11 +18,11 @@ public class CTMIconManager {
      */
     public enum DetectionDiameter {
 
-        /** 直径1 - 最小检测范围 */
+
         DIAMETER_1(1),
-        /** 直径3 - 中等检测范围 */
+
         DIAMETER_3(3),
-        /** 直径5 - 最大检测范围 */
+        
         DIAMETER_5(5);
 
         private final int value;

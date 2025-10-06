@@ -21,7 +21,6 @@ public class CTMConfig {
     public final List<String> equivalents;
 
     public CTMConfig(JsonObject ctmObj) {
-        // 解析所有配置
         this.connectionTexture = parseStringField(ctmObj, "connection");
         this.altTexture = parseStringField(ctmObj, "alt");
         this.randomTextures = parseStringArray(ctmObj, "random");

@@ -109,44 +109,57 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
 
             if (!config.randomTextures.isEmpty()) {
                 
+                List<String> processedTextures = config.randomTextures;
+                List<CTMIconManager> randomManagers = new ArrayList<>();               
+                
                 //对random和connection同时存在的情况处理
                 if (config.connectionTexture != null) {
-                    List<String> processedTextures = config.randomTextures;
-                    List<CTMIconManager> randomManagers = new ArrayList<>();
-
                     for (String processedTexture : processedTextures) { 
-
-                        if (processedTexture.contains("_ctm")) {
-                            String baseTextureName = processedTexture.replace("_ctm", "");
-
-                            // 配对随机纹理（IconCTM和IconSmall）
-                            if (processedTextures.contains(baseTextureName)) {
-
-                                TextureAtlasSprite baseSprite = new NewTextureAtlasSprite(baseTextureName);
-                                TextureAtlasSprite randomSprite = new NewTextureAtlasSprite(processedTexture);
-                                mapRegisteredSprites.put(baseTextureName, baseSprite);
-                                mapRegisteredSprites.put(processedTexture, randomSprite);
-
-                                CTMIconManager.Builder builderRandom = CTMIconManager.builder()
-                                    .setIconSmall(baseSprite)
-                                    .setIconCTM(randomSprite);
-                                
-                                CTMIconManager randomManager = builderRandom.buildAndInit();
-                                randomManagers.add(randomManager);
-                            }
+                        if (!processedTexture.contains("_ctm")) {
+                            continue;
                         }
+                        
+                        String baseTextureName = processedTexture.replace("_ctm", "");
+
+                        // 配对随机纹理（IconCTM和IconSmall）
+                        if (!processedTextures.contains(baseTextureName)) {
+                            continue;
+                        }
+
+                        TextureAtlasSprite baseSprite = new NewTextureAtlasSprite(baseTextureName);
+                        TextureAtlasSprite randomSprite = new NewTextureAtlasSprite(processedTexture);
+                        mapRegisteredSprites.put(baseTextureName, baseSprite);
+                        mapRegisteredSprites.put(processedTexture, randomSprite);
+
+                        randomManagers.add(
+                            CTMIconManager.builder()
+                                .setIconSmall(baseSprite)
+                                .setIconCTM(randomSprite)
+                                .buildAndInit()
+                        );
                     }
 
-                    if (!randomManagers.isEmpty()) {
-                        ctmRandomMap.put(textureName, randomManagers);
-                    }
                 }
 
                 //单独的random字段处理
                 if (config.connectionTexture == null) {
-                    
-                }
 
+                    for (String processedTexture : processedTextures) {
+                        TextureAtlasSprite randomSprite = new NewTextureAtlasSprite(processedTexture);
+                        mapRegisteredSprites.put(processedTexture, randomSprite);
+
+                        randomManagers.add(
+                            CTMIconManager.builder()
+                                .setIconSmall(currentBase)
+                                .setIconCTM(randomSprite)
+                                .buildAndInit()
+                        );
+                    }
+                }
+                
+                if (!randomManagers.isEmpty()) {
+                    ctmRandomMap.put(textureName, randomManagers);
+                }
                 
             }
 
