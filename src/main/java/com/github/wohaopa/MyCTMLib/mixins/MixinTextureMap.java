@@ -99,6 +99,7 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
                             .replace("textures/blocks/", "")
                             .replace(".png", "");
 
+                        // 修复代码
                         if (connectTextureName.startsWith("gregtech:iconsets/MACHINE_CASING_FUSION_")
                             && connectTexture.endsWith("_ctm")
                             && Loader.isModLoaded("gregtech")) {
@@ -139,6 +140,72 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
                                 }
                             }
                         } catch (IOException ignored) {}
+
+                        // 处理随机纹理，仅针对CTM纹理
+                        if (ctmObj.has("random")) {
+                            System.out.println("[CTM_Random_0] ctmObj.has(\"random\") = " + ctmObj.has("random"));
+                            JsonElement randomElement = ctmObj.get("random");
+
+                            if (randomElement.isJsonArray()) {
+                                // 处理数组格式：["texture1", "texture2", ...]
+                                JsonArray randomArray = randomElement.getAsJsonArray();
+
+                                // 统一处理名称
+                                List<String> processedTextures = new ArrayList<>();
+                                for (JsonElement element : randomArray) {
+                                    String processedName = element.getAsString()
+                                        .replace("minecraft:", "")
+                                        .replace("textures/blocks/", "")
+                                        .replace(".png", "");
+                                    processedTextures.add(processedName);
+                                }
+
+                                // 生成randomManager数组
+                                List<CTMIconManager> randomManagers = new ArrayList<>();
+
+                                for (String processedTexture : processedTextures) {
+                                    // 如果包含"ctm"，查找对应的基础纹理
+                                    if (processedTexture.contains("_ctm")) {
+                                        // 生成对应的基础纹理名称（去掉_ctm）
+                                        String baseTextureName = processedTexture.replace("_ctm", "");
+
+                                        // 在已处理的纹理中查找对应的基础纹理
+                                        if (processedTextures.contains(baseTextureName)) {
+                                            System.out.println(
+                                                "[CTM_Random_Pair] " + baseTextureName + " <-> " + processedTexture);
+
+                                            // 创建并注册纹理
+                                            TextureAtlasSprite baseSprite = new NewTextureAtlasSprite(baseTextureName);
+                                            TextureAtlasSprite ctmSprite = new NewTextureAtlasSprite(processedTexture);
+                                            mapRegisteredSprites.put(baseTextureName, baseSprite);
+                                            mapRegisteredSprites.put(processedTexture, ctmSprite);
+
+                                            // 配对成功，创建CTMIconManager
+                                            CTMIconManager randomManager = new CTMIconManager(baseSprite, ctmSprite);
+                                            if (currentAlt != null) {
+                                                randomManager.setIconAlt(currentAlt);
+                                            }
+                                            randomManager.init();
+                                            randomManagers.add(randomManager);
+
+                                            System.out.println(
+                                                "[CTM_Random_Manager] Created manager for: " + baseTextureName
+                                                    + " <-> "
+                                                    + processedTexture);
+                                        }
+                                    }
+                                }
+
+                                // 循环结束后，将randomManagers注册到ctmRandomMap
+                                if (!randomManagers.isEmpty()) {
+                                    ctmRandomMap.put(textureName, randomManagers);
+                                    System.out.println(
+                                        "[CTM_Random_Register] Registered " + randomManagers.size()
+                                            + " random managers for: "
+                                            + textureName);
+                                }
+                            }
+                        }
                     }
 
                     JsonPrimitive altPrimitive = ctmObj.getAsJsonPrimitive("alt");
@@ -187,14 +254,23 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
                             equivalents.add(eq);
                         }
                     }
+
                     if (!equivalents.isEmpty()) {
                         ctmReplaceMap.put(textureName, equivalents.toArray(new String[0]));
                     }
+
+                    // 创建基础CTMIconManager
+                    CTMIconManager ctmManager = new CTMIconManager(currentBase, currentCTM);
+
+                    // 使用setter方法设置属性
                     if (currentAlt != null) {
-                        ctmIconMap.put(textureName, new CTMIconManager(currentBase, currentCTM, currentAlt));
+                        ctmManager.setIconAlt(currentAlt);
                         ctmAltMap.put(textureName, currentAlt.getIconName());
-                    } else if (currentCTM != null) {
-                        ctmIconMap.put(textureName, new CTMIconManager(currentBase, currentCTM));
+                    }
+
+                    // 添加到映射表
+                    if (currentCTM != null) {
+                        ctmIconMap.put(textureName, ctmManager);
                     }
                     cir.setReturnValue(currentBase);
                 }
