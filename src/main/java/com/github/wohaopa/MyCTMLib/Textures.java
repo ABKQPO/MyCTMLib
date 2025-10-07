@@ -52,7 +52,6 @@ public class Textures {
         }
 
         boolean result = ctmIconMap.containsKey(icon);
-        // if (MyCTMLib.debugMode) System.out.println("[CTM] contain(\"" + icon + "\") = " + result);
         if (Loader.isModLoaded("gregtech")) {
             if (gtBlockCasings4CTM) GTNHIntegrationHelper.setBlockCasings4CTM(false);
             if (gtGregtechMetaCasingBlocks3CTM) GTNHIntegrationHelper.setGregtechMetaCasingBlocks3CTM(false);
@@ -83,25 +82,23 @@ public class Textures {
 
         // 如果检测直径为1，直接使用17-20，不需要buildConnect
         if (manager.detectionDiameter == CTMIconManager.DetectionDiameter.DIAMETER_1) {
-            int baseIconIdx = 17 + (iconIdx[0] % 4);
-            iconIdx[0] = baseIconIdx;
+            System.out.println("[CTMLib] DetectionDiameter.DIAMETER_1" + icon);  
+            iconIdx[0] = 17;
+            iconIdx[1] = 18;
+            iconIdx[2] = 19;
+            iconIdx[3] = 20;
         } else {
             buildConnect(blockAccess, (int) x, (int) y, (int) z, iIcon, forgeDirection, iconIdx);
         }
 
-        // 检查是否有随机纹理管理器
         if (ctmRandomMap.containsKey(icon)) {
             List<CTMIconManager> randomManagers = ctmRandomMap.get(icon);
-            System.out.println(
-                "[CTM_Random_RenderWorldBlock] Found " + randomManagers.size() + " random managers for: " + icon);
 
-            // 根据世界位置计算随机索引
             long worldSeed = 0;
             int blockX = (int) x;
             int blockY = (int) y;
             int blockZ = (int) z;
 
-            // 使用优化的缓存随机数生成器
             int randomIndex = PositionRandomCache
                 .getRandomIndex(worldSeed, blockX, blockY, blockZ, randomManagers.size());
             manager = randomManagers.get(randomIndex);
