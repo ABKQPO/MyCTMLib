@@ -94,12 +94,17 @@ public class Textures {
         if (ctmRandomMap.containsKey(icon)) {
             List<CTMIconManager> randomManagers = ctmRandomMap.get(icon);
 
+            
             long worldSeed = 0;
+            if (blockAccess instanceof net.minecraft.world.World) {
+                worldSeed = ((net.minecraft.world.World) blockAccess).getSeed();
+            }
+            
             int blockX = (int) x;
             int blockY = (int) y;
             int blockZ = (int) z;
 
-            int randomIndex = PositionRandomCache
+            int randomIndex = FastRandom
                 .getRandomIndex(worldSeed, blockX, blockY, blockZ, randomManagers.size());
             manager = randomManagers.get(randomIndex);
         }
