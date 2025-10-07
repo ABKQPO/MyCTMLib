@@ -14,6 +14,8 @@ import cpw.mods.fml.common.Mod;
 import cpw.mods.fml.common.event.FMLLoadCompleteEvent;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
 
 @Mod(modid = MyCTMLib.MODID, version = "v1.2.5_28x", name = "MyCTMLib", acceptedMinecraftVersions = "[1.7.10]")
 public class MyCTMLib {
@@ -26,17 +28,24 @@ public class MyCTMLib {
 
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event) {
-
-        ((AccessorMinecraft) Minecraft.getMinecraft()).getMetadataSerializer()
-            .registerMetadataSectionType(
-                new MyCTMLibMetadataSectionSerializer(),
-                MyCTMLibMetadataSectionSerializer.MyCTMLibMetadataSection.class);
+        // 只在客户端注册元数据序列化器
+        if (FMLCommonHandler.instance().getSide().isClient()) {
+            registerMetadataSerializer();
+        }
 
         FMLCommonHandler.instance()
             .bus()
             .register(this);
         configuration = new Configuration(event.getSuggestedConfigurationFile());
         loadConfig();
+    }
+
+    @SideOnly(Side.CLIENT)
+    private void registerMetadataSerializer() {
+        ((AccessorMinecraft) Minecraft.getMinecraft()).getMetadataSerializer()
+            .registerMetadataSectionType(
+                new MyCTMLibMetadataSectionSerializer(),
+                MyCTMLibMetadataSectionSerializer.MyCTMLibMetadataSection.class);
     }
 
     @Mod.EventHandler
