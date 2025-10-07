@@ -29,7 +29,9 @@ public class MyCTMLib {
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event) {
         // 只在客户端注册元数据序列化器
-        if (FMLCommonHandler.instance().getSide().isClient()) {
+        if (FMLCommonHandler.instance()
+            .getSide()
+            .isClient()) {
             registerMetadataSerializer();
         }
 

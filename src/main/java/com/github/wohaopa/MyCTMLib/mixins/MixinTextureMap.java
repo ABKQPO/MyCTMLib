@@ -1,9 +1,28 @@
 package com.github.wohaopa.MyCTMLib.mixins;
 
+import static com.github.wohaopa.MyCTMLib.Textures.ctmAltMap;
+import static com.github.wohaopa.MyCTMLib.Textures.ctmIconMap;
+import static com.github.wohaopa.MyCTMLib.Textures.ctmRandomMap;
+import static com.github.wohaopa.MyCTMLib.Textures.ctmReplaceMap;
+import static com.github.wohaopa.MyCTMLib.Textures.gtBWBlocksGlassCTM;
+import static com.github.wohaopa.MyCTMLib.Textures.gtBlockCasings4CTM;
+import static com.github.wohaopa.MyCTMLib.Textures.gtGregtechMetaCasingBlocks3CTM;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.texture.AbstractTexture;
+import net.minecraft.client.renderer.texture.IIconRegister;
+import net.minecraft.client.renderer.texture.ITickableTextureObject;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.client.renderer.texture.TextureMap;
+import net.minecraft.client.resources.IResource;
+import net.minecraft.client.resources.SimpleResource;
+import net.minecraft.util.IIcon;
+import net.minecraft.util.ResourceLocation;
 
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -17,26 +36,9 @@ import com.github.wohaopa.MyCTMLib.CTMIconManager;
 import com.github.wohaopa.MyCTMLib.InterpolatedIcon;
 import com.github.wohaopa.MyCTMLib.MyCTMLibMetadataSectionSerializer.MyCTMLibMetadataSection;
 import com.github.wohaopa.MyCTMLib.NewTextureAtlasSprite;
-import static com.github.wohaopa.MyCTMLib.Textures.ctmAltMap;
-import static com.github.wohaopa.MyCTMLib.Textures.ctmIconMap;
-import static com.github.wohaopa.MyCTMLib.Textures.ctmRandomMap;
-import static com.github.wohaopa.MyCTMLib.Textures.ctmReplaceMap;
-import static com.github.wohaopa.MyCTMLib.Textures.gtBWBlocksGlassCTM;
-import static com.github.wohaopa.MyCTMLib.Textures.gtBlockCasings4CTM;
-import static com.github.wohaopa.MyCTMLib.Textures.gtGregtechMetaCasingBlocks3CTM;
 import com.google.gson.JsonObject;
 
 import cpw.mods.fml.common.Loader;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.texture.AbstractTexture;
-import net.minecraft.client.renderer.texture.IIconRegister;
-import net.minecraft.client.renderer.texture.ITickableTextureObject;
-import net.minecraft.client.renderer.texture.TextureAtlasSprite;
-import net.minecraft.client.renderer.texture.TextureMap;
-import net.minecraft.client.resources.IResource;
-import net.minecraft.client.resources.SimpleResource;
-import net.minecraft.util.IIcon;
-import net.minecraft.util.ResourceLocation;
 
 @Mixin(TextureMap.class)
 public abstract class MixinTextureMap extends AbstractTexture implements ITickableTextureObject, IIconRegister {
@@ -69,30 +71,29 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
                 return;
             }
 
-
             if (!(resource instanceof SimpleResource simple)) {
                 return;
             }
 
             // try{
-            //     // 触发解析json
-            //     simple.getMetadata("myctmlib");
+            // // 触发解析json
+            // simple.getMetadata("myctmlib");
 
-            //     if (((AccessorSimpleResource) simple).getMcMetaJson() == null) {
-            //         System.out.println("[CTMLib] registerIcon2: " + " No Metadata");
-            //     }else{
-            //         System.out.println(((AccessorSimpleResource) simple).getMcMetaJson());
-            //     }
-                 
-            // }catch(Exception e){
-            //     System.out.println("[CTMLib] registerIcon2: " + e.getMessage());
+            // if (((AccessorSimpleResource) simple).getMcMetaJson() == null) {
+            // System.out.println("[CTMLib] registerIcon2: " + " No Metadata");
+            // }else{
+            // System.out.println(((AccessorSimpleResource) simple).getMcMetaJson());
             // }
-            
-            JsonObject ctmObj = ((MyCTMLibMetadataSection) resource.getMetadata("myctmlib")).getJson();           
-            
+
+            // }catch(Exception e){
+            // System.out.println("[CTMLib] registerIcon2: " + e.getMessage());
+            // }
+
+            JsonObject ctmObj = ((MyCTMLibMetadataSection) resource.getMetadata("myctmlib")).getJson();
+
             if (ctmObj == null) {
-                    return;
-                }
+                return;
+            }
 
             CTMIconManager.Builder builder = CTMIconManager.builder();
             CTMConfig config = new CTMConfig(ctmObj);
@@ -199,7 +200,7 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
 
             cir.setReturnValue(currentBase);
         } catch (Exception e) {
-            //System.out.println("[CTMLib] Error: " + e.getMessage());
+            // System.out.println("[CTMLib] Error: " + e.getMessage());
         }
     }
 

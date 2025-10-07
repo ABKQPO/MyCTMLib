@@ -91,10 +91,10 @@ public class CTMIconManager {
         }
 
         if (iconSmall != null) {
-        // 构造小图标：2x2 网格，索引从 17 到 20
+            // 构造小图标：2x2 网格，索引从 17 到 20
             for (int i = 1; i <= 2; i++) {
                 for (int j = 0; j < 2; j++) {
-                icons[i + j * 2 + 16] = new CTMIcon(iconSmall, 2, 2, i - 1, j);
+                    icons[i + j * 2 + 16] = new CTMIcon(iconSmall, 2, 2, i - 1, j);
                 }
             }
         }

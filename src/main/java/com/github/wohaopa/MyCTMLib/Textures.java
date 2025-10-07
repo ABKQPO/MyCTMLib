@@ -82,7 +82,7 @@ public class Textures {
 
         // 如果检测直径为1，直接使用17-20，不需要buildConnect
         if (manager.detectionDiameter == CTMIconManager.DetectionDiameter.DIAMETER_1) {
-            System.out.println("[CTMLib] DetectionDiameter.DIAMETER_1" + icon);  
+            System.out.println("[CTMLib] DetectionDiameter.DIAMETER_1" + icon);
             iconIdx[0] = 17;
             iconIdx[1] = 18;
             iconIdx[2] = 19;
@@ -94,18 +94,16 @@ public class Textures {
         if (ctmRandomMap.containsKey(icon)) {
             List<CTMIconManager> randomManagers = ctmRandomMap.get(icon);
 
-            
             long worldSeed = 0;
             if (blockAccess instanceof net.minecraft.world.World) {
                 worldSeed = ((net.minecraft.world.World) blockAccess).getSeed();
             }
-            
+
             int blockX = (int) x;
             int blockY = (int) y;
             int blockZ = (int) z;
 
-            int randomIndex = FastRandom
-                .getRandomIndex(worldSeed, blockX, blockY, blockZ, randomManagers.size());
+            int randomIndex = FastRandom.getRandomIndex(worldSeed, blockX, blockY, blockZ, randomManagers.size());
             manager = randomManagers.get(randomIndex);
         }
 

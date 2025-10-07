@@ -20,7 +20,7 @@ public class MyCTMLibMetadataSectionSerializer implements IMetadataSectionSerial
     public MyCTMLibMetadataSection deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext context)
         throws JsonParseException {
         JsonObject json = jsonElement.getAsJsonObject();
-        
+
         // 直接返回整个 myctmlib JSON 对象
         return new MyCTMLibMetadataSection(json);
     }
@@ -32,12 +32,13 @@ public class MyCTMLibMetadataSectionSerializer implements IMetadataSectionSerial
 
     @SideOnly(Side.CLIENT)
     public static class MyCTMLibMetadataSection implements IMetadataSection {
+
         private final JsonObject json;
-        
+
         public MyCTMLibMetadataSection(JsonObject json) {
             this.json = json;
         }
-        
+
         public JsonObject getJson() {
             return json;
         }

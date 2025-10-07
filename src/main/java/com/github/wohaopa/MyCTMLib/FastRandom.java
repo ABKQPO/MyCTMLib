@@ -12,19 +12,19 @@ public class FastRandom {
      */
     public static int getRandomIndex(long worldSeed, int x, int y, int z, int bound) {
         if (bound <= 1) return 0;
-        
+
         // 将世界种子混合为int
-        int seed = (int)(worldSeed ^ (worldSeed >>> 32));
-        
+        int seed = (int) (worldSeed ^ (worldSeed >>> 32));
+
         // 哈希位置坐标
         int hash = seed;
         hash = 31 * hash + x;
         hash = 31 * hash + y;
         hash = 31 * hash + z;
-        
+
         // 应用Wang Hash最终化
         hash = wangHash(hash);
-        
+
         // 拒绝采样避免偏差
         int max = (0x7fffffff / bound) * bound;
         while ((hash & 0x7fffffff) >= max) {
@@ -47,4 +47,3 @@ public class FastRandom {
         return key;
     }
 }
-
