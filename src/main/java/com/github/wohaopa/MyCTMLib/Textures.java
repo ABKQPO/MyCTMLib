@@ -103,8 +103,11 @@ public class Textures {
             int blockY = (int) y;
             int blockZ = (int) z;
 
-            int randomIndex = FastRandom.getRandomIndex(worldSeed, blockX, blockY, blockZ, randomManagers.size());
-            manager = randomManagers.get(randomIndex);
+            int randomIndex = FastRandom.getRandomIndex(worldSeed, blockX, blockY, blockZ, randomManagers.size() + 1);
+            if (randomIndex < randomManagers.size()) {
+                manager = randomManagers.get(randomIndex);
+            }
+            // 如果randomIndex == randomManagers.size()，则不使用随机纹理
         }
 
         float offset = 1e-3f;
