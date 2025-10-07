@@ -80,17 +80,22 @@ public class CTMIconManager {
      * 调用后才能使用 getIcon。
      */
     public void init() {
-        // 构造主纹理的子图标：4x4 网格，索引从 1 到 16（注意：下标 0 未使用）
-        for (int i = 1; i <= 4; i++) {
-            for (int j = 0; j < 4; j++) {
-                icons[i + j * 4] = new CTMIcon(iconCTM, 4, 4, i - 1, j);
+
+        if (iconCTM != null) {
+            // 构造主纹理的子图标：4x4 网格，索引从 1 到 16（注意：下标 0 未使用）
+            for (int i = 1; i <= 4; i++) {
+                for (int j = 0; j < 4; j++) {
+                    icons[i + j * 4] = new CTMIcon(iconCTM, 4, 4, i - 1, j);
+                }
             }
         }
 
+        if (iconSmall != null) {
         // 构造小图标：2x2 网格，索引从 17 到 20
-        for (int i = 1; i <= 2; i++) {
-            for (int j = 0; j < 2; j++) {
+            for (int i = 1; i <= 2; i++) {
+                for (int j = 0; j < 2; j++) {
                 icons[i + j * 2 + 16] = new CTMIcon(iconSmall, 2, 2, i - 1, j);
+                }
             }
         }
 
