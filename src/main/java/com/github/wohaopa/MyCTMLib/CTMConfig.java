@@ -28,7 +28,7 @@ public class CTMConfig {
     }
 
     // 解析方法
-    private String parseStringField(JsonObject ctmObj, String fieldName) {
+    public String parseStringField(JsonObject ctmObj, String fieldName) {
         JsonPrimitive primitive = ctmObj.getAsJsonPrimitive(fieldName);
         if (primitive == null) {
             return null;
@@ -40,7 +40,7 @@ public class CTMConfig {
         return processTextureName(value);
     }
 
-    private List<String> parseStringArray(JsonObject ctmObj, String fieldName) {
+    public List<String> parseStringArray(JsonObject ctmObj, String fieldName) {
         if (!ctmObj.has(fieldName)) {
             return new ArrayList<>();
         }
@@ -65,7 +65,7 @@ public class CTMConfig {
     /**
      * 处理纹理名称，移除前缀和后缀
      */
-    private static String processTextureName(String texture) {
+    public static String processTextureName(String texture) {
         return texture.replace("minecraft:", "")
             .replace("textures/blocks/", "")
             .replace(".png", "");

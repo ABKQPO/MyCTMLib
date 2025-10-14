@@ -36,7 +36,7 @@ public class FastRandom {
     /**
      * Wang Hash算法 - 高质量整数哈希
      */
-    private static int wangHash(int key) {
+    public static int wangHash(int key) {
         key = (~key) + (key << 21); // key = (key << 21) - key - 1;
         key = key ^ (key >>> 24);
         key = (key + (key << 3)) + (key << 8); // key * 265

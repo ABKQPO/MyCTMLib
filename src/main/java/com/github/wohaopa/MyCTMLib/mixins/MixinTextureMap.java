@@ -75,19 +75,6 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
                 return;
             }
 
-            // try{
-            // // 触发解析json
-            // simple.getMetadata("myctmlib");
-
-            // if (((AccessorSimpleResource) simple).getMcMetaJson() == null) {
-            // System.out.println("[CTMLib] registerIcon2: " + " No Metadata");
-            // }else{
-            // System.out.println(((AccessorSimpleResource) simple).getMcMetaJson());
-            // }
-
-            // }catch(Exception e){
-            // System.out.println("[CTMLib] registerIcon2: " + e.getMessage());
-            // }
 
             JsonObject ctmObj = ((MyCTMLibMetadataSection) resource.getMetadata("myctmlib")).getJson();
 
@@ -207,7 +194,7 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
     /**
      * 修复代码所用的方法，移动到这里
      */
-    private void updateGTNHFlags(String connectionTexture) {
+    public void updateGTNHFlags(String connectionTexture) {
         if (connectionTexture.startsWith("gregtech:iconsets/MACHINE_CASING_FUSION_")
             && connectionTexture.endsWith("_ctm")
             && Loader.isModLoaded("gregtech")) {
@@ -229,7 +216,7 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
     /**
      * 判断是否应该使用插值纹理
      */
-    private boolean useInterpolation(SimpleResource simple) {
+    public boolean useInterpolation(SimpleResource simple) {
         if (simple.getMetadata("animation") == null) {
             return false;
         }
@@ -243,7 +230,7 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
     /**
      * 从JSON对象中获取资源
      */
-    private IResource getResourceFromJson(JsonObject ctmObj, String fieldName) throws IOException {
+    public IResource getResourceFromJson(JsonObject ctmObj, String fieldName) throws IOException {
         ResourceLocation res = completeResourceLocation(
             new ResourceLocation(
                 ctmObj.getAsJsonPrimitive(fieldName)
@@ -257,7 +244,7 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
     /**
      * 从纹理名称获取资源
      */
-    private IResource getResourceFromTextureName(String textureName) throws IOException {
+    public IResource getResourceFromTextureName(String textureName) throws IOException {
         ResourceLocation res = completeResourceLocation(new ResourceLocation(textureName), 0);
         return Minecraft.getMinecraft()
             .getResourceManager()
