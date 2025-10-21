@@ -5,25 +5,24 @@ import java.lang.reflect.Type;
 import net.minecraft.client.resources.data.IMetadataSection;
 import net.minecraft.client.resources.data.IMetadataSectionSerializer;
 
-import com.github.bsideup.jabel.Desugar;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
+
+@SideOnly(Side.CLIENT)
 public class MyCTMLibMetadataSectionSerializer implements IMetadataSectionSerializer {
 
     @Override
     public MyCTMLibMetadataSection deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext context)
         throws JsonParseException {
         JsonObject json = jsonElement.getAsJsonObject();
-        if (!json.has("connection")) {
-            throw new JsonParseException("Missing 'connection' field in myctmlib metadata");
-        }
 
-        String connection = json.get("connection")
-            .getAsString();
-        return new MyCTMLibMetadataSection(connection);
+        // 直接返回整个 myctmlib JSON 对象
+        return new MyCTMLibMetadataSection(json);
     }
 
     @Override
@@ -31,6 +30,17 @@ public class MyCTMLibMetadataSectionSerializer implements IMetadataSectionSerial
         return "myctmlib";
     }
 
-    @Desugar
-    public record MyCTMLibMetadataSection(String connection) implements IMetadataSection {}
+    @SideOnly(Side.CLIENT)
+    public static class MyCTMLibMetadataSection implements IMetadataSection {
+
+        private final JsonObject json;
+
+        public MyCTMLibMetadataSection(JsonObject json) {
+            this.json = json;
+        }
+
+        public JsonObject getJson() {
+            return json;
+        }
+    }
 }

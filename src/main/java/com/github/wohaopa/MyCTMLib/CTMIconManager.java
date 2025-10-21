@@ -13,11 +13,38 @@ import cpw.mods.fml.relauncher.SideOnly;
  */
 public class CTMIconManager {
 
+    /**
+     * 检测直径枚举，定义CTM纹理检测的范围大小。
+     */
+    public enum DetectionDiameter {
+
+        DIAMETER_1(1),
+
+        DIAMETER_3(3),
+
+        DIAMETER_5(5);
+
+        private final int value;
+
+        DetectionDiameter(int value) {
+            this.value = value;
+        }
+
+        /**
+         * 获取检测直径的数值。
+         *
+         * @return 直径值
+         */
+        public int getValue() {
+            return value;
+        }
+    }
+
     // 存储所有子图块图标（索引 1 ~ 20）
     public IIcon[] icons = new CTMIcon[25];
 
     // 主纹理图（通常为 4x4）
-    public IIcon icon;
+    public IIcon iconCTM;
 
     // 小型图（通常为 2x2，用于特殊边角等）
     public IIcon iconSmall;
@@ -25,22 +52,24 @@ public class CTMIconManager {
     // ctm专用小型图（通常为 2x2，用于特殊CTM等）
     public IIcon iconAlt;
 
+    // 环形图（通常为 10x10，用于特殊CTM等）
+    public IIcon iconRing;
+
+    // 检测直径
+    public DetectionDiameter detectionDiameter = DetectionDiameter.DIAMETER_1;
+
     /**
-     * 构造函数，提供用于裁切的主图标与小图标。
+     * 私有构造函数，通过Builder创建实例
+     */
+    private CTMIconManager() {}
+
+    /**
+     * 构造函数 - 仅小图标（向后兼容）
      *
      * @param iconSmall 用于 2x2 图块裁切的图标
-     * @param icon      用于 4x4 图块裁切的图标
-     * @param iconAlt   替代图标（可选）
      */
-    public CTMIconManager(IIcon iconSmall, IIcon icon, IIcon iconAlt) {
-        this.icon = icon;
+    public CTMIconManager(IIcon iconSmall) {
         this.iconSmall = iconSmall;
-        this.iconAlt = iconAlt;
-    }
-
-    // 便捷构造函数
-    public CTMIconManager(IIcon iconSmall, IIcon icon) {
-        this(iconSmall, icon, null);
     }
 
     // 是否初始化完成
@@ -51,17 +80,22 @@ public class CTMIconManager {
      * 调用后才能使用 getIcon。
      */
     public void init() {
-        // 构造主纹理的子图标：4x4 网格，索引从 1 到 16（注意：下标 0 未使用）
-        for (int i = 1; i <= 4; i++) {
-            for (int j = 0; j < 4; j++) {
-                icons[i + j * 4] = new CTMIcon(icon, 4, 4, i - 1, j);
+
+        if (iconCTM != null) {
+            // 构造主纹理的子图标：4x4 网格，索引从 1 到 16（注意：下标 0 未使用）
+            for (int i = 1; i <= 4; i++) {
+                for (int j = 0; j < 4; j++) {
+                    icons[i + j * 4] = new CTMIcon(iconCTM, 4, 4, i - 1, j);
+                }
             }
         }
 
-        // 构造小图标：2x2 网格，索引从 17 到 20
-        for (int i = 1; i <= 2; i++) {
-            for (int j = 0; j < 2; j++) {
-                icons[i + j * 2 + 16] = new CTMIcon(iconSmall, 2, 2, i - 1, j);
+        if (iconSmall != null) {
+            // 构造小图标：2x2 网格，索引从 17 到 20
+            for (int i = 1; i <= 2; i++) {
+                for (int j = 0; j < 2; j++) {
+                    icons[i + j * 2 + 16] = new CTMIcon(iconSmall, 2, 2, i - 1, j);
+                }
             }
         }
 
@@ -98,17 +132,93 @@ public class CTMIconManager {
         return inited;
     }
 
-    // Setter方法
-    public void setIconSmall(IIcon iconSmall) {
-        this.iconSmall = iconSmall;
+    /**
+     * CTMIconManager的Builder类
+     */
+    public static class Builder {
+
+        private final CTMIconManager manager;
+
+        public Builder() {
+            this.manager = new CTMIconManager();
+        }
+
+        /**
+         * 设置CTM主图标
+         */
+        public Builder setIconCTM(IIcon iconCTM) {
+            manager.iconCTM = iconCTM;
+            return this;
+        }
+
+        /**
+         * 设置小图标
+         */
+        public Builder setIconSmall(IIcon iconSmall) {
+            manager.iconSmall = iconSmall;
+            return this;
+        }
+
+        /**
+         * 设置ALt图标
+         */
+        public Builder setIconAlt(IIcon iconAlt) {
+            manager.iconAlt = iconAlt;
+            return this;
+        }
+
+        /**
+         * 设置环形图标
+         */
+        public Builder setIconRing(IIcon iconRing) {
+            manager.iconRing = iconRing;
+            return this;
+        }
+
+        /**
+         * 设置检测直径
+         */
+        public Builder setDetectionDiameter(DetectionDiameter diameter) {
+            // 可以在这里添加检测直径相关的逻辑
+            return this;
+        }
+
+        /**
+         * 构建CTMIconManager实例
+         */
+        public CTMIconManager build() {
+            // 验证必需的图标
+            if (manager.iconSmall == null) {
+                throw new IllegalStateException("iconSmall is required");
+            }
+
+            // 根据图标类型自动设置检测直径
+            if (manager.iconCTM != null) {
+                manager.detectionDiameter = DetectionDiameter.DIAMETER_3; // 3x3类型
+            } else if (manager.iconRing != null) {
+                manager.detectionDiameter = DetectionDiameter.DIAMETER_5; // 5x5类型
+            } else {
+                manager.detectionDiameter = DetectionDiameter.DIAMETER_1; // 其余为1
+            }
+
+            return manager;
+        }
+
+        /**
+         * 构建并自动初始化CTMIconManager实例
+         */
+        public CTMIconManager buildAndInit() {
+            CTMIconManager result = build();
+            result.init();
+            return result;
+        }
     }
 
-    public void setIcon(IIcon icon) {
-        this.icon = icon;
-    }
-
-    public void setIconAlt(IIcon iconAlt) {
-        this.iconAlt = iconAlt;
+    /**
+     * 创建Builder实例
+     */
+    public static Builder builder() {
+        return new Builder();
     }
 
     /**

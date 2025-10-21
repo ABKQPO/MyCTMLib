@@ -2,7 +2,6 @@ package com.github.wohaopa.MyCTMLib;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 
 import net.minecraft.block.Block;
@@ -53,7 +52,6 @@ public class Textures {
         }
 
         boolean result = ctmIconMap.containsKey(icon);
-        // if (MyCTMLib.debugMode) System.out.println("[CTM] contain(\"" + icon + "\") = " + result);
         if (Loader.isModLoaded("gregtech")) {
             if (gtBlockCasings4CTM) GTNHIntegrationHelper.setBlockCasings4CTM(false);
             if (gtGregtechMetaCasingBlocks3CTM) GTNHIntegrationHelper.setGregtechMetaCasingBlocks3CTM(false);
@@ -77,36 +75,39 @@ public class Textures {
 
         int[] iconIdx = threadLocalIconIdx.get();
 
-        buildConnect(blockAccess, (int) x, (int) y, (int) z, iIcon, forgeDirection, iconIdx);
-
         CTMIconManager manager = ctmIconMap.get(icon);
         if (!manager.hasInited()) {
             manager.init();
         }
 
-        // 检查是否有随机纹理管理器
+        // 如果检测直径为1，直接使用17-20，不需要buildConnect
+        if (manager.detectionDiameter == CTMIconManager.DetectionDiameter.DIAMETER_1) {
+            System.out.println("[CTMLib] DetectionDiameter.DIAMETER_1" + icon);
+            iconIdx[0] = 17;
+            iconIdx[1] = 18;
+            iconIdx[2] = 19;
+            iconIdx[3] = 20;
+        } else {
+            buildConnect(blockAccess, (int) x, (int) y, (int) z, iIcon, forgeDirection, iconIdx);
+        }
+
         if (ctmRandomMap.containsKey(icon)) {
             List<CTMIconManager> randomManagers = ctmRandomMap.get(icon);
-            System.out.println(
-                "[CTM_Random_RenderWorldBlock] Found " + randomManagers.size() + " random managers for: " + icon);
 
-            // 根据世界位置计算随机索引
             long worldSeed = 0;
+            if (blockAccess instanceof net.minecraft.world.World) {
+                worldSeed = ((net.minecraft.world.World) blockAccess).getSeed();
+            }
+
             int blockX = (int) x;
             int blockY = (int) y;
             int blockZ = (int) z;
 
-            // 使用世界种子和方块位置生成随机种子，确保相同位置总是选择相同的纹理
-            long randomSeed = worldSeed + blockX * 435L + blockY * 357L + blockZ * 299L;
-            Random random = new Random(randomSeed);
-
-            int randomIndex = random.nextInt(randomManagers.size());
-            manager = randomManagers.get(randomIndex);
-            System.out.println("[CTM_Random_RenderWorldBlock] Selected random manager: " + manager.icon.getIconName());
-            System.out.println(
-                "[CTM_Random_RenderWorldBlock] manager.UV = " + manager.icon.getInterpolatedU(0)
-                    + ", "
-                    + manager.icon.getInterpolatedV(0));
+            int randomIndex = FastRandom.getRandomIndex(worldSeed, blockX, blockY, blockZ, randomManagers.size() + 1);
+            if (randomIndex < randomManagers.size()) {
+                manager = randomManagers.get(randomIndex);
+            }
+            // 如果randomIndex == randomManagers.size()，则不使用随机纹理
         }
 
         float offset = 1e-3f;

@@ -1,6 +1,12 @@
 package com.github.wohaopa.MyCTMLib.mixins;
 
-import static com.github.wohaopa.MyCTMLib.Textures.*;
+import static com.github.wohaopa.MyCTMLib.Textures.ctmAltMap;
+import static com.github.wohaopa.MyCTMLib.Textures.ctmIconMap;
+import static com.github.wohaopa.MyCTMLib.Textures.ctmRandomMap;
+import static com.github.wohaopa.MyCTMLib.Textures.ctmReplaceMap;
+import static com.github.wohaopa.MyCTMLib.Textures.gtBWBlocksGlassCTM;
+import static com.github.wohaopa.MyCTMLib.Textures.gtBlockCasings4CTM;
+import static com.github.wohaopa.MyCTMLib.Textures.gtGregtechMetaCasingBlocks3CTM;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -25,13 +31,12 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import com.github.wohaopa.MyCTMLib.CTMConfig;
 import com.github.wohaopa.MyCTMLib.CTMIconManager;
 import com.github.wohaopa.MyCTMLib.InterpolatedIcon;
+import com.github.wohaopa.MyCTMLib.MyCTMLibMetadataSectionSerializer.MyCTMLibMetadataSection;
 import com.github.wohaopa.MyCTMLib.NewTextureAtlasSprite;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
 
 import cpw.mods.fml.common.Loader;
 
@@ -57,224 +62,205 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
         cancellable = true)
     private void onRegisterIcon(String textureName, CallbackInfoReturnable<IIcon> cir) {
         try {
+            TextureAtlasSprite currentBase = null;
             TextureAtlasSprite currentCTM = null;
             TextureAtlasSprite currentAlt = null;
-            ResourceLocation res = completeResourceLocation(new ResourceLocation(textureName), 0);
-            IResource resource = Minecraft.getMinecraft()
-                .getResourceManager()
-                .getResource(res);
+            IResource resource = getResourceFromTextureName(textureName);
 
             if (basePath.contains("textures\\items") || basePath.contains("textures/items")) {
                 return;
             }
 
-            if (resource instanceof SimpleResource simple) {
+            if (!(resource instanceof SimpleResource simple)) {
+                return;
+            }
 
-                if (simple.getMetadata("myctmlib") != null) {
-                    TextureAtlasSprite currentBase = new NewTextureAtlasSprite(textureName);
-                    mapRegisteredSprites.put(textureName, currentBase);
+            // try{
+            // // 触发解析json
+            // simple.getMetadata("myctmlib");
 
-                    if (simple.getMetadata("animation") != null) {
-                        JsonObject animationObj = ((AccessorSimpleResource) simple).getMcMetaJson()
-                            .getAsJsonObject("animation");
-                        if (animationObj.has("interpolate") && animationObj.getAsJsonPrimitive("interpolate")
-                            .getAsBoolean()) {
-                            InterpolatedIcon interpolatedIcon = new InterpolatedIcon(textureName);
-                            mapRegisteredSprites.put(textureName, interpolatedIcon);
-                            currentBase = interpolatedIcon;
+            // if (((AccessorSimpleResource) simple).getMcMetaJson() == null) {
+            // System.out.println("[CTMLib] registerIcon2: " + " No Metadata");
+            // }else{
+            // System.out.println(((AccessorSimpleResource) simple).getMcMetaJson());
+            // }
+
+            // }catch(Exception e){
+            // System.out.println("[CTMLib] registerIcon2: " + e.getMessage());
+            // }
+
+            JsonObject ctmObj = ((MyCTMLibMetadataSection) resource.getMetadata("myctmlib")).getJson();
+
+            if (ctmObj == null) {
+                return;
+            }
+
+            CTMIconManager.Builder builder = CTMIconManager.builder();
+            CTMConfig config = new CTMConfig(ctmObj);
+
+            currentBase = useInterpolation(simple) ? new InterpolatedIcon(textureName)
+                : new NewTextureAtlasSprite(textureName);
+            builder.setIconSmall(currentBase);
+            mapRegisteredSprites.put(textureName, currentBase);
+
+            if (config.connectionTexture != null) {
+
+                // 修复代码
+                updateGTNHFlags(config.connectionTexture);
+
+                try {
+                    IResource resourceCTM = getResourceFromJson(ctmObj, "connection");
+
+                    if (resourceCTM instanceof SimpleResource simpleCTM) {
+                        currentCTM = useInterpolation(simpleCTM) ? new InterpolatedIcon(config.connectionTexture)
+                            : new NewTextureAtlasSprite(config.connectionTexture);
+                        mapRegisteredSprites.put(config.connectionTexture, currentCTM);
+                        builder.setIconCTM(currentCTM);
+                    }
+
+                } catch (IOException ignored) {}
+            }
+
+            if (!config.randomTextures.isEmpty()) {
+
+                List<String> processedTextures = config.randomTextures;
+                List<CTMIconManager> randomManagers = new ArrayList<>();
+
+                // 对random和connection同时存在的情况处理
+                if (config.connectionTexture != null) {
+                    for (String processedTexture : processedTextures) {
+                        if (!processedTexture.contains("_ctm")) {
+                            continue;
                         }
-                    }
 
-                    JsonObject ctmObj = ((AccessorSimpleResource) simple).getMcMetaJson()
-                        .getAsJsonObject("myctmlib");
+                        String baseTextureName = processedTexture.replace("_ctm", "");
 
-                    JsonPrimitive connectionPrimitive = ctmObj.getAsJsonPrimitive("connection");
-                    String connectTexture = null;
-                    if (connectionPrimitive != null) {
-                        connectTexture = connectionPrimitive.getAsString();
-                    }
-
-                    if (connectTexture != null && !connectTexture.isEmpty()) {
-                        String connectTextureName = connectTexture.replace("minecraft:", "")
-                            .replace("textures/blocks/", "")
-                            .replace(".png", "");
-
-                        // 修复代码
-                        if (connectTextureName.startsWith("gregtech:iconsets/MACHINE_CASING_FUSION_")
-                            && connectTexture.endsWith("_ctm")
-                            && Loader.isModLoaded("gregtech")) {
-                            gtBlockCasings4CTM = true;
+                        // 配对随机纹理（IconCTM和IconSmall）
+                        if (!processedTextures.contains(baseTextureName)) {
+                            continue;
                         }
 
-                        if (connectTextureName.startsWith("miscutils:iconsets/MACHINE_CASING_FUSION_")
-                            && connectTexture.endsWith("_ctm")
-                            && Loader.isModLoaded("gregtech")) {
-                            gtGregtechMetaCasingBlocks3CTM = true;
-                        }
+                        TextureAtlasSprite baseSprite = new NewTextureAtlasSprite(baseTextureName);
+                        TextureAtlasSprite randomSprite = new NewTextureAtlasSprite(processedTexture);
+                        mapRegisteredSprites.put(baseTextureName, baseSprite);
+                        mapRegisteredSprites.put(processedTexture, randomSprite);
 
-                        if (connectTexture.contains("BoronSilicateGlass") && connectTextureName.endsWith("_ctm")
-                            && Loader.isModLoaded("gregtech")) {
-                            gtBWBlocksGlassCTM = true;
-                        }
-
-                        currentCTM = new NewTextureAtlasSprite(connectTextureName);
-                        mapRegisteredSprites.put(connectTextureName, currentCTM);
-                        try {
-                            ResourceLocation resCTM = completeResourceLocation(new ResourceLocation(connectTexture), 0);
-                            IResource resourceCTM = Minecraft.getMinecraft()
-                                .getResourceManager()
-                                .getResource(resCTM);
-
-                            if (resourceCTM instanceof SimpleResource simpleCTM) {
-                                if (simpleCTM.getMetadata("animation") != null) {
-                                    JsonObject animationObjCTM = ((AccessorSimpleResource) simpleCTM).getMcMetaJson()
-                                        .getAsJsonObject("animation");
-                                    if (animationObjCTM.has("interpolate")
-                                        && animationObjCTM.getAsJsonPrimitive("interpolate")
-                                            .getAsBoolean()) {
-                                        InterpolatedIcon interpolatedIconCTM = new InterpolatedIcon(connectTextureName);
-                                        mapRegisteredSprites.put(connectTextureName, interpolatedIconCTM);
-
-                                        currentCTM = interpolatedIconCTM;
-                                    }
-                                }
-                            }
-                        } catch (IOException ignored) {}
-
-                        // 处理随机纹理，仅针对CTM纹理
-                        if (ctmObj.has("random")) {
-                            System.out.println("[CTM_Random_0] ctmObj.has(\"random\") = " + ctmObj.has("random"));
-                            JsonElement randomElement = ctmObj.get("random");
-
-                            if (randomElement.isJsonArray()) {
-                                // 处理数组格式：["texture1", "texture2", ...]
-                                JsonArray randomArray = randomElement.getAsJsonArray();
-
-                                // 统一处理名称
-                                List<String> processedTextures = new ArrayList<>();
-                                for (JsonElement element : randomArray) {
-                                    String processedName = element.getAsString()
-                                        .replace("minecraft:", "")
-                                        .replace("textures/blocks/", "")
-                                        .replace(".png", "");
-                                    processedTextures.add(processedName);
-                                }
-
-                                // 生成randomManager数组
-                                List<CTMIconManager> randomManagers = new ArrayList<>();
-
-                                for (String processedTexture : processedTextures) {
-                                    // 如果包含"ctm"，查找对应的基础纹理
-                                    if (processedTexture.contains("_ctm")) {
-                                        // 生成对应的基础纹理名称（去掉_ctm）
-                                        String baseTextureName = processedTexture.replace("_ctm", "");
-
-                                        // 在已处理的纹理中查找对应的基础纹理
-                                        if (processedTextures.contains(baseTextureName)) {
-                                            System.out.println(
-                                                "[CTM_Random_Pair] " + baseTextureName + " <-> " + processedTexture);
-
-                                            // 创建并注册纹理
-                                            TextureAtlasSprite baseSprite = new NewTextureAtlasSprite(baseTextureName);
-                                            TextureAtlasSprite ctmSprite = new NewTextureAtlasSprite(processedTexture);
-                                            mapRegisteredSprites.put(baseTextureName, baseSprite);
-                                            mapRegisteredSprites.put(processedTexture, ctmSprite);
-
-                                            // 配对成功，创建CTMIconManager
-                                            CTMIconManager randomManager = new CTMIconManager(baseSprite, ctmSprite);
-                                            if (currentAlt != null) {
-                                                randomManager.setIconAlt(currentAlt);
-                                            }
-                                            randomManager.init();
-                                            randomManagers.add(randomManager);
-
-                                            System.out.println(
-                                                "[CTM_Random_Manager] Created manager for: " + baseTextureName
-                                                    + " <-> "
-                                                    + processedTexture);
-                                        }
-                                    }
-                                }
-
-                                // 循环结束后，将randomManagers注册到ctmRandomMap
-                                if (!randomManagers.isEmpty()) {
-                                    ctmRandomMap.put(textureName, randomManagers);
-                                    System.out.println(
-                                        "[CTM_Random_Register] Registered " + randomManagers.size()
-                                            + " random managers for: "
-                                            + textureName);
-                                }
-                            }
-                        }
+                        randomManagers.add(
+                            CTMIconManager.builder()
+                                .setIconSmall(baseSprite)
+                                .setIconCTM(randomSprite)
+                                .buildAndInit());
                     }
 
-                    JsonPrimitive altPrimitive = ctmObj.getAsJsonPrimitive("alt");
-                    String altTexture = null;
-                    if (altPrimitive != null) {
-                        altTexture = altPrimitive.getAsString();
+                }
+
+                // 单独的random字段处理
+                if (config.connectionTexture == null) {
+
+                    for (String processedTexture : processedTextures) {
+                        TextureAtlasSprite randomSprite = new NewTextureAtlasSprite(processedTexture);
+                        mapRegisteredSprites.put(processedTexture, randomSprite);
+
+                        randomManagers.add(
+                            CTMIconManager.builder()
+                                .setIconSmall(randomSprite)
+                                .buildAndInit());
                     }
+                }
 
-                    if (altTexture != null && !altTexture.isEmpty()) {
-                        String altTextureName = altTexture.replace("minecraft:", "")
-                            .replace("textures/blocks/", "")
-                            .replace(".png", "");
-                        currentAlt = new NewTextureAtlasSprite(altTextureName);
-                        mapRegisteredSprites.put(altTextureName, currentAlt);
-                        try {
-                            ResourceLocation resAlt = completeResourceLocation(new ResourceLocation(altTexture), 0);
-                            IResource resourceAlt = Minecraft.getMinecraft()
-                                .getResourceManager()
-                                .getResource(resAlt);
+                if (!randomManagers.isEmpty()) {
+                    ctmRandomMap.put(textureName, randomManagers);
+                }
 
-                            if (resourceAlt instanceof SimpleResource simpleAlt) {
-                                if (simpleAlt.getMetadata("animation") != null) {
-                                    JsonObject animationObjAlt = ((AccessorSimpleResource) simpleAlt).getMcMetaJson()
-                                        .getAsJsonObject("animation");
-                                    if (animationObjAlt.has("interpolate")
-                                        && animationObjAlt.getAsJsonPrimitive("interpolate")
-                                            .getAsBoolean()) {
-                                        InterpolatedIcon interpolatedIconAlt = new InterpolatedIcon(altTextureName);
-                                        mapRegisteredSprites.put(altTextureName, interpolatedIconAlt);
+            }
 
-                                        currentAlt = interpolatedIconAlt;
-                                    }
-                                }
-                            }
-                        } catch (IOException ignored) {}
-                    }
+            if (config.altTexture != null) {
+                try {
+                    IResource resourceAlt = getResourceFromJson(ctmObj, "alt");
 
-                    List<String> equivalents = new ArrayList<>();
-                    if (ctmObj.has("equivalents")) {
-                        JsonArray arr = ctmObj.getAsJsonArray("equivalents");
-                        for (JsonElement el : arr) {
-                            String eq = el.getAsString()
-                                .replace("minecraft:", "")
-                                .replace("textures/blocks/", "")
-                                .replace(".png", "");
-                            equivalents.add(eq);
-                        }
-                    }
+                    if (resourceAlt instanceof SimpleResource simpleAlt) {
+                        currentAlt = useInterpolation(simpleAlt) ? new InterpolatedIcon(config.altTexture)
+                            : new NewTextureAtlasSprite(config.altTexture);
 
-                    if (!equivalents.isEmpty()) {
-                        ctmReplaceMap.put(textureName, equivalents.toArray(new String[0]));
-                    }
-
-                    // 创建基础CTMIconManager
-                    CTMIconManager ctmManager = new CTMIconManager(currentBase, currentCTM);
-
-                    // 使用setter方法设置属性
-                    if (currentAlt != null) {
-                        ctmManager.setIconAlt(currentAlt);
+                        mapRegisteredSprites.put(config.altTexture, currentAlt);
+                        builder.setIconAlt(currentAlt);
                         ctmAltMap.put(textureName, currentAlt.getIconName());
                     }
 
-                    // 添加到映射表
-                    if (currentCTM != null) {
-                        ctmIconMap.put(textureName, ctmManager);
-                    }
-                    cir.setReturnValue(currentBase);
-                }
+                } catch (IOException ignored) {}
+
             }
-        } catch (Exception ignored) {}
+
+            if (!config.equivalents.isEmpty()) {
+                ctmReplaceMap.put(textureName, config.equivalents.toArray(new String[0]));
+            }
+
+            CTMIconManager ctmManager = builder.buildAndInit();
+            ctmIconMap.put(textureName, ctmManager);
+            
+            cir.setReturnValue(currentBase);
+        } catch (Exception e) {
+            // System.out.println("[CTMLib] Error: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 修复代码所用的方法，移动到这里
+     */
+    private void updateGTNHFlags(String connectionTexture) {
+        if (connectionTexture.startsWith("gregtech:iconsets/MACHINE_CASING_FUSION_")
+            && connectionTexture.endsWith("_ctm")
+            && Loader.isModLoaded("gregtech")) {
+            gtBlockCasings4CTM = true;
+        }
+
+        if (connectionTexture.startsWith("miscutils:iconsets/MACHINE_CASING_FUSION_")
+            && connectionTexture.endsWith("_ctm")
+            && Loader.isModLoaded("gregtech")) {
+            gtGregtechMetaCasingBlocks3CTM = true;
+        }
+
+        if (connectionTexture.contains("BoronSilicateGlass") && connectionTexture.endsWith("_ctm")
+            && Loader.isModLoaded("gregtech")) {
+            gtBWBlocksGlassCTM = true;
+        }
+    }
+
+    /**
+     * 判断是否应该使用插值纹理
+     */
+    private boolean useInterpolation(SimpleResource simple) {
+        if (simple.getMetadata("animation") == null) {
+            return false;
+        }
+
+        JsonObject animationObj = ((AccessorSimpleResource) simple).getMcMetaJson()
+            .getAsJsonObject("animation");
+        return animationObj.has("interpolate") && animationObj.getAsJsonPrimitive("interpolate")
+            .getAsBoolean();
+    }
+
+    /**
+     * 从JSON对象中获取资源
+     */
+    private IResource getResourceFromJson(JsonObject ctmObj, String fieldName) throws IOException {
+        ResourceLocation res = completeResourceLocation(
+            new ResourceLocation(
+                ctmObj.getAsJsonPrimitive(fieldName)
+                    .getAsString()),
+            0);
+        return Minecraft.getMinecraft()
+            .getResourceManager()
+            .getResource(res);
+    }
+
+    /**
+     * 从纹理名称获取资源
+     */
+    private IResource getResourceFromTextureName(String textureName) throws IOException {
+        ResourceLocation res = completeResourceLocation(new ResourceLocation(textureName), 0);
+        return Minecraft.getMinecraft()
+            .getResourceManager()
+            .getResource(res);
     }
 }

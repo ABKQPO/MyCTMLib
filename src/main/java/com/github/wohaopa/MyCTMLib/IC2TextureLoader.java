@@ -164,10 +164,19 @@ public class IC2TextureLoader {
                             ctmReplaceMap.put(textureName, equivalents.toArray(new String[0]));
                         }
                         if (currentAlt != null) {
-                            ctmIconMap.put(textureName, new CTMIconManager(currentBase, currentCTM, currentAlt));
+                            CTMIconManager manager = CTMIconManager.builder()
+                                .setIconSmall(currentBase)
+                                .setIconCTM(currentCTM)
+                                .setIconAlt(currentAlt)
+                                .buildAndInit();
+                            ctmIconMap.put(textureName, manager);
                             ctmAltMap.put(textureName, currentAlt.getIconName());
                         } else if (currentCTM != null) {
-                            ctmIconMap.put(textureName, new CTMIconManager(currentBase, currentCTM));
+                            CTMIconManager manager = CTMIconManager.builder()
+                                .setIconSmall(currentBase)
+                                .setIconCTM(currentCTM)
+                                .buildAndInit();
+                            ctmIconMap.put(textureName, manager);
                         }
                     }
                 }
