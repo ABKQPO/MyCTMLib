@@ -93,7 +93,7 @@ tags:
 
 ### 模型数据配置选项
 
-模型路径：命名空间/blockmodels/XXX.json
+模型路径：命名空间/models/block/XXX.json
 
 | MainFiled     | Value                    |     |
 | ------------- | ------------------------ | --- |
