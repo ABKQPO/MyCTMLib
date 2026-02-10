@@ -21,6 +21,7 @@ import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.client.resources.IResource;
 import net.minecraft.client.resources.SimpleResource;
+import net.minecraft.client.resources.data.IMetadataSection;
 import net.minecraft.util.IIcon;
 import net.minecraft.util.ResourceLocation;
 
@@ -36,6 +37,8 @@ import com.github.wohaopa.MyCTMLib.CTMIconManager;
 import com.github.wohaopa.MyCTMLib.InterpolatedIcon;
 import com.github.wohaopa.MyCTMLib.MyCTMLibMetadataSectionSerializer.MyCTMLibMetadataSection;
 import com.github.wohaopa.MyCTMLib.NewTextureAtlasSprite;
+import com.github.wohaopa.MyCTMLib.texture.TextureMetadataSection;
+import com.github.wohaopa.MyCTMLib.texture.TextureRegistry;
 import com.google.gson.JsonObject;
 
 import cpw.mods.fml.common.Loader;
@@ -71,12 +74,23 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
                 return;
             }
 
+            // 新管线：若存在 ctmlib section 则写入 TextureRegistry
+            try {
+                IMetadataSection ctmlibSec = resource.getMetadata("ctmlib");
+                if (ctmlibSec != null && ctmlibSec instanceof TextureMetadataSection) {
+                    TextureRegistry.getInstance()
+                        .put(textureName, ((TextureMetadataSection) ctmlibSec).getData());
+                }
+            } catch (Exception ignored) {}
+
             if (!(resource instanceof SimpleResource simple)) {
                 return;
             }
 
-
-            JsonObject ctmObj = ((MyCTMLibMetadataSection) resource.getMetadata("myctmlib")).getJson();
+            IMetadataSection myctmlibSec = resource.getMetadata("myctmlib");
+            JsonObject ctmObj = (myctmlibSec != null && myctmlibSec instanceof MyCTMLibMetadataSection)
+                ? ((MyCTMLibMetadataSection) myctmlibSec).getJson()
+                : null;
 
             if (ctmObj == null) {
                 return;
@@ -184,7 +198,7 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
 
             CTMIconManager ctmManager = builder.buildAndInit();
             ctmIconMap.put(textureName, ctmManager);
-            
+
             cir.setReturnValue(currentBase);
         } catch (Exception e) {
             // System.out.println("[CTMLib] Error: " + e.getMessage());

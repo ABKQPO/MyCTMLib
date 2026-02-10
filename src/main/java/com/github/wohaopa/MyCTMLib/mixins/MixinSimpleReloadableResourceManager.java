@@ -17,6 +17,9 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import com.github.wohaopa.MyCTMLib.GTNHIntegrationHelper;
+import com.github.wohaopa.MyCTMLib.blockstate.BlockStateRegistry;
+import com.github.wohaopa.MyCTMLib.model.ModelRegistry;
+import com.github.wohaopa.MyCTMLib.texture.TextureRegistry;
 
 import cpw.mods.fml.common.Loader;
 
@@ -25,6 +28,12 @@ public class MixinSimpleReloadableResourceManager {
 
     @Inject(method = "clearResources", at = @At("HEAD"))
     private void onClearResources(CallbackInfo ci) {
+        BlockStateRegistry.getInstance()
+            .clear();
+        ModelRegistry.getInstance()
+            .clear();
+        TextureRegistry.getInstance()
+            .clear();
         ctmIconMap.clear();
         ctmAltMap.clear();
         ctmReplaceMap.clear();

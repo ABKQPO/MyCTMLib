@@ -1,12 +1,17 @@
 package com.github.wohaopa.MyCTMLib;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.resources.IReloadableResourceManager;
+import net.minecraft.client.resources.data.IMetadataSerializer;
 import net.minecraftforge.common.config.Configuration;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.github.wohaopa.MyCTMLib.mixins.AccessorMinecraft;
+import com.github.wohaopa.MyCTMLib.resource.CTMLibResourceLoader;
+import com.github.wohaopa.MyCTMLib.texture.TextureMetadataSection;
+import com.github.wohaopa.MyCTMLib.texture.TextureMetadataSectionSerializer;
 
 import cpw.mods.fml.client.event.ConfigChangedEvent;
 import cpw.mods.fml.common.FMLCommonHandler;
@@ -44,10 +49,18 @@ public class MyCTMLib {
 
     @SideOnly(Side.CLIENT)
     private void registerMetadataSerializer() {
-        ((AccessorMinecraft) Minecraft.getMinecraft()).getMetadataSerializer()
-            .registerMetadataSectionType(
-                new MyCTMLibMetadataSectionSerializer(),
-                MyCTMLibMetadataSectionSerializer.MyCTMLibMetadataSection.class);
+        IMetadataSerializer serializer = ((AccessorMinecraft) Minecraft.getMinecraft()).getMetadataSerializer();
+        serializer.registerMetadataSectionType(
+            new MyCTMLibMetadataSectionSerializer(),
+            MyCTMLibMetadataSectionSerializer.MyCTMLibMetadataSection.class);
+        // 新管线：ctmlib section，供 mcmeta 解析器与 TextureRegistry 使用
+        serializer.registerMetadataSectionType(new TextureMetadataSectionSerializer(), TextureMetadataSection.class);
+        // 资源重载时加载 BlockState/Model，并清空新注册表（清空在 MixinSimpleReloadableResourceManager.clearResources）
+        if (Minecraft.getMinecraft()
+            .getResourceManager() instanceof IReloadableResourceManager) {
+            ((IReloadableResourceManager) Minecraft.getMinecraft()
+                .getResourceManager()).registerReloadListener(new CTMLibResourceLoader());
+        }
     }
 
     @Mod.EventHandler
