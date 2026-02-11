@@ -10,8 +10,9 @@ import com.github.wohaopa.MyCTMLib.MyCTMLib;
 /**
  * 根据 (tileX, tileY) 与 layout 网格尺寸将纹理切成单格 UV，用 Tessellator 绘制单面一个 quad。
  * 当 renderBlocks.enableAO 为 true 时使用四角亮度/颜色（与环境光遮挡一致），否则使用 fallback 单值。
- * 各面顶点顺序与 UV 与旧 mod Textures.renderFace* 对齐，以保证正面朝向正确（不被背面剔除）且纹理不翻转。
- * 顶面/底面（UP/DOWN）需交换 U 以修正水平翻转。
+ * 各面顶点顺序与 AO 四角对应均与原版 RenderBlocks.renderFace* 一致。
+ *
+ * 水平面（DOWN/UP）纹理方向约定：minU→西，maxU→东，minV→北（纹理上），maxV→南（纹理下）。
  */
 public final class FaceRenderer {
 
@@ -22,16 +23,16 @@ public final class FaceRenderer {
     private static final int CORNER_BOTTOM_RIGHT = 3;
 
     /**
-     * 各面顶点顺序对应的角索引（与 addVertexWithUV 的 4 个顶点一致）。
-     * 与旧 mod Textures.renderFace* 的顶点顺序对齐，保证正面朝向与 UV 不翻转。
+     * 各面顶点顺序对应的 AO 角索引（与 addVertexWithUV 的 4 个顶点一致）。
+     * 原版 RenderBlocks.renderFace* 各面顶点顺序均为 TL→BL→BR→TR，保证正面朝向（CCW）与 AO 四角对应正确。
      */
     private static final int[][] CORNER_ORDER_BY_FACE = {
         { CORNER_TOP_LEFT, CORNER_BOTTOM_LEFT, CORNER_BOTTOM_RIGHT, CORNER_TOP_RIGHT },     // DOWN
-        { CORNER_TOP_RIGHT, CORNER_BOTTOM_RIGHT, CORNER_BOTTOM_LEFT, CORNER_TOP_LEFT },     // UP
-        { CORNER_TOP_LEFT, CORNER_TOP_RIGHT, CORNER_BOTTOM_RIGHT, CORNER_BOTTOM_LEFT },     // NORTH（与 Textures.renderFaceZNeg 一致：左上→右上→右下→左下）
-        { CORNER_TOP_LEFT, CORNER_BOTTOM_LEFT, CORNER_BOTTOM_RIGHT, CORNER_TOP_RIGHT },     // SOUTH（与 Textures.renderFaceZPos 一致：左上→左下→右下→右上）
-        { CORNER_TOP_RIGHT, CORNER_TOP_LEFT, CORNER_BOTTOM_LEFT, CORNER_BOTTOM_RIGHT },     // WEST（与 Textures.renderFaceXNeg 一致）
-        { CORNER_BOTTOM_RIGHT, CORNER_BOTTOM_LEFT, CORNER_TOP_LEFT, CORNER_TOP_RIGHT },     // EAST（与 Textures.renderFaceXPos 一致）
+        { CORNER_TOP_LEFT, CORNER_BOTTOM_LEFT, CORNER_BOTTOM_RIGHT, CORNER_TOP_RIGHT },     // UP
+        { CORNER_TOP_LEFT, CORNER_BOTTOM_LEFT, CORNER_BOTTOM_RIGHT, CORNER_TOP_RIGHT },     // NORTH
+        { CORNER_TOP_LEFT, CORNER_BOTTOM_LEFT, CORNER_BOTTOM_RIGHT, CORNER_TOP_RIGHT },     // SOUTH
+        { CORNER_TOP_LEFT, CORNER_BOTTOM_LEFT, CORNER_BOTTOM_RIGHT, CORNER_TOP_RIGHT },     // WEST
+        { CORNER_TOP_LEFT, CORNER_BOTTOM_LEFT, CORNER_BOTTOM_RIGHT, CORNER_TOP_RIGHT },     // EAST
     };
 
     /** 在添加一个顶点前设置 Tessellator 的亮度与颜色（来自 RenderBlocks 四角 AO）。 */
@@ -155,29 +156,31 @@ public final class FaceRenderer {
 
         switch (face) {
             case DOWN:
-                // 与旧 mod Textures.renderFaceYNeg 顶点顺序一致；交换 U 以修正朝下看时的水平翻转。
+                // 顶点顺序与原版 renderFaceYNeg 一致：TL→BL→BR→TR
+                // UV 约定：minU→西 minV→北 maxU→东 maxV→南。交换 U 与 V 以满足约定。
                 if (renderBlocks.enableAO) setTessellatorAO(renderBlocks, corners[0]);
-                tes.addVertexWithUV(minX, minY, maxZ, maxU, maxV);
+                tes.addVertexWithUV(minX, minY, maxZ, minU, minV);
                 if (renderBlocks.enableAO) setTessellatorAO(renderBlocks, corners[1]);
-                tes.addVertexWithUV(minX, minY, minZ, maxU, minV);
+                tes.addVertexWithUV(minX, minY, minZ, minU, maxV);
                 if (renderBlocks.enableAO) setTessellatorAO(renderBlocks, corners[2]);
-                tes.addVertexWithUV(maxX, minY, minZ, minU, minV);
+                tes.addVertexWithUV(maxX, minY, minZ, maxU, maxV);
                 if (renderBlocks.enableAO) setTessellatorAO(renderBlocks, corners[3]);
-                tes.addVertexWithUV(maxX, minY, maxZ, minU, maxV);
+                tes.addVertexWithUV(maxX, minY, maxZ, maxU, minV);
                 break;
             case UP:
-                // 与旧 mod Textures.renderFaceYPos 顶点顺序一致；交换 U 与 V 以修正从上往下看时的翻转。
+                // 顶点顺序与原版 renderFaceYPos 一致：TL→BL→BR→TR
+                // UV 约定：minU→西 minV→北 maxU→东 maxV→南。交换 U 与 V 以满足约定。
                 if (renderBlocks.enableAO) setTessellatorAO(renderBlocks, corners[0]);
-                tes.addVertexWithUV(maxX, maxY, maxZ, minU, minV);
+                tes.addVertexWithUV(maxX, maxY, maxZ, maxU, maxV);
                 if (renderBlocks.enableAO) setTessellatorAO(renderBlocks, corners[1]);
-                tes.addVertexWithUV(maxX, maxY, minZ, minU, maxV);
+                tes.addVertexWithUV(maxX, maxY, minZ, maxU, minV);
                 if (renderBlocks.enableAO) setTessellatorAO(renderBlocks, corners[2]);
-                tes.addVertexWithUV(minX, maxY, minZ, maxU, maxV);
+                tes.addVertexWithUV(minX, maxY, minZ, minU, minV);
                 if (renderBlocks.enableAO) setTessellatorAO(renderBlocks, corners[3]);
-                tes.addVertexWithUV(minX, maxY, maxZ, maxU, minV);
+                tes.addVertexWithUV(minX, maxY, maxZ, minU, maxV);
                 break;
             case NORTH:
-                // 与旧 mod Textures.renderFaceZNeg 顶点顺序与 UV 一致：左上→右上→右下→左下，朝南看时不翻转。
+                // 顶点顺序与原版 renderFaceZNeg 一致：TL→BL→BR→TR
                 if (renderBlocks.enableAO) setTessellatorAO(renderBlocks, corners[0]);
                 tes.addVertexWithUV(minX, maxY, minZ, maxU, minV);
                 if (renderBlocks.enableAO) setTessellatorAO(renderBlocks, corners[1]);
@@ -188,7 +191,7 @@ public final class FaceRenderer {
                 tes.addVertexWithUV(minX, minY, minZ, maxU, maxV);
                 break;
             case SOUTH:
-                // 与旧 mod Textures.renderFaceZPos 顶点顺序一致：左上→左下→右下→右上，正面从 -Z 看为 CCW，UV 对应不翻转。
+                // 顶点顺序与原版 renderFaceZPos 一致：TL→BL→BR→TR
                 if (renderBlocks.enableAO) setTessellatorAO(renderBlocks, corners[0]);
                 tes.addVertexWithUV(minX, maxY, maxZ, minU, minV);
                 if (renderBlocks.enableAO) setTessellatorAO(renderBlocks, corners[1]);
@@ -199,7 +202,7 @@ public final class FaceRenderer {
                 tes.addVertexWithUV(maxX, maxY, maxZ, maxU, minV);
                 break;
             case WEST:
-                // 与旧 mod Textures.renderFaceXNeg 顶点顺序与 UV 一致：右上→左上→左下→右下，从 +X 看为 CCW，避免背面剔除。
+                // 顶点顺序与原版 renderFaceXNeg 一致：TL→BL→BR→TR
                 if (renderBlocks.enableAO) setTessellatorAO(renderBlocks, corners[0]);
                 tes.addVertexWithUV(minX, maxY, maxZ, maxU, minV);
                 if (renderBlocks.enableAO) setTessellatorAO(renderBlocks, corners[1]);
@@ -210,7 +213,7 @@ public final class FaceRenderer {
                 tes.addVertexWithUV(minX, minY, maxZ, maxU, maxV);
                 break;
             case EAST:
-                // 与旧 mod Textures.renderFaceXPos 顶点顺序一致：右下→左下→左上→右上，从 -X 看为 CCW，避免背面剔除，UV 与顶点对应正确。
+                // 顶点顺序与原版 renderFaceXPos 一致：TL→BL→BR→TR
                 if (renderBlocks.enableAO) setTessellatorAO(renderBlocks, corners[0]);
                 tes.addVertexWithUV(maxX, minY, maxZ, minU, maxV);
                 if (renderBlocks.enableAO) setTessellatorAO(renderBlocks, corners[1]);
