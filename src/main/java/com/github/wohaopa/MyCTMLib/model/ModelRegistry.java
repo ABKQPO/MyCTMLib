@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.github.wohaopa.MyCTMLib.MyCTMLib;
+
 /**
  * modelId → ModelData 的注册表。
  * 可选：纹理路径 → (modelId, faceInfo) 的回退索引，供无 BlockState 时按纹理名查模型。
@@ -43,6 +45,15 @@ public class ModelRegistry {
     public void clear() {
         modelById.clear();
         textureToModel.clear();
+    }
+
+    /** debug 模式下打出 modelId 列表便于查看数据。 */
+    public void dumpForDebug() {
+        if (!MyCTMLib.debugMode) return;
+        MyCTMLib.LOG.info("[CTMLibFusion] --- ModelRegistry (size={}) ---", modelById.size());
+        for (String modelId : modelById.keySet()) {
+            MyCTMLib.LOG.info("[CTMLibFusion] ModelRegistry | modelId={}", modelId);
+        }
     }
 
     public static class TextureModelEntry {

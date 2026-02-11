@@ -31,6 +31,13 @@ public class MyCTMLib {
     public static boolean debugMode = false;
     public Configuration configuration;
 
+    /** 仅对 stone/cobblestone 打表与过滤 [CTMLibFusion] 日志，避免无效刷屏。 */
+    public static boolean isFusionTraceTarget(String name) {
+        if (name == null) return false;
+        String s = name.indexOf(':') >= 0 ? name.substring(name.indexOf(':') + 1) : name;
+        return "stone".equals(s) || "cobblestone".equals(s);
+    }
+
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event) {
         // 只在客户端注册元数据序列化器

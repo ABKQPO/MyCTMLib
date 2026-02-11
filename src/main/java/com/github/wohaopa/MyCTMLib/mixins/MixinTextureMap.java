@@ -30,17 +30,23 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import com.github.wohaopa.MyCTMLib.CTMConfig;
 import com.github.wohaopa.MyCTMLib.CTMIconManager;
 import com.github.wohaopa.MyCTMLib.InterpolatedIcon;
 import com.github.wohaopa.MyCTMLib.MyCTMLibMetadataSectionSerializer.MyCTMLibMetadataSection;
+import com.github.wohaopa.MyCTMLib.MyCTMLib;
 import com.github.wohaopa.MyCTMLib.NewTextureAtlasSprite;
 import com.github.wohaopa.MyCTMLib.texture.TextureMetadataSection;
+import com.github.wohaopa.MyCTMLib.blockstate.BlockStateRegistry;
+import com.github.wohaopa.MyCTMLib.model.ModelRegistry;
 import com.github.wohaopa.MyCTMLib.texture.TextureRegistry;
 import com.google.gson.JsonObject;
 
+import cpw.mods.fml.client.FMLClientHandler;
 import cpw.mods.fml.common.Loader;
 
 @Mixin(TextureMap.class)
@@ -74,16 +80,42 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
                 return;
             }
 
-            // 新管线：若存在 ctmlib section 则写入 TextureRegistry
+            // 新管线：若存在 ctmlib section 则写入 TextureRegistry，并替换 sprite 为整张连接图（否则 block 拿到的是 16x16）
+            boolean hadCtmlib = false;
             try {
                 IMetadataSection ctmlibSec = resource.getMetadata("ctmlib");
                 if (ctmlibSec != null && ctmlibSec instanceof TextureMetadataSection) {
                     TextureRegistry.getInstance()
                         .put(textureName, ((TextureMetadataSection) ctmlibSec).getData());
+                    hadCtmlib = true;
+                    if (MyCTMLib.isFusionTraceTarget(textureName)) {
+                        MyCTMLib.LOG.info("[CTMLibFusion] TextureRegistry.put ctmlib textureName={}", textureName);
+                    }
                 }
             } catch (Exception ignored) {}
 
+            boolean trace = MyCTMLib.isFusionTraceTarget(textureName);
+            if (trace) {
+                com.github.wohaopa.MyCTMLib.MyCTMLib.LOG.info(
+                    "[CTMLibFusion] registerIcon trace textureName={} hadCtmlib={} resourceClass={}",
+                    textureName,
+                    hadCtmlib,
+                    resource != null ? resource.getClass()
+                        .getSimpleName() : "null");
+            }
+
             if (!(resource instanceof SimpleResource simple)) {
+                if (hadCtmlib) {
+                    if (trace) {
+                        com.github.wohaopa.MyCTMLib.MyCTMLib.LOG.info(
+                            "[CTMLibFusion] registerIcon trace textureName={} branch=putSpriteNonSimpleResource",
+                            textureName);
+                    }
+                    TextureAtlasSprite sprite = new NewTextureAtlasSprite(textureName);
+                    mapRegisteredSprites.put(textureName, sprite);
+                    cir.setReturnValue(sprite);
+                    cir.cancel();
+                }
                 return;
             }
 
@@ -93,7 +125,23 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
                 : null;
 
             if (ctmObj == null) {
+                if (hadCtmlib) {
+                    if (trace) {
+                        com.github.wohaopa.MyCTMLib.MyCTMLib.LOG.info(
+                            "[CTMLibFusion] registerIcon trace textureName={} branch=putSpriteCtmObjNull",
+                            textureName);
+                    }
+                    TextureAtlasSprite sprite = new NewTextureAtlasSprite(textureName);
+                    mapRegisteredSprites.put(textureName, sprite);
+                    cir.setReturnValue(sprite);
+                    cir.cancel();
+                }
                 return;
+            }
+
+            if (trace) {
+                com.github.wohaopa.MyCTMLib.MyCTMLib.LOG
+                    .info("[CTMLibFusion] registerIcon trace textureName={} branch=myctmlibPath", textureName);
             }
 
             CTMIconManager.Builder builder = CTMIconManager.builder();
@@ -201,7 +249,7 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
 
             cir.setReturnValue(currentBase);
         } catch (Exception e) {
-            // System.out.println("[CTMLib] Error: " + e.getMessage());
+            // System.out.println("[CTMLibFusion] Error: " + e.getMessage());
         }
     }
 
@@ -253,6 +301,54 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
         return Minecraft.getMinecraft()
             .getResourceManager()
             .getResource(res);
+    }
+
+    /**
+     * 图集加载完成后打出三个 Registry 的数据（仅 debug 模式）。
+     */
+    @Inject(method = "loadTextureAtlas", at = @At("RETURN"))
+    private void afterLoadTextureAtlas(net.minecraft.client.resources.IResourceManager p_110571_1_, CallbackInfo ci) {
+        if (MyCTMLib.debugMode) {
+            MyCTMLib.LOG.info("[CTMLibFusion] --- dump after loadTextureAtlas ---");
+            BlockStateRegistry.getInstance().dumpForDebug();
+            ModelRegistry.getInstance().dumpForDebug();
+            TextureRegistry.getInstance().dumpForDebug();
+        }
+    }
+
+    /**
+     * 纹理构建阶段：RuntimeException 时 FML 会调用 trackBrokenTexture。
+     * 对 stone/cobblestone 打点确认是否在 loadTextureAtlas 的 catch 中失败。
+     */
+    @Redirect(
+        method = "loadTextureAtlas",
+        at = @At(
+            value = "INVOKE",
+            target = "Lcpw/mods/fml/client/FMLClientHandler;trackBrokenTexture(Lnet/minecraft/util/ResourceLocation;Ljava/lang/String;)V"))
+    public void onTrackBrokenTexture(FMLClientHandler handler, ResourceLocation location, String message) {
+        String path = location != null ? location.getResourcePath() : "";
+        if ("stone".equals(path) || "cobblestone".equals(path)) {
+            com.github.wohaopa.MyCTMLib.MyCTMLib.LOG
+                .warn("[CTMLibFusion] loadTextureAtlas RuntimeException path={} message={}", location, message);
+        }
+        handler.trackBrokenTexture(location, message);
+    }
+
+    /**
+     * 纹理构建阶段：IOException 时 FML 会调用 trackMissingTexture。
+     */
+    @Redirect(
+        method = "loadTextureAtlas",
+        at = @At(
+            value = "INVOKE",
+            target = "Lcpw/mods/fml/client/FMLClientHandler;trackMissingTexture(Lnet/minecraft/util/ResourceLocation;)V"))
+    public void onTrackMissingTexture(FMLClientHandler handler, ResourceLocation location) {
+        String path = location != null ? location.getResourcePath() : "";
+        if ("stone".equals(path) || "cobblestone".equals(path)) {
+            com.github.wohaopa.MyCTMLib.MyCTMLib.LOG
+                .warn("[CTMLibFusion] loadTextureAtlas IOException trackMissingTexture path={}", location);
+        }
+        handler.trackMissingTexture(location);
     }
 
     /**

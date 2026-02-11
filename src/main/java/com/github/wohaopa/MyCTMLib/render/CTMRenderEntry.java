@@ -10,6 +10,7 @@ import net.minecraft.util.IIcon;
 import net.minecraft.world.IBlockAccess;
 import net.minecraftforge.common.util.ForgeDirection;
 
+import com.github.wohaopa.MyCTMLib.MyCTMLib;
 import com.github.wohaopa.MyCTMLib.blockstate.BlockStateRegistry;
 import com.github.wohaopa.MyCTMLib.model.ModelData;
 import com.github.wohaopa.MyCTMLib.model.ModelElement;
@@ -42,24 +43,49 @@ public final class CTMRenderEntry {
         if (blockAccess == null || icon == null) return false;
         String iconName = normalizeIconName(icon.getIconName());
         int meta = blockAccess.getBlockMetadata((int) x, (int) y, (int) z);
+        boolean traceTarget = MyCTMLib.debugMode && MyCTMLib.isFusionTraceTarget(iconName);
 
-        TextureTypeData data = TextureRegistry.getInstance()
-            .get(iconName);
+        TextureTypeData data = getConnectingData(iconName);
         ConnectionPredicate predicate = PredicateRegistry.defaultPredicate();
         ConnectingTextureData ctd = null;
         IIcon useIcon = icon;
 
         if (data instanceof ConnectingTextureData) {
             ctd = (ConnectingTextureData) data;
+            if (traceTarget) {
+                MyCTMLib.LOG.info("[CTMLibFusion] tryRender branch=TextureRegistry iconName={}", iconName);
+                logTryRenderTable(iconName, getBlockId(block), true, "TextureRegistry", null, "draw");
+            }
         } else {
             String blockId = getBlockId(block);
-            if (blockId == null) return false;
+            if (!traceTarget && blockId != null && MyCTMLib.debugMode && MyCTMLib.isFusionTraceTarget(blockId)) {
+                traceTarget = true;
+            }
+            if (blockId == null) {
+                if (traceTarget) {
+                    MyCTMLib.LOG.info("[CTMLibFusion] tryRender skip: blockId=null for block={}", block);
+                    logTryRenderTable(iconName, null, false, "skip", null, "skip:blockId=null");
+                }
+                return false;
+            }
             String modelId = BlockStateRegistry.getInstance()
                 .getModelId(blockId, meta);
-            if (modelId == null) return false;
+            if (modelId == null) {
+                if (traceTarget) {
+                    MyCTMLib.LOG.info("[CTMLibFusion] tryRender skip: modelId=null blockId={} meta={}", blockId, meta);
+                    logTryRenderTable(iconName, blockId, false, "skip", null, "skip:modelId=null");
+                }
+                return false;
+            }
             ModelData modelData = ModelRegistry.getInstance()
                 .get(modelId);
-            if (modelData == null) return false;
+            if (modelData == null) {
+                if (traceTarget) {
+                    MyCTMLib.LOG.info("[CTMLibFusion] tryRender skip: modelData=null modelId={}", modelId);
+                    logTryRenderTable(iconName, blockId, false, "skip", modelId, "skip:modelData=null");
+                }
+                return false;
+            }
             ModelFace faceData = getFaceForDirection(modelData, face);
             if (faceData == null) return false;
             String textureKey = faceData.getTextureKey();
@@ -68,15 +94,33 @@ public final class CTMRenderEntry {
             if (texturePath == null) return false;
             String domain = modelId.indexOf(':') >= 0 ? modelId.substring(0, modelId.indexOf(':')) : "minecraft";
             String fullIconPath = toBlockIconPath(domain, texturePath);
-            data = TextureRegistry.getInstance()
-                .get(fullIconPath);
-            if (!(data instanceof ConnectingTextureData)) return false;
+            data = getConnectingData(fullIconPath);
+            if (!(data instanceof ConnectingTextureData)) {
+                if (traceTarget) {
+                    MyCTMLib.LOG.info(
+                        "[CTMLibFusion] tryRender branch=BlockState blockId={} modelId={} fullIconPath={} ctmlibFound={}",
+                        blockId,
+                        modelId,
+                        fullIconPath,
+                        data != null);
+                    logTryRenderTable(iconName, blockId, false, "BlockState", modelId, "skip:ctmlibNotFound");
+                }
+                return false;
+            }
             ctd = (ConnectingTextureData) data;
             predicate = faceData.getConnectionKey() != null
                 ? PredicateRegistry.getPredicate(faceData.getConnectionKey(), modelData.getConnections())
                 : PredicateRegistry.defaultPredicate();
             if (predicate == null) predicate = PredicateRegistry.defaultPredicate();
             useIcon = icon;
+            if (traceTarget) {
+                MyCTMLib.LOG.info(
+                    "[CTMLibFusion] tryRender branch=BlockState blockId={} modelId={} fullIconPath={}",
+                    blockId,
+                    modelId,
+                    fullIconPath);
+                logTryRenderTable(iconName, blockId, false, "BlockState", modelId, "draw");
+            }
         }
 
         ConnectingLayout layout = ctd.getLayout();
@@ -127,6 +171,33 @@ public final class CTMRenderEntry {
         if (path.contains(":")) return path;
         String p = path.replace("block/", "blocks/");
         return domain + ":" + p;
+    }
+
+    /**
+     * 从 TextureRegistry 查找 ConnectingTextureData。1.7.10 注册时 textureName 可能为短名（如 "stone"），
+     * 查找时可能为 "minecraft:stone"，故先查 key 再查 path 部分。
+     */
+    private static TextureTypeData getConnectingData(String key) {
+        TextureTypeData data = TextureRegistry.getInstance()
+            .get(key);
+        if (data == null && key != null && key.indexOf(':') >= 0) {
+            data = TextureRegistry.getInstance()
+                .get(key.substring(key.indexOf(':') + 1));
+        }
+        return data;
+    }
+
+    /** 仅对 stone/cobblestone 打表：一行汇总 icon / blockId / ctdFromIcon / branch / modelId / result */
+    private static void logTryRenderTable(String iconName, String blockId, boolean ctdFromIcon, String branch,
+        String modelId, String result) {
+        MyCTMLib.LOG.info(
+            "[CTMLibFusion] tryRender | icon={} blockId={} ctdFromIcon={} branch={} modelId={} result={}",
+            iconName,
+            blockId != null ? blockId : "-",
+            ctdFromIcon,
+            branch,
+            modelId != null ? modelId : "-",
+            result);
     }
 
     /** 与 MixinRenderBlocks 中 iconName 处理一致：第二个冒号及之后替换为 & */

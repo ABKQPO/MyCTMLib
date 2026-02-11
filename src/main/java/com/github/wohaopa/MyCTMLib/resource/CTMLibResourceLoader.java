@@ -16,6 +16,7 @@ import com.github.wohaopa.MyCTMLib.blockstate.BlockStateRegistry;
 import com.github.wohaopa.MyCTMLib.model.ModelData;
 import com.github.wohaopa.MyCTMLib.model.ModelParser;
 import com.github.wohaopa.MyCTMLib.model.ModelRegistry;
+import com.github.wohaopa.MyCTMLib.texture.TextureRegistry;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
@@ -46,6 +47,12 @@ public class CTMLibResourceLoader implements net.minecraft.client.resources.IRes
 
         loadBlockStates(resourceManager);
         loadModels(resourceManager);
+        if (MyCTMLib.debugMode) {
+            MyCTMLib.LOG.info("[CTMLibFusion] --- dump after onResourceManagerReload ---");
+            BlockStateRegistry.getInstance().dumpForDebug();
+            ModelRegistry.getInstance().dumpForDebug();
+            TextureRegistry.getInstance().dumpForDebug();
+        }
     }
 
     /**

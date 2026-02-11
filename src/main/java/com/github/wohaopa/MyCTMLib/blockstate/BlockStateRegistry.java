@@ -6,6 +6,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.github.wohaopa.MyCTMLib.MyCTMLib;
+
 /**
  * 方块状态 → 模型 ID 的注册表。
  * 键：(blockId, metadata)，如 ("modid:blockname", 0)。
@@ -54,5 +56,14 @@ public class BlockStateRegistry {
 
     public void clear() {
         blockToVariants.clear();
+    }
+
+    /** debug 模式下打出 blockId → (variantKey → modelId) 便于查看数据。 */
+    public void dumpForDebug() {
+        if (!MyCTMLib.debugMode) return;
+        MyCTMLib.LOG.info("[CTMLibFusion] --- BlockStateRegistry (size={}) ---", blockToVariants.size());
+        for (Map.Entry<String, Map<String, String>> e : blockToVariants.entrySet()) {
+            MyCTMLib.LOG.info("[CTMLibFusion] BlockStateRegistry | blockId={} variants={}", e.getKey(), e.getValue());
+        }
     }
 }
