@@ -5,7 +5,6 @@ import java.util.Map;
 
 import net.minecraft.block.Block;
 import net.minecraft.client.renderer.RenderBlocks;
-import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.util.IIcon;
 import net.minecraft.world.IBlockAccess;
 import net.minecraftforge.common.util.ForgeDirection;
@@ -129,10 +128,8 @@ public final class CTMRenderEntry {
         int[] pos = handler.getTilePosition(mask);
         int tileX = pos[0], tileY = pos[1];
         int brightness = block.getMixedBrightnessForBlock(blockAccess, (int) x, (int) y, (int) z);
-        Tessellator.instance.setBrightness(brightness);
-        Tessellator.instance.setColorOpaque_F(1.0F, 1.0F, 1.0F);
-        FaceRenderer
-            .drawFace(renderBlocks, x, y, z, face, useIcon, tileX, tileY, handler.getWidth(), handler.getHeight());
+        FaceRenderer.drawFace(
+            renderBlocks, x, y, z, face, useIcon, tileX, tileY, handler.getWidth(), handler.getHeight(), brightness);
         return true;
     }
 
