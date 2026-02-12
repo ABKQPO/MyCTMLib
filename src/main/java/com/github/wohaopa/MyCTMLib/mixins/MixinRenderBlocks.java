@@ -41,18 +41,18 @@ public abstract class MixinRenderBlocks {
      */
     @Inject(method = "renderFaceYNeg", at = @At("HEAD"), cancellable = true)
     private void redirect$renderFaceYNeg(Block block, double x, double y, double z, IIcon iIcon, CallbackInfo ci) {
-        if (blockAccess == null || iIcon == null) return;
+        if (iIcon == null) return;
         if (this.hasOverrideBlockTexture()) return;
 
-        String iconName = iIcon.getIconName();
-        int firstColon = iconName.indexOf(':');
-        int secondColon = iconName.indexOf(':', firstColon + 1);
-
-        if (secondColon != -1) {
-            iconName = iconName.substring(0, secondColon) + "&"
-                + iconName.substring(secondColon + 1)
-                    .replace(":", "&");
+        if (blockAccess == null) {
+            if (CTMRenderEntry.tryRenderItemFace(
+                (RenderBlocks) (Object) this, block, x, y, z, iIcon, ForgeDirection.DOWN)) {
+                ci.cancel();
+            }
+            return;
         }
+
+        String iconName = normalizeIconName(iIcon.getIconName());
 
         if (CTMRenderEntry
             .tryRender((RenderBlocks) (Object) this, blockAccess, block, x, y, z, iIcon, ForgeDirection.DOWN)) {
@@ -78,18 +78,18 @@ public abstract class MixinRenderBlocks {
      */
     @Inject(method = "renderFaceYPos", at = @At("HEAD"), cancellable = true)
     private void redirect$renderFaceYPos(Block block, double x, double y, double z, IIcon iIcon, CallbackInfo ci) {
-        if (blockAccess == null || iIcon == null) return;
+        if (iIcon == null) return;
         if (this.hasOverrideBlockTexture()) return;
 
-        String iconName = iIcon.getIconName();
-        int firstColon = iconName.indexOf(':');
-        int secondColon = iconName.indexOf(':', firstColon + 1);
-
-        if (secondColon != -1) {
-            iconName = iconName.substring(0, secondColon) + "&"
-                + iconName.substring(secondColon + 1)
-                    .replace(":", "&");
+        if (blockAccess == null) {
+            if (CTMRenderEntry.tryRenderItemFace(
+                (RenderBlocks) (Object) this, block, x, y, z, iIcon, ForgeDirection.UP)) {
+                ci.cancel();
+            }
+            return;
         }
+
+        String iconName = normalizeIconName(iIcon.getIconName());
 
         if (CTMRenderEntry
             .tryRender((RenderBlocks) (Object) this, blockAccess, block, x, y, z, iIcon, ForgeDirection.UP)) {
@@ -108,18 +108,18 @@ public abstract class MixinRenderBlocks {
      */
     @Inject(method = "renderFaceZNeg", at = @At("HEAD"), cancellable = true)
     private void redirect$renderFaceZNeg(Block block, double x, double y, double z, IIcon iIcon, CallbackInfo ci) {
-        if (blockAccess == null || iIcon == null) return;
+        if (iIcon == null) return;
         if (this.hasOverrideBlockTexture()) return;
 
-        String iconName = iIcon.getIconName();
-        int firstColon = iconName.indexOf(':');
-        int secondColon = iconName.indexOf(':', firstColon + 1);
-
-        if (secondColon != -1) {
-            iconName = iconName.substring(0, secondColon) + "&"
-                + iconName.substring(secondColon + 1)
-                    .replace(":", "&");
+        if (blockAccess == null) {
+            if (CTMRenderEntry.tryRenderItemFace(
+                (RenderBlocks) (Object) this, block, x, y, z, iIcon, ForgeDirection.NORTH)) {
+                ci.cancel();
+            }
+            return;
         }
+
+        String iconName = normalizeIconName(iIcon.getIconName());
 
         if (CTMRenderEntry
             .tryRender((RenderBlocks) (Object) this, blockAccess, block, x, y, z, iIcon, ForgeDirection.NORTH)) {
@@ -145,18 +145,18 @@ public abstract class MixinRenderBlocks {
      */
     @Inject(method = "renderFaceZPos", at = @At("HEAD"), cancellable = true)
     private void redirect$renderFaceZPos(Block block, double x, double y, double z, IIcon iIcon, CallbackInfo ci) {
-        if (blockAccess == null || iIcon == null) return;
+        if (iIcon == null) return;
         if (this.hasOverrideBlockTexture()) return;
 
-        String iconName = iIcon.getIconName();
-        int firstColon = iconName.indexOf(':');
-        int secondColon = iconName.indexOf(':', firstColon + 1);
-
-        if (secondColon != -1) {
-            iconName = iconName.substring(0, secondColon) + "&"
-                + iconName.substring(secondColon + 1)
-                    .replace(":", "&");
+        if (blockAccess == null) {
+            if (CTMRenderEntry.tryRenderItemFace(
+                (RenderBlocks) (Object) this, block, x, y, z, iIcon, ForgeDirection.SOUTH)) {
+                ci.cancel();
+            }
+            return;
         }
+
+        String iconName = normalizeIconName(iIcon.getIconName());
 
         if (CTMRenderEntry
             .tryRender((RenderBlocks) (Object) this, blockAccess, block, x, y, z, iIcon, ForgeDirection.SOUTH)) {
@@ -182,18 +182,18 @@ public abstract class MixinRenderBlocks {
      */
     @Inject(method = "renderFaceXNeg", at = @At("HEAD"), cancellable = true)
     private void redirect$renderFaceXNeg(Block block, double x, double y, double z, IIcon iIcon, CallbackInfo ci) {
-        if (blockAccess == null || iIcon == null) return;
+        if (iIcon == null) return;
         if (this.hasOverrideBlockTexture()) return;
 
-        String iconName = iIcon.getIconName();
-        int firstColon = iconName.indexOf(':');
-        int secondColon = iconName.indexOf(':', firstColon + 1);
-
-        if (secondColon != -1) {
-            iconName = iconName.substring(0, secondColon) + "&"
-                + iconName.substring(secondColon + 1)
-                    .replace(":", "&");
+        if (blockAccess == null) {
+            if (CTMRenderEntry.tryRenderItemFace(
+                (RenderBlocks) (Object) this, block, x, y, z, iIcon, ForgeDirection.WEST)) {
+                ci.cancel();
+            }
+            return;
         }
+
+        String iconName = normalizeIconName(iIcon.getIconName());
 
         if (CTMRenderEntry
             .tryRender((RenderBlocks) (Object) this, blockAccess, block, x, y, z, iIcon, ForgeDirection.WEST)) {
@@ -219,18 +219,18 @@ public abstract class MixinRenderBlocks {
      */
     @Inject(method = "renderFaceXPos", at = @At("HEAD"), cancellable = true)
     private void redirect$renderFaceXPos(Block block, double x, double y, double z, IIcon iIcon, CallbackInfo ci) {
-        if (blockAccess == null || iIcon == null) return;
+        if (iIcon == null) return;
         if (this.hasOverrideBlockTexture()) return;
 
-        String iconName = iIcon.getIconName();
-        int firstColon = iconName.indexOf(':');
-        int secondColon = iconName.indexOf(':', firstColon + 1);
-
-        if (secondColon != -1) {
-            iconName = iconName.substring(0, secondColon) + "&"
-                + iconName.substring(secondColon + 1)
-                    .replace(":", "&");
+        if (blockAccess == null) {
+            if (CTMRenderEntry.tryRenderItemFace(
+                (RenderBlocks) (Object) this, block, x, y, z, iIcon, ForgeDirection.EAST)) {
+                ci.cancel();
+            }
+            return;
         }
+
+        String iconName = normalizeIconName(iIcon.getIconName());
 
         if (CTMRenderEntry
             .tryRender((RenderBlocks) (Object) this, blockAccess, block, x, y, z, iIcon, ForgeDirection.EAST)) {
@@ -249,5 +249,18 @@ public abstract class MixinRenderBlocks {
             ForgeDirection.EAST)) {
             ci.cancel();
         }
+    }
+
+    /** 与 CTMRenderEntry 中 iconName 处理一致：第二个冒号及之后替换为 & */
+    private static String normalizeIconName(String name) {
+        if (name == null) return "";
+        int first = name.indexOf(':');
+        int second = name.indexOf(':', first + 1);
+        if (second != -1) {
+            return name.substring(0, second) + "&"
+                + name.substring(second + 1)
+                    .replace(":", "&");
+        }
+        return name;
     }
 }

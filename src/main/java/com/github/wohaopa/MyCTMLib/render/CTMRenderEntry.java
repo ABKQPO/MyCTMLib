@@ -197,6 +197,27 @@ public final class CTMRenderEntry {
             result);
     }
 
+    /**
+     * 物品渲染通道：blockAccess 为 null 时使用。以无连接（默认格 0,0）渲染连接纹理。
+     * 用于手持、背包 GUI、物品栏等场景，避免显示整张连接图。
+     */
+    public static boolean tryRenderItemFace(RenderBlocks renderBlocks, Block block, double x, double y, double z,
+        IIcon icon, ForgeDirection face) {
+        if (icon == null) return false;
+        String iconName = normalizeIconName(icon.getIconName());
+        TextureTypeData data = getConnectingData(iconName);
+        if (!(data instanceof ConnectingTextureData ctd)) return false;
+
+        ConnectingLayout layout = ctd.getLayout();
+        LayoutHandler handler = LayoutHandlers.get(layout);
+        int tileX = 0;
+        int tileY = 0;
+        int brightness = 15728880;
+        FaceRenderer.drawFace(
+            renderBlocks, x, y, z, face, icon, tileX, tileY, handler.getWidth(), handler.getHeight(), brightness);
+        return true;
+    }
+
     /** 与 MixinRenderBlocks 中 iconName 处理一致：第二个冒号及之后替换为 & */
     private static String normalizeIconName(String name) {
         if (name == null) return "";
