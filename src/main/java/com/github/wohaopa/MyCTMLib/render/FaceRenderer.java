@@ -27,12 +27,12 @@ public final class FaceRenderer {
      * 原版 RenderBlocks.renderFace* 各面顶点顺序均为 TL→BL→BR→TR，保证正面朝向（CCW）与 AO 四角对应正确。
      */
     private static final int[][] CORNER_ORDER_BY_FACE = {
-        { CORNER_TOP_LEFT, CORNER_BOTTOM_LEFT, CORNER_BOTTOM_RIGHT, CORNER_TOP_RIGHT },     // DOWN
-        { CORNER_TOP_LEFT, CORNER_BOTTOM_LEFT, CORNER_BOTTOM_RIGHT, CORNER_TOP_RIGHT },     // UP
-        { CORNER_TOP_LEFT, CORNER_BOTTOM_LEFT, CORNER_BOTTOM_RIGHT, CORNER_TOP_RIGHT },     // NORTH
-        { CORNER_TOP_LEFT, CORNER_BOTTOM_LEFT, CORNER_BOTTOM_RIGHT, CORNER_TOP_RIGHT },     // SOUTH
-        { CORNER_TOP_LEFT, CORNER_BOTTOM_LEFT, CORNER_BOTTOM_RIGHT, CORNER_TOP_RIGHT },     // WEST
-        { CORNER_TOP_LEFT, CORNER_BOTTOM_LEFT, CORNER_BOTTOM_RIGHT, CORNER_TOP_RIGHT },     // EAST
+        { CORNER_TOP_LEFT, CORNER_BOTTOM_LEFT, CORNER_BOTTOM_RIGHT, CORNER_TOP_RIGHT }, // DOWN
+        { CORNER_TOP_LEFT, CORNER_BOTTOM_LEFT, CORNER_BOTTOM_RIGHT, CORNER_TOP_RIGHT }, // UP
+        { CORNER_TOP_LEFT, CORNER_BOTTOM_LEFT, CORNER_BOTTOM_RIGHT, CORNER_TOP_RIGHT }, // NORTH
+        { CORNER_TOP_LEFT, CORNER_BOTTOM_LEFT, CORNER_BOTTOM_RIGHT, CORNER_TOP_RIGHT }, // SOUTH
+        { CORNER_TOP_LEFT, CORNER_BOTTOM_LEFT, CORNER_BOTTOM_RIGHT, CORNER_TOP_RIGHT }, // WEST
+        { CORNER_TOP_LEFT, CORNER_BOTTOM_LEFT, CORNER_BOTTOM_RIGHT, CORNER_TOP_RIGHT }, // EAST
     };
 
     /** 在添加一个顶点前设置 Tessellator 的亮度与颜色（来自 RenderBlocks 四角 AO）。 */
@@ -76,18 +76,47 @@ public final class FaceRenderer {
     /**
      * 绘制一个面，纹理取 layout 网格中的 (tileX, tileY) 格。
      *
-     * @param renderBlocks 当前 RenderBlocks（含 renderMin/Max）
-     * @param x            block x
-     * @param y            block y
-     * @param z            block z
-     * @param face         面方向
-     * @param icon         整图 icon
-     * @param tileX        格 x
-     * @param tileY        格 y
-     * @param gridW        layout 宽度
-     * @param gridH        layout 高度
+     * @param renderBlocks       当前 RenderBlocks（含 renderMin/Max）
+     * @param x                  block x
+     * @param y                  block y
+     * @param z                  block z
+     * @param face               面方向
+     * @param icon               整图 icon
+     * @param tileX              格 x
+     * @param tileY              格 y
+     * @param gridW              layout 宽度
+     * @param gridH              layout 高度
      * @param fallbackBrightness 非 AO 时使用的整面亮度
      */
+    /**
+     * 绘制一个面（子块 bounds 版本）。纹理取 layout 网格中的 (tileX, tileY) 格，顶点按 relMin/relMax 归一化坐标绘制。
+     */
+    public static void drawFace(RenderBlocks renderBlocks, double x, double y, double z, ForgeDirection face,
+        IIcon icon, int tileX, int tileY, int gridW, int gridH, int fallbackBrightness, double relMinX, double relMaxX,
+        double relMinY, double relMaxY, double relMinZ, double relMaxZ) {
+        double minU = icon.getMinU() + (icon.getMaxU() - icon.getMinU()) * tileX / gridW;
+        double maxU = icon.getMinU() + (icon.getMaxU() - icon.getMinU()) * (tileX + 1) / gridW;
+        double minV = icon.getMinV() + (icon.getMaxV() - icon.getMinV()) * tileY / gridH;
+        double maxV = icon.getMinV() + (icon.getMaxV() - icon.getMinV()) * (tileY + 1) / gridH;
+        drawFace(
+            renderBlocks,
+            x,
+            y,
+            z,
+            face,
+            minU,
+            maxU,
+            minV,
+            maxV,
+            fallbackBrightness,
+            relMinX,
+            relMaxX,
+            relMinY,
+            relMaxY,
+            relMinZ,
+            relMaxZ);
+    }
+
     public static void drawFace(RenderBlocks renderBlocks, double x, double y, double z, ForgeDirection face,
         IIcon icon, int tileX, int tileY, int gridW, int gridH, int fallbackBrightness) {
         double minU = icon.getMinU() + (icon.getMaxU() - icon.getMinU()) * tileX / gridW;
@@ -123,20 +152,23 @@ public final class FaceRenderer {
                 maxV);
         }
 
-        drawFace(renderBlocks, x, y, z, face, minU, maxU, minV, maxV, fallbackBrightness);
+        drawFace(renderBlocks, x, y, z, face, minU, maxU, minV, maxV, fallbackBrightness, 0, 1, 0, 1, 0, 1);
     }
 
     /**
-     * 绘制单面一个 quad。enableAO 时每顶点使用 RenderBlocks 四角亮度/颜色，否则使用 fallbackBrightness 与 (1,1,1)。
+     * 绘制单面一个 quad（带 bounds）。enableAO 时每顶点使用 RenderBlocks 四角亮度/颜色，否则使用 fallbackBrightness 与 (1,1,1)。
+     *
+     * @param relMinX,relMaxX,relMinY,relMaxY,relMinZ,relMaxZ 相对于方块 (x,y,z) 的归一化坐标 (0–1)，用于子块绘制
      */
     public static void drawFace(RenderBlocks renderBlocks, double x, double y, double z, ForgeDirection face,
-        double minU, double maxU, double minV, double maxV, int fallbackBrightness) {
-        double minX = x + renderBlocks.renderMinX;
-        double maxX = x + renderBlocks.renderMaxX;
-        double minY = y + renderBlocks.renderMinY;
-        double maxY = y + renderBlocks.renderMaxY;
-        double minZ = z + renderBlocks.renderMinZ;
-        double maxZ = z + renderBlocks.renderMaxZ;
+        double minU, double maxU, double minV, double maxV, int fallbackBrightness, double relMinX, double relMaxX,
+        double relMinY, double relMaxY, double relMinZ, double relMaxZ) {
+        double minX = x + relMinX;
+        double maxX = x + relMaxX;
+        double minY = y + relMinY;
+        double maxY = y + relMaxY;
+        double minZ = z + relMinZ;
+        double maxZ = z + relMaxZ;
 
         Tessellator tes = Tessellator.instance;
         if (renderBlocks.renderFromInside) {

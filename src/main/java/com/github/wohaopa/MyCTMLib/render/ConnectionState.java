@@ -75,7 +75,8 @@ public final class ConnectionState {
         if (predicate == null) return 0;
         int mask = 0;
         // 使用 opposite 面的 OFFSETS：因为我们是从相反方向观察的
-        int fi = face.getOpposite().ordinal();
+        int fi = face.getOpposite()
+            .ordinal();
         for (int d = 0; d < 8; d++) {
             int dx = OFFSETS[fi][d][0], dy = OFFSETS[fi][d][1], dz = OFFSETS[fi][d][2];
             if (predicate.connect(world, x, y, z, face, block, meta, dx, dy, dz)) {

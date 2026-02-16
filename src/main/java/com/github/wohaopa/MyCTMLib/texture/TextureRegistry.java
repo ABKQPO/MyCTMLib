@@ -8,6 +8,7 @@ import com.github.wohaopa.MyCTMLib.MyCTMLib;
 /**
  * 纹理路径（如 "modid:blocks/stone"）→ 解析后的 TextureTypeData。
  * 在 MixinTextureMap.registerIcon 或资源加载时，读取 .mcmeta 并调用 TextureTypeRegistry.deserialize 后 put 到此表。
+ * 使用 TextureKeyNormalizer 做规范化与多键回退，put 时写入所有 lookup 候选键，get 时按候选顺序查找。
  */
 public class TextureRegistry {
 
@@ -19,26 +20,42 @@ public class TextureRegistry {
     }
 
     public void put(String texturePath, TextureTypeData data) {
-        if (texturePath != null && data != null) {
-            pathToData.put(normalizePath(texturePath), data);
+        if (texturePath == null || data == null) return;
+        String normalized = normalizePath(texturePath);
+        pathToData.put(normalized, data);
+        for (String candidate : TextureKeyNormalizer.getLookupCandidates(normalized)) {
+            if (!candidate.equals(normalized)) {
+                pathToData.put(candidate, data);
+            }
+        }
+        if (normalized.indexOf(':') < 0 && normalized.indexOf('/') < 0) {
+            pathToData.put(TextureKeyNormalizer.toCanonicalTextureKey("minecraft", normalized), data);
         }
     }
 
     public TextureTypeData get(String texturePath) {
-        return texturePath == null ? null : pathToData.get(normalizePath(texturePath));
+        if (texturePath == null) return null;
+        for (String candidate : TextureKeyNormalizer.getLookupCandidates(normalizePath(texturePath))) {
+            TextureTypeData data = pathToData.get(candidate);
+            if (data != null) return data;
+        }
+        return null;
     }
 
     public void clear() {
         pathToData.clear();
     }
 
-    /** debug 模式下打出 texturePath → 数据类型 便于查看数据。 */
+    /** debug 模式下打出 texturePath → 数据类型 便于查看数据。trace 目标（stone/cobblestone）单独标出。 */
     public void dumpForDebug() {
         if (!MyCTMLib.debugMode) return;
         MyCTMLib.LOG.info("[CTMLibFusion] --- TextureRegistry (size={}) ---", pathToData.size());
         for (Map.Entry<String, TextureTypeData> e : pathToData.entrySet()) {
-            String type = e.getValue() != null ? e.getValue().getClass().getSimpleName() : "null";
-            MyCTMLib.LOG.info("[CTMLibFusion] TextureRegistry | path={} type={}", e.getKey(), type);
+            String type = e.getValue() != null ? e.getValue()
+                .getClass()
+                .getSimpleName() : "null";
+            String trace = MyCTMLib.isFusionTraceTarget(e.getKey()) ? " [trace]" : "";
+            MyCTMLib.LOG.info("[CTMLibFusion] TextureRegistry | path={} type={}{}", e.getKey(), type, trace);
         }
     }
 

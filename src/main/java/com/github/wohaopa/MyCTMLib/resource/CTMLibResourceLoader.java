@@ -49,9 +49,12 @@ public class CTMLibResourceLoader implements net.minecraft.client.resources.IRes
         loadModels(resourceManager);
         if (MyCTMLib.debugMode) {
             MyCTMLib.LOG.info("[CTMLibFusion] --- dump after onResourceManagerReload ---");
-            BlockStateRegistry.getInstance().dumpForDebug();
-            ModelRegistry.getInstance().dumpForDebug();
-            TextureRegistry.getInstance().dumpForDebug();
+            BlockStateRegistry.getInstance()
+                .dumpForDebug();
+            ModelRegistry.getInstance()
+                .dumpForDebug();
+            TextureRegistry.getInstance()
+                .dumpForDebug();
         }
     }
 
@@ -74,6 +77,12 @@ public class CTMLibResourceLoader implements net.minecraft.client.resources.IRes
                     IResource res = resourceManager.getResource(new ResourceLocation(domain, blockstatePath));
                     try (InputStream in = res.getInputStream()) {
                         blockStateParser.parseAndRegister(blockId, in);
+                        if (MyCTMLib.debugMode && MyCTMLib.isFusionTraceTarget(blockId)) {
+                            MyCTMLib.LOG.info(
+                                "[CTMLibFusion] BlockState loaded | blockId={} path={}",
+                                blockId,
+                                domain + ":" + blockstatePath);
+                        }
                     }
                 } catch (IOException ignored) {} catch (Exception e) {
                     if (MyCTMLib.debugMode) {
@@ -138,6 +147,16 @@ public class CTMLibResourceLoader implements net.minecraft.client.resources.IRes
             ModelData data = modelParser.parse(root);
             ModelRegistry.getInstance()
                 .put(modelId, data);
+            if (MyCTMLib.debugMode && MyCTMLib.isFusionTraceTarget(modelId)) {
+                MyCTMLib.LOG.info(
+                    "[CTMLibFusion] Model loaded | modelId={} path={} elements={} textures={}",
+                    modelId,
+                    domain + ":" + path,
+                    data.getElements()
+                        .size(),
+                    data.getTextures()
+                        .keySet());
+            }
         }
     }
 }

@@ -92,12 +92,30 @@ public class GTNHIntegrationHelper {
         return null;
     }
 
+    /**
+     * 设置 BlockCasings4 的 CTM 连接纹理开关。
+     * 使用反射以兼容不同 GT5-Unofficial 版本：dev jar 中该字段可能在编译期不可见。
+     */
     public static void setBlockCasings4CTM(boolean ctm) {
-        BlockCasings4.mConnectedMachineTextures = ctm;
+        try {
+            java.lang.reflect.Field f = BlockCasings4.class.getField("mConnectedMachineTextures");
+            f.setBoolean(null, ctm);
+        } catch (Throwable ignored) {
+            // 目标 GT5 版本可能无此字段，忽略
+        }
     }
 
+    /**
+     * 设置 GregtechMetaCasingBlocks3 的 CTM 连接纹理开关。
+     * 使用反射以兼容不同 GT5-Unofficial/GT++ 版本。
+     */
     public static void setGregtechMetaCasingBlocks3CTM(boolean ctm) {
-        GregtechMetaCasingBlocks3.mConnectedMachineTextures = ctm;
+        try {
+            java.lang.reflect.Field f = GregtechMetaCasingBlocks3.class.getField("mConnectedMachineTextures");
+            f.setBoolean(null, ctm);
+        } catch (Throwable ignored) {
+            // 目标版本可能无此字段，忽略
+        }
     }
 
     public static void setBWBlocksGlassCTM(boolean ctm) {

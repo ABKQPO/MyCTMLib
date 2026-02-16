@@ -37,12 +37,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import com.github.wohaopa.MyCTMLib.CTMConfig;
 import com.github.wohaopa.MyCTMLib.CTMIconManager;
 import com.github.wohaopa.MyCTMLib.InterpolatedIcon;
-import com.github.wohaopa.MyCTMLib.MyCTMLibMetadataSectionSerializer.MyCTMLibMetadataSection;
 import com.github.wohaopa.MyCTMLib.MyCTMLib;
+import com.github.wohaopa.MyCTMLib.MyCTMLibMetadataSectionSerializer.MyCTMLibMetadataSection;
 import com.github.wohaopa.MyCTMLib.NewTextureAtlasSprite;
-import com.github.wohaopa.MyCTMLib.texture.TextureMetadataSection;
 import com.github.wohaopa.MyCTMLib.blockstate.BlockStateRegistry;
 import com.github.wohaopa.MyCTMLib.model.ModelRegistry;
+import com.github.wohaopa.MyCTMLib.texture.TextureMetadataSection;
 import com.github.wohaopa.MyCTMLib.texture.TextureRegistry;
 import com.google.gson.JsonObject;
 
@@ -310,9 +310,12 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
     private void afterLoadTextureAtlas(net.minecraft.client.resources.IResourceManager p_110571_1_, CallbackInfo ci) {
         if (MyCTMLib.debugMode) {
             MyCTMLib.LOG.info("[CTMLibFusion] --- dump after loadTextureAtlas ---");
-            BlockStateRegistry.getInstance().dumpForDebug();
-            ModelRegistry.getInstance().dumpForDebug();
-            TextureRegistry.getInstance().dumpForDebug();
+            BlockStateRegistry.getInstance()
+                .dumpForDebug();
+            ModelRegistry.getInstance()
+                .dumpForDebug();
+            TextureRegistry.getInstance()
+                .dumpForDebug();
         }
     }
 

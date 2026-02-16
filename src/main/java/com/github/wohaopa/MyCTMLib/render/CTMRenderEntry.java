@@ -1,6 +1,8 @@
 package com.github.wohaopa.MyCTMLib.render;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 import net.minecraft.block.Block;
@@ -18,6 +20,7 @@ import com.github.wohaopa.MyCTMLib.model.ModelRegistry;
 import com.github.wohaopa.MyCTMLib.predicate.ConnectionPredicate;
 import com.github.wohaopa.MyCTMLib.predicate.PredicateRegistry;
 import com.github.wohaopa.MyCTMLib.texture.ConnectingTextureData;
+import com.github.wohaopa.MyCTMLib.texture.TextureKeyNormalizer;
 import com.github.wohaopa.MyCTMLib.texture.TextureRegistry;
 import com.github.wohaopa.MyCTMLib.texture.TextureTypeData;
 import com.github.wohaopa.MyCTMLib.texture.layout.ConnectingLayout;
@@ -29,7 +32,7 @@ import cpw.mods.fml.relauncher.SideOnly;
 
 /**
  * 新管线渲染入口：在 MixinRenderBlocks 六面 HEAD 处调用。
- * 先查 TextureRegistry（iconName）；若无则查 BlockStateRegistry → ModelRegistry 得该面纹理与谓词，再查 TextureRegistry 取 layout，算连接并绘制。
+ * 优先查 BlockStateRegistry → ModelRegistry 得该面纹理与谓词；若无匹配，再查 TextureRegistry(iconName)。
  */
 @SideOnly(Side.CLIENT)
 public final class CTMRenderEntry {
@@ -43,93 +46,195 @@ public final class CTMRenderEntry {
         String iconName = normalizeIconName(icon.getIconName());
         int meta = blockAccess.getBlockMetadata((int) x, (int) y, (int) z);
         boolean traceTarget = MyCTMLib.debugMode && MyCTMLib.isFusionTraceTarget(iconName);
-
-        TextureTypeData data = getConnectingData(iconName);
-        ConnectionPredicate predicate = PredicateRegistry.defaultPredicate();
-        ConnectingTextureData ctd = null;
-        IIcon useIcon = icon;
-
-        if (data instanceof ConnectingTextureData) {
-            ctd = (ConnectingTextureData) data;
-            if (traceTarget) {
-                MyCTMLib.LOG.info("[CTMLibFusion] tryRender branch=TextureRegistry iconName={}", iconName);
-                logTryRenderTable(iconName, getBlockId(block), true, "TextureRegistry", null, "draw");
-            }
-        } else {
-            String blockId = getBlockId(block);
-            if (!traceTarget && blockId != null && MyCTMLib.debugMode && MyCTMLib.isFusionTraceTarget(blockId)) {
-                traceTarget = true;
-            }
-            if (blockId == null) {
-                if (traceTarget) {
-                    MyCTMLib.LOG.info("[CTMLibFusion] tryRender skip: blockId=null for block={}", block);
-                    logTryRenderTable(iconName, null, false, "skip", null, "skip:blockId=null");
-                }
-                return false;
-            }
-            String modelId = BlockStateRegistry.getInstance()
-                .getModelId(blockId, meta);
-            if (modelId == null) {
-                if (traceTarget) {
-                    MyCTMLib.LOG.info("[CTMLibFusion] tryRender skip: modelId=null blockId={} meta={}", blockId, meta);
-                    logTryRenderTable(iconName, blockId, false, "skip", null, "skip:modelId=null");
-                }
-                return false;
-            }
-            ModelData modelData = ModelRegistry.getInstance()
-                .get(modelId);
-            if (modelData == null) {
-                if (traceTarget) {
-                    MyCTMLib.LOG.info("[CTMLibFusion] tryRender skip: modelData=null modelId={}", modelId);
-                    logTryRenderTable(iconName, blockId, false, "skip", modelId, "skip:modelData=null");
-                }
-                return false;
-            }
-            ModelFace faceData = getFaceForDirection(modelData, face);
-            if (faceData == null) return false;
-            String textureKey = faceData.getTextureKey();
-            if (textureKey == null) return false;
-            String texturePath = resolveTexturePath(textureKey, modelData.getTextures());
-            if (texturePath == null) return false;
-            String domain = modelId.indexOf(':') >= 0 ? modelId.substring(0, modelId.indexOf(':')) : "minecraft";
-            String fullIconPath = toBlockIconPath(domain, texturePath);
-            data = getConnectingData(fullIconPath);
-            if (!(data instanceof ConnectingTextureData)) {
-                if (traceTarget) {
-                    MyCTMLib.LOG.info(
-                        "[CTMLibFusion] tryRender branch=BlockState blockId={} modelId={} fullIconPath={} ctmlibFound={}",
-                        blockId,
-                        modelId,
-                        fullIconPath,
-                        data != null);
-                    logTryRenderTable(iconName, blockId, false, "BlockState", modelId, "skip:ctmlibNotFound");
-                }
-                return false;
-            }
-            ctd = (ConnectingTextureData) data;
-            predicate = faceData.getConnectionKey() != null
-                ? PredicateRegistry.getPredicate(faceData.getConnectionKey(), modelData.getConnections())
-                : PredicateRegistry.defaultPredicate();
-            if (predicate == null) predicate = PredicateRegistry.defaultPredicate();
-            useIcon = icon;
-            if (traceTarget) {
-                MyCTMLib.LOG.info(
-                    "[CTMLibFusion] tryRender branch=BlockState blockId={} modelId={} fullIconPath={}",
-                    blockId,
-                    modelId,
-                    fullIconPath);
-                logTryRenderTable(iconName, blockId, false, "BlockState", modelId, "draw");
-            }
+        String blockId = getBlockId(block);
+        if (!traceTarget && blockId != null && MyCTMLib.debugMode && MyCTMLib.isFusionTraceTarget(blockId)) {
+            traceTarget = true;
         }
 
+        // 优先 Model 分支：blockId + meta → BlockStateRegistry → ModelRegistry
+        if (blockId != null) {
+            String modelId = BlockStateRegistry.getInstance()
+                .getModelId(blockId, meta);
+            if (traceTarget && modelId == null) {
+                MyCTMLib.LOG.info(
+                    "[CTMLibFusion] tryRender Model skip | blockId={} meta={} modelId=null (BlockStateRegistry)",
+                    blockId,
+                    meta);
+            }
+            if (modelId != null) {
+                ModelData modelData = ModelRegistry.getInstance()
+                    .get(modelId);
+                if (traceTarget && modelData == null) {
+                    MyCTMLib.LOG.info(
+                        "[CTMLibFusion] tryRender Model skip | blockId={} modelId={} modelData=null (ModelRegistry)",
+                        blockId,
+                        modelId);
+                }
+                if (modelData != null) {
+                    List<ModelElement> elements = getElementsWithFace(modelData, face);
+                    if (traceTarget && elements.isEmpty()) {
+                        MyCTMLib.LOG.info(
+                            "[CTMLibFusion] tryRender Model skip | blockId={} modelId={} face={} elements=0 (no face)",
+                            blockId,
+                            modelId,
+                            face);
+                    }
+                    if (!elements.isEmpty()) {
+                        ConnectionPredicate predicate = PredicateRegistry.defaultPredicate();
+                        ModelFace firstFace = elements.get(0)
+                            .getFace(face);
+                        if (firstFace != null && firstFace.getConnectionKey() != null) {
+                            ConnectionPredicate p = PredicateRegistry
+                                .getPredicate(firstFace.getConnectionKey(), modelData.getConnections());
+                            if (p != null) predicate = p;
+                        }
+                        int mask = ConnectionState
+                            .computeMask(blockAccess, (int) x, (int) y, (int) z, face, block, meta, predicate);
+                        int brightness = block.getMixedBrightnessForBlock(blockAccess, (int) x, (int) y, (int) z);
+                        String domain = modelId.indexOf(':') >= 0 ? modelId.substring(0, modelId.indexOf(':'))
+                            : "minecraft";
+                        boolean drewAny = false;
+                        int skippedCount = 0;
+                        for (ModelElement el : elements) {
+                            ModelFace faceData = el.getFace(face);
+                            if (faceData == null) {
+                                if (traceTarget) skippedCount++;
+                                continue;
+                            }
+                            String textureKey = faceData.getTextureKey();
+                            if (textureKey == null) {
+                                if (traceTarget) {
+                                    MyCTMLib.LOG.info(
+                                        "[CTMLibFusion] tryRender Model element skip | textureKey=null face={}",
+                                        face);
+                                    skippedCount++;
+                                }
+                                continue;
+                            }
+                            String texturePath = resolveTexturePath(textureKey, modelData.getTextures());
+                            if (texturePath == null) {
+                                if (traceTarget) {
+                                    MyCTMLib.LOG.info(
+                                        "[CTMLibFusion] tryRender Model element skip | textureKey={} texturePath=null (unresolved)",
+                                        textureKey);
+                                    skippedCount++;
+                                }
+                                continue;
+                            }
+                            String textureLookupKey = TextureKeyNormalizer.toCanonicalTextureKey(domain, texturePath);
+                            TextureTypeData data = getConnectingData(textureLookupKey);
+                            if (!(data instanceof ConnectingTextureData texData)) {
+                                if (traceTarget) {
+                                    String dataType = data != null ? data.getClass()
+                                        .getSimpleName() : "null";
+                                    MyCTMLib.LOG.info(
+                                        "[CTMLibFusion] tryRender Model element skip | textureKey={} texturePath={} textureLookupKey={} TextureRegistry data={} (need ConnectingTextureData)",
+                                        textureKey,
+                                        texturePath,
+                                        textureLookupKey,
+                                        dataType);
+                                    skippedCount++;
+                                }
+                                continue;
+                            }
+                            ConnectingLayout layout = texData.getLayout();
+                            LayoutHandler handler = LayoutHandlers.get(layout);
+                            int[] pos = handler.getTilePosition(mask);
+                            float[] f = el.getFrom(), t = el.getTo();
+                            double relMinX = Math.min(f[0], t[0]) / 16.0;
+                            double relMaxX = Math.max(f[0], t[0]) / 16.0;
+                            double relMinY = Math.min(f[1], t[1]) / 16.0;
+                            double relMaxY = Math.max(f[1], t[1]) / 16.0;
+                            double relMinZ = Math.min(f[2], t[2]) / 16.0;
+                            double relMaxZ = Math.max(f[2], t[2]) / 16.0;
+                            FaceRenderer.drawFace(
+                                renderBlocks,
+                                x,
+                                y,
+                                z,
+                                face,
+                                icon,
+                                pos[0],
+                                pos[1],
+                                handler.getWidth(),
+                                handler.getHeight(),
+                                brightness,
+                                relMinX,
+                                relMaxX,
+                                relMinY,
+                                relMaxY,
+                                relMinZ,
+                                relMaxZ);
+                            drewAny = true;
+                        }
+                        if (drewAny) {
+                            if (traceTarget) {
+                                MyCTMLib.LOG.info(
+                                    "[CTMLibFusion] tryRender branch=Model blockId={} modelId={} face={} elements={} mask={}",
+                                    blockId,
+                                    modelId,
+                                    face,
+                                    elements.size(),
+                                    mask);
+                                logTryRenderTable(iconName, blockId, false, "Model", modelId, "draw");
+                            }
+                            return true;
+                        }
+                        if (traceTarget) {
+                            MyCTMLib.LOG.info(
+                                "[CTMLibFusion] tryRender Model skip | blockId={} modelId={} face={} elements={} drewAny=false skipped={} (all elements skipped)",
+                                blockId,
+                                modelId,
+                                face,
+                                elements.size(),
+                                skippedCount);
+                        }
+                    }
+                }
+            }
+        } else if (traceTarget) {
+            MyCTMLib.LOG.info("[CTMLibFusion] tryRender Model skip | blockId=null (block not in registry)");
+        }
+
+        // 回退到 TextureRegistry(iconName)
+        TextureTypeData data = getConnectingData(iconName);
+        if (!(data instanceof ConnectingTextureData ctd)) {
+            if (traceTarget) {
+                String dataType = data != null ? data.getClass()
+                    .getSimpleName() : "null";
+                MyCTMLib.LOG.info(
+                    "[CTMLibFusion] tryRender TextureRegistry skip | iconName={} data={} (need ConnectingTextureData), fallback to vanilla",
+                    iconName,
+                    dataType);
+            }
+            return false;
+        }
+        ConnectionPredicate predicate = PredicateRegistry.defaultPredicate();
         ConnectingLayout layout = ctd.getLayout();
         LayoutHandler handler = LayoutHandlers.get(layout);
         int mask = ConnectionState.computeMask(blockAccess, (int) x, (int) y, (int) z, face, block, meta, predicate);
         int[] pos = handler.getTilePosition(mask);
-        int tileX = pos[0], tileY = pos[1];
         int brightness = block.getMixedBrightnessForBlock(blockAccess, (int) x, (int) y, (int) z);
         FaceRenderer.drawFace(
-            renderBlocks, x, y, z, face, useIcon, tileX, tileY, handler.getWidth(), handler.getHeight(), brightness);
+            renderBlocks,
+            x,
+            y,
+            z,
+            face,
+            icon,
+            pos[0],
+            pos[1],
+            handler.getWidth(),
+            handler.getHeight(),
+            brightness);
+        if (traceTarget) {
+            MyCTMLib.LOG.info(
+                "[CTMLibFusion] tryRender branch=TextureRegistry iconName={} face={} mask={}",
+                iconName,
+                face,
+                mask);
+            logTryRenderTable(iconName, blockId, true, "TextureRegistry", null, "draw");
+        }
         return true;
     }
 
@@ -145,17 +250,19 @@ public final class CTMRenderEntry {
         return null;
     }
 
-    private static ModelFace getFaceForDirection(ModelData modelData, ForgeDirection face) {
+    private static List<ModelElement> getElementsWithFace(ModelData modelData, ForgeDirection face) {
+        List<ModelElement> out = new ArrayList<>();
         for (ModelElement el : modelData.getElements()) {
-            ModelFace f = el.getFace(face);
-            if (f != null) return f;
+            if (el.getFace(face) != null) out.add(el);
         }
-        return null;
+        return out;
     }
 
     private static String resolveTexturePath(String key, Map<String, String> textures) {
         if (key == null || textures == null) return null;
-        String v = textures.get(key);
+        String lookupKey = key.startsWith("#") ? key.substring(1)
+            .trim() : key;
+        String v = textures.get(lookupKey);
         if (v != null && v.startsWith("#")) return resolveTexturePath(
             v.substring(1)
                 .trim(),
@@ -163,32 +270,20 @@ public final class CTMRenderEntry {
         return v;
     }
 
-    private static String toBlockIconPath(String domain, String path) {
-        if (path == null) return null;
-        if (path.contains(":")) return path;
-        String p = path.replace("block/", "blocks/");
-        return domain + ":" + p;
-    }
-
     /**
-     * 从 TextureRegistry 查找 ConnectingTextureData。1.7.10 注册时 textureName 可能为短名（如 "stone"），
-     * 查找时可能为 "minecraft:stone"，故先查 key 再查 path 部分。
+     * 从 TextureRegistry 查找 ConnectingTextureData。使用 TextureKeyNormalizer 多键回退，
+     * 兼容 1.7.10 短名（cobblestone）、模型路径（minecraft:block/cobblestone）等格式。
      */
     private static TextureTypeData getConnectingData(String key) {
-        TextureTypeData data = TextureRegistry.getInstance()
+        return TextureRegistry.getInstance()
             .get(key);
-        if (data == null && key != null && key.indexOf(':') >= 0) {
-            data = TextureRegistry.getInstance()
-                .get(key.substring(key.indexOf(':') + 1));
-        }
-        return data;
     }
 
-    /** 仅对 stone/cobblestone 打表：一行汇总 icon / blockId / ctdFromIcon / branch / modelId / result */
+    /** 仅对 stone/cobblestone 打表：一行汇总 icon / blockId / ctdFromIcon / branch / modelId / result / face */
     private static void logTryRenderTable(String iconName, String blockId, boolean ctdFromIcon, String branch,
         String modelId, String result) {
         MyCTMLib.LOG.info(
-            "[CTMLibFusion] tryRender | icon={} blockId={} ctdFromIcon={} branch={} modelId={} result={}",
+            "[CTMLibFusion] tryRender OK | icon={} blockId={} ctdFromIcon={} branch={} modelId={} result={}",
             iconName,
             blockId != null ? blockId : "-",
             ctdFromIcon,
@@ -214,7 +309,17 @@ public final class CTMRenderEntry {
         int tileY = 0;
         int brightness = 15728880;
         FaceRenderer.drawFace(
-            renderBlocks, x, y, z, face, icon, tileX, tileY, handler.getWidth(), handler.getHeight(), brightness);
+            renderBlocks,
+            x,
+            y,
+            z,
+            face,
+            icon,
+            tileX,
+            tileY,
+            handler.getWidth(),
+            handler.getHeight(),
+            brightness);
         return true;
     }
 

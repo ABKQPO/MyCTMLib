@@ -2,11 +2,11 @@ package com.github.wohaopa.MyCTMLib.mixins;
 
 import java.util.Arrays;
 
+import net.minecraft.client.renderer.texture.TextureUtil;
+
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
-
-import net.minecraft.client.renderer.texture.TextureUtil;
 
 /**
  * 修复原版 TextureUtil.generateMipmapData 的 ArrayIndexOutOfBoundsException。
@@ -18,11 +18,7 @@ import net.minecraft.client.renderer.texture.TextureUtil;
 @Mixin(TextureUtil.class)
 public class MixinTextureUtil {
 
-    @ModifyVariable(
-        method = "generateMipmapData",
-        at = @At("HEAD"),
-        index = 2,
-        argsOnly = true)
+    @ModifyVariable(method = "generateMipmapData", at = @At("HEAD"), index = 2, argsOnly = true)
     @SuppressWarnings("unused")
     private static int[][] padFrameData(int[][] frameData, int mipmapLevels, int width) {
         int required = mipmapLevels + 1;
