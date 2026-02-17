@@ -6,7 +6,6 @@ import static com.github.wohaopa.MyCTMLib.Textures.ctmIconMap;
 import static com.github.wohaopa.MyCTMLib.Textures.ctmRandomMap;
 import static com.github.wohaopa.MyCTMLib.Textures.ctmReplaceMap;
 import static com.github.wohaopa.MyCTMLib.Textures.gtBWBlocksGlassCTM;
-import static com.github.wohaopa.MyCTMLib.Textures.gtBlockCasings4CTM;
 import static com.github.wohaopa.MyCTMLib.Textures.gtGregtechMetaCasingBlocks3CTM;
 
 import net.minecraft.client.resources.SimpleReloadableResourceManager;
@@ -30,10 +29,8 @@ public class MixinSimpleReloadableResourceManager {
         ctmReplaceMap.clear();
         ctmRandomMap.clear();
         if (isInit && Loader.isModLoaded("gregtech")) {
-            GTNHIntegrationHelper.setBlockCasings4CTM(true);
             GTNHIntegrationHelper.setGregtechMetaCasingBlocks3CTM(true);
             GTNHIntegrationHelper.setBWBlocksGlassCTM(true);
-            gtBlockCasings4CTM = false;
             gtGregtechMetaCasingBlocks3CTM = false;
             gtBWBlocksGlassCTM = false;
         }

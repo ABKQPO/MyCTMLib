@@ -5,7 +5,6 @@ import static com.github.wohaopa.MyCTMLib.Textures.ctmIconMap;
 import static com.github.wohaopa.MyCTMLib.Textures.ctmRandomMap;
 import static com.github.wohaopa.MyCTMLib.Textures.ctmReplaceMap;
 import static com.github.wohaopa.MyCTMLib.Textures.gtBWBlocksGlassCTM;
-import static com.github.wohaopa.MyCTMLib.Textures.gtBlockCasings4CTM;
 import static com.github.wohaopa.MyCTMLib.Textures.gtGregtechMetaCasingBlocks3CTM;
 
 import java.io.IOException;
@@ -197,7 +196,7 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
 
             CTMIconManager ctmManager = builder.buildAndInit();
             ctmIconMap.put(textureName, ctmManager);
-            
+
             cir.setReturnValue(currentBase);
         } catch (Exception e) {
             // System.out.println("[CTMLib] Error: " + e.getMessage());
@@ -208,11 +207,6 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
      * 修复代码所用的方法，移动到这里
      */
     private void updateGTNHFlags(String connectionTexture) {
-        if (connectionTexture.startsWith("gregtech:iconsets/MACHINE_CASING_FUSION_")
-            && connectionTexture.endsWith("_ctm")
-            && Loader.isModLoaded("gregtech")) {
-            gtBlockCasings4CTM = true;
-        }
 
         if (connectionTexture.startsWith("miscutils:iconsets/MACHINE_CASING_FUSION_")
             && connectionTexture.endsWith("_ctm")

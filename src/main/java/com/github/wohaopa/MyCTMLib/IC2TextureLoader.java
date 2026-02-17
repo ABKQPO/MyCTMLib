@@ -67,12 +67,6 @@ public class IC2TextureLoader {
                                 .replace("textures/blocks/", "")
                                 .replace(".png", "");
 
-                            if (connectTextureName.startsWith("gregtech:iconsets/MACHINE_CASING_FUSION_")
-                                && connectTexture.endsWith("_ctm")
-                                && Loader.isModLoaded("gregtech")) {
-                                gtBlockCasings4CTM = true;
-                            }
-
                             if (connectTextureName.startsWith("miscutils:iconsets/MACHINE_CASING_FUSION_")
                                 && connectTexture.endsWith("_ctm")
                                 && Loader.isModLoaded("gregtech")) {
