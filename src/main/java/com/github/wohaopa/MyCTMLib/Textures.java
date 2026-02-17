@@ -22,7 +22,6 @@ public class Textures {
     public static Map<String, String> ctmAltMap = new ConcurrentHashMap<>();
     public static Map<String, List<CTMIconManager>> ctmRandomMap = new ConcurrentHashMap<>();
 
-    public static boolean gtBlockCasings4CTM = false;
     public static boolean gtGregtechMetaCasingBlocks3CTM = false;
     public static boolean gtBWBlocksGlassCTM = false;
 
@@ -53,7 +52,6 @@ public class Textures {
 
         boolean result = ctmIconMap.containsKey(icon);
         if (Loader.isModLoaded("gregtech")) {
-            if (gtBlockCasings4CTM) GTNHIntegrationHelper.setBlockCasings4CTM(false);
             if (gtGregtechMetaCasingBlocks3CTM) GTNHIntegrationHelper.setGregtechMetaCasingBlocks3CTM(false);
             if (gtBWBlocksGlassCTM) GTNHIntegrationHelper.setBWBlocksGlassCTM(false);
         }

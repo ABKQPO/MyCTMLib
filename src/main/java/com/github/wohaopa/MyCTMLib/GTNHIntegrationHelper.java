@@ -22,7 +22,6 @@ import gregtech.api.interfaces.IBlockWithTextures;
 import gregtech.api.interfaces.IIconContainer;
 import gregtech.api.interfaces.ITexture;
 import gregtech.api.interfaces.tileentity.ITexturedTileEntity;
-import gregtech.common.blocks.BlockCasings4;
 import gregtech.common.blocks.BlockCasings5;
 import gregtech.common.blocks.BlockMachines;
 import gregtech.common.render.GTCopiedBlockTextureRender;
@@ -90,10 +89,6 @@ public class GTNHIntegrationHelper {
         }
 
         return null;
-    }
-
-    public static void setBlockCasings4CTM(boolean ctm) {
-        BlockCasings4.mConnectedMachineTextures = ctm;
     }
 
     public static void setGregtechMetaCasingBlocks3CTM(boolean ctm) {
