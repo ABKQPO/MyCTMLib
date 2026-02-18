@@ -76,7 +76,7 @@ public final class CTMRenderEntry {
                             if (faceData == null) continue;
                             String textureKey = faceData.getTextureKey();
                             if (textureKey == null) continue;
-                            String texturePath = resolveTexturePath(textureKey, modelData.getTextures());
+                            String texturePath = TextureKeyNormalizer.resolveTexturePath(textureKey, modelData.getTextures());
                             if (texturePath == null) continue;
                             String textureLookupKey = TextureKeyNormalizer.toCanonicalTextureKey(domain, texturePath);
                             TextureTypeData data = getConnectingData(textureLookupKey);
@@ -234,7 +234,7 @@ public final class CTMRenderEntry {
                             if (faceData == null) continue;
                             String textureKey = faceData.getTextureKey();
                             if (textureKey == null) continue;
-                            String texturePath = resolveTexturePath(textureKey, modelData.getTextures());
+                            String texturePath = TextureKeyNormalizer.resolveTexturePath(textureKey, modelData.getTextures());
                             if (texturePath == null) continue;
                             String textureLookupKey = TextureKeyNormalizer.toCanonicalTextureKey(domain, texturePath);
                             skipModelId = modelId;
@@ -332,18 +332,6 @@ public final class CTMRenderEntry {
             if (el.getFace(face) != null) out.add(el);
         }
         return out;
-    }
-
-    private static String resolveTexturePath(String key, Map<String, String> textures) {
-        if (key == null || textures == null) return null;
-        String lookupKey = key.startsWith("#") ? key.substring(1)
-            .trim() : key;
-        String v = textures.get(lookupKey);
-        if (v != null && v.startsWith("#")) return resolveTexturePath(
-            v.substring(1)
-                .trim(),
-            textures);
-        return v;
     }
 
     /**

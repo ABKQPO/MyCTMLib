@@ -142,10 +142,11 @@ public class ModelParser {
         for (Map.Entry<String, JsonElement> e : tex.entrySet()) {
             if (e.getValue()
                 .isJsonPrimitive()) {
-                out.put(
-                    e.getKey(),
-                    e.getValue()
-                        .getAsString());
+                String key = e.getKey();
+                String storageKey = key.startsWith("#") ? key.substring(1)
+                    .trim() : key;
+                out.put(storageKey, e.getValue()
+                    .getAsString());
             }
         }
         return out;

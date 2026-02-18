@@ -177,7 +177,7 @@ public class CTMLibResourceLoader implements net.minecraft.client.resources.IRes
         Set<String> resolvedPaths = new HashSet<>();
         for (String value : textures.values()) {
             if (value == null) continue;
-            String resolved = value.startsWith("#") ? resolveTexturePath(value, textures) : value;
+            String resolved = value.startsWith("#") ? TextureKeyNormalizer.resolveTexturePath(value, textures) : value;
             if (resolved != null && !resolved.startsWith("#")) {
                 resolvedPaths.add(resolved);
             }
@@ -207,19 +207,6 @@ public class CTMLibResourceLoader implements net.minecraft.client.resources.IRes
                 }
             }
         }
-    }
-
-    /** 递归解析 #key 引用，与 CTMRenderEntry 逻辑一致。 */
-    private static String resolveTexturePath(String key, Map<String, String> textures) {
-        if (key == null || textures == null) return null;
-        String lookupKey = key.startsWith("#") ? key.substring(1)
-            .trim() : key;
-        String v = textures.get(lookupKey);
-        if (v != null && v.startsWith("#")) {
-            return resolveTexturePath(v.substring(1)
-                .trim(), textures);
-        }
-        return v;
     }
 
     /**

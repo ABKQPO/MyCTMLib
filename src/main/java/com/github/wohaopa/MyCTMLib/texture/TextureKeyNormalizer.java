@@ -2,8 +2,11 @@ package com.github.wohaopa.MyCTMLib.texture;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * 纹理键规范化工具。统一模型纹理路径与 TextureRegistry 查找键的格式。
@@ -68,6 +71,36 @@ public final class TextureKeyNormalizer {
             pathPart = "blocks/" + pathPart;
         }
         return d + ":" + pathPart;
+    }
+
+    /**
+     * 递归解析 #key 引用，支持引用链（如 "#particle" -> "#all" -> "stone"）及循环检测。
+     * 兼容两种 Map 存储：key 带 #（如 "#all"）或不带 #（如 "all"）。
+     *
+     * @param key      纹理引用，如 "#all" 或 "all"
+     * @param textures 模型 textures Map
+     * @return 解析后的纹理路径，或 null
+     */
+    public static String resolveTexturePath(String key, Map<String, String> textures) {
+        return resolveTexturePath(key, textures, new HashSet<String>());
+    }
+
+    private static String resolveTexturePath(String key, Map<String, String> textures, Set<String> visiting) {
+        if (key == null || textures == null) return null;
+        String lookupKey = key.startsWith("#") ? key.substring(1)
+            .trim() : key;
+        if (visiting.contains(lookupKey)) return null;
+        visiting.add(lookupKey);
+        try {
+            String v = textures.get(key);
+            if (v == null && key.startsWith("#")) v = textures.get(lookupKey);
+            if (v != null && v.startsWith("#")) {
+                return resolveTexturePath(v, textures, visiting);
+            }
+            return v;
+        } finally {
+            visiting.remove(lookupKey);
+        }
     }
 
     /**
