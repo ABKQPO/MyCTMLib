@@ -44,6 +44,7 @@ import com.github.wohaopa.MyCTMLib.NewTextureAtlasSprite;
 import com.github.wohaopa.MyCTMLib.blockstate.BlockStateRegistry;
 import com.github.wohaopa.MyCTMLib.model.ModelRegistry;
 import com.github.wohaopa.MyCTMLib.resource.BlockTextureDumpUtil;
+import com.github.wohaopa.MyCTMLib.resource.DebugErrorCollector;
 import com.github.wohaopa.MyCTMLib.texture.TextureMetadataSection;
 import com.github.wohaopa.MyCTMLib.texture.TextureRegistry;
 import com.google.gson.JsonObject;
@@ -91,7 +92,12 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
                         .put(textureName, ((TextureMetadataSection) ctmlibSec).getData());
                     hadCtmlib = true;
                 }
-            } catch (Exception ignored) {}
+            } catch (Exception e) {
+                if (MyCTMLib.debugMode) {
+                    DebugErrorCollector.getInstance()
+                        .add("texture_mixin", textureName, e);
+                }
+            }
 
             if (!(resource instanceof SimpleResource simple)) {
                 if (hadCtmlib) {

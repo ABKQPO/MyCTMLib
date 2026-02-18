@@ -18,7 +18,7 @@ import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
 
 /**
- * 解析 models/block/*.json 或 blockmodel/*.json。
+ * 解析 models/block/*.json（标准路径 assets/&lt;modid&gt;/models/block/）。
  * 仅当 loader 为 "myctmlib:model" 或 "ctmlib:model" 且 type 为 "connection" 或 "base" 时解析。
  */
 public class ModelParser {

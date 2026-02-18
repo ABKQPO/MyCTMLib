@@ -1,11 +1,17 @@
 package com.github.wohaopa.MyCTMLib.resource;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 
 import net.minecraft.block.Block;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.resources.data.IMetadataSection;
 import net.minecraft.client.resources.IReloadableResourceManager;
 import net.minecraft.client.resources.IResource;
 import net.minecraft.client.resources.IResourceManager;
@@ -18,6 +24,7 @@ import com.github.wohaopa.MyCTMLib.model.ModelData;
 import com.github.wohaopa.MyCTMLib.model.ModelParser;
 import com.github.wohaopa.MyCTMLib.model.ModelRegistry;
 import com.github.wohaopa.MyCTMLib.texture.TextureKeyNormalizer;
+import com.github.wohaopa.MyCTMLib.texture.TextureMetadataSection;
 import com.github.wohaopa.MyCTMLib.texture.TextureRegistry;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -26,7 +33,7 @@ import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
 /**
- * 资源重载时清空 BlockState/Model 注册表并尝试加载 blockstates/*.json 与 models/block/*.json。
+ * 资源重载时清空 BlockState/Model 注册表并尝试加载 blockstates/*.json 与 models/block/*.json（标准路径 assets/&lt;modid&gt;/models/block/）。
  * 在 Mod 入口注册为 IResourceManagerReloadListener。
  */
 @SideOnly(Side.CLIENT)
@@ -42,6 +49,8 @@ public class CTMLibResourceLoader implements net.minecraft.client.resources.IRes
             .clear();
         ModelRegistry.getInstance()
             .clear();
+        DebugErrorCollector.getInstance()
+            .clear();
 
         if (!(resourceManager instanceof IReloadableResourceManager)) {
             return;
@@ -56,6 +65,8 @@ public class CTMLibResourceLoader implements net.minecraft.client.resources.IRes
                 .dumpForDebug();
             TextureRegistry.getInstance()
                 .dumpForDebug();
+            DebugErrorCollector.getInstance()
+                .flushToFile(new File(Minecraft.getMinecraft().mcDataDir, "config/ctmlib_debug_errors.json"));
         }
     }
 
@@ -79,14 +90,24 @@ public class CTMLibResourceLoader implements net.minecraft.client.resources.IRes
                     try (InputStream in = res.getInputStream()) {
                         blockStateParser.parseAndRegister(TextureKeyNormalizer.normalizeDomain(blockId), in);
                     }
-                } catch (IOException ignored) {} catch (Exception e) {
+                } catch (IOException e) {
                     if (MyCTMLib.debugMode) {
+                        DebugErrorCollector.getInstance()
+                            .add("blockstate", domain + ":" + blockstatePath, e);
+                        MyCTMLib.LOG.warn("BlockState parse failed: " + domain + ":" + blockstatePath, e);
+                    }
+                } catch (Exception e) {
+                    if (MyCTMLib.debugMode) {
+                        DebugErrorCollector.getInstance()
+                            .add("blockstate", domain + ":" + blockstatePath, e);
                         MyCTMLib.LOG.warn("BlockState parse failed: " + domain + ":" + blockstatePath, e);
                     }
                 }
             }
         } catch (Throwable t) {
             if (MyCTMLib.debugMode) {
+                DebugErrorCollector.getInstance()
+                    .add("blockstate", "blockstate_scan", t);
                 MyCTMLib.LOG.warn("BlockState scan failed", t);
             }
         }
@@ -102,6 +123,8 @@ public class CTMLibResourceLoader implements net.minecraft.client.resources.IRes
                 loadModel(resourceManager, modelId);
             } catch (Throwable t) {
                 if (MyCTMLib.debugMode) {
+                    DebugErrorCollector.getInstance()
+                        .add("model", modelId, t);
                     MyCTMLib.LOG.warn("Model load failed: " + modelId, t);
                 }
             }
@@ -109,8 +132,8 @@ public class CTMLibResourceLoader implements net.minecraft.client.resources.IRes
     }
 
     /**
-     * 按 modelId（如 "modid:block/stone"）尝试加载并解析模型，写入 ModelRegistry。
-     * 先尝试 models/block/stone.json，再尝试 blockmodel/stone.json。
+     * 按 modelId（如 "modid:block/stone"）加载并解析模型，写入 ModelRegistry。
+     * 标准路径：assets/&lt;domain&gt;/models/block/&lt;name&gt;.json。
      */
     public void loadModel(IResourceManager resourceManager, String modelId) {
         int colon = modelId.indexOf(':');
@@ -119,13 +142,10 @@ public class CTMLibResourceLoader implements net.minecraft.client.resources.IRes
         String resourcePath = path.startsWith("block/") ? "models/" + path + ".json" : "models/block/" + path + ".json";
         try {
             tryLoadOneModel(resourceManager, domain, resourcePath, modelId);
-            return;
-        } catch (Exception ignored) {}
-        String simple = path.replace("block/", "");
-        try {
-            tryLoadOneModel(resourceManager, domain, "blockmodel/" + simple + ".json", modelId);
         } catch (Exception e) {
             if (MyCTMLib.debugMode) {
+                DebugErrorCollector.getInstance()
+                    .add("model", modelId, e);
                 MyCTMLib.LOG.warn("Model load failed: " + modelId, e);
             }
         }
@@ -142,6 +162,79 @@ public class CTMLibResourceLoader implements net.minecraft.client.resources.IRes
             ModelData data = modelParser.parse(root);
             ModelRegistry.getInstance()
                 .put(TextureKeyNormalizer.normalizeDomain(modelId), data);
+            prefillTextureRegistryForModel(resourceManager, domain, data);
         }
+    }
+
+    /**
+     * 根据模型引用的纹理路径预填充 TextureRegistry。
+     * 若已存在则跳过；若不存在则尝试加载纹理资源，有 ctmlib mcmeta 则注册；纹理不存在则静默跳过。
+     */
+    private void prefillTextureRegistryForModel(IResourceManager resourceManager, String modelDomain,
+        ModelData data) {
+        Map<String, String> textures = data.getTextures();
+        if (textures == null || textures.isEmpty()) return;
+        Set<String> resolvedPaths = new HashSet<>();
+        for (String value : textures.values()) {
+            if (value == null) continue;
+            String resolved = value.startsWith("#") ? resolveTexturePath(value, textures) : value;
+            if (resolved != null && !resolved.startsWith("#")) {
+                resolvedPaths.add(resolved);
+            }
+        }
+        TextureRegistry texReg = TextureRegistry.getInstance();
+        for (String texturePath : resolvedPaths) {
+            String lookupKey = TextureKeyNormalizer.toCanonicalTextureKey(modelDomain, texturePath);
+            if (lookupKey == null) continue;
+            if (texReg.get(lookupKey) != null) continue;
+            try {
+                ResourceLocation texRes = toTextureResourceLocation(modelDomain, texturePath);
+                if (texRes == null) continue;
+                IResource resource = resourceManager.getResource(texRes);
+                IMetadataSection sec = resource.getMetadata("ctmlib");
+                if (sec instanceof TextureMetadataSection tms) {
+                    texReg.put(lookupKey, tms.getData());
+                }
+            } catch (IOException e) {
+                if (MyCTMLib.debugMode) {
+                    DebugErrorCollector.getInstance()
+                        .add("texture_prefill", lookupKey, e);
+                }
+            } catch (Exception e) {
+                if (MyCTMLib.debugMode) {
+                    DebugErrorCollector.getInstance()
+                        .add("texture_prefill", lookupKey, e);
+                }
+            }
+        }
+    }
+
+    /** 递归解析 #key 引用，与 CTMRenderEntry 逻辑一致。 */
+    private static String resolveTexturePath(String key, Map<String, String> textures) {
+        if (key == null || textures == null) return null;
+        String lookupKey = key.startsWith("#") ? key.substring(1)
+            .trim() : key;
+        String v = textures.get(lookupKey);
+        if (v != null && v.startsWith("#")) {
+            return resolveTexturePath(v.substring(1)
+                .trim(), textures);
+        }
+        return v;
+    }
+
+    /**
+     * 将模型纹理路径转为 ResourceLocation。
+     * 如 ic2:block/blockAlloyGlass&0 → (ic2, textures/blocks/blockAlloyGlass&0)。
+     */
+    private static ResourceLocation toTextureResourceLocation(String modelDomain, String texturePath) {
+        String canonical = TextureKeyNormalizer.toCanonicalTextureKey(modelDomain, texturePath);
+        if (canonical == null) return null;
+        int colon = canonical.indexOf(':');
+        if (colon < 0) return null;
+        String domain = canonical.substring(0, colon);
+        String pathPart = canonical.substring(colon + 1);
+        if (pathPart.isEmpty()) return null;
+        String resourcePath = "textures/" + pathPart + ".png";
+        return new ResourceLocation(domain, resourcePath);
     }
 }
