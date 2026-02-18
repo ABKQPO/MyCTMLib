@@ -89,6 +89,6 @@ public final class PredicateRegistry {
      * 默认谓词（纯 TextureRegistry 路径、无 Model 时使用）：is_same_block。
      */
     public static ConnectionPredicate defaultPredicate() {
-        return IsSameBlockPredicate.INSTANCE;
+        return IsSameTexturePredicate.INSTANCE;
     }
 }
