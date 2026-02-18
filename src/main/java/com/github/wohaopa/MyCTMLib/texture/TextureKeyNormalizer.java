@@ -3,6 +3,7 @@ package com.github.wohaopa.MyCTMLib.texture;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * 纹理键规范化工具。统一模型纹理路径与 TextureRegistry 查找键的格式。
@@ -26,6 +27,19 @@ public final class TextureKeyNormalizer {
                     .replace(":", "&");
         }
         return name;
+    }
+
+    /**
+     * 将 domain:path 的 domain 转为小写，用于注册表存储与查找，避免大小写敏感导致失败。
+     */
+    public static String normalizeDomain(String key) {
+        if (key == null) return "";
+        int colon = key.indexOf(':');
+        if (colon >= 0) {
+            return key.substring(0, colon)
+                .toLowerCase(Locale.ROOT) + ":" + key.substring(colon + 1);
+        }
+        return key;
     }
 
     /**
@@ -82,6 +96,12 @@ public final class TextureKeyNormalizer {
             }
         } else if (colon < 0 && !out.contains(k)) {
             out.add(k);
+        }
+        if (colon >= 0) {
+            String domainLower = normalizeDomain(k);
+            if (!out.contains(domainLower)) {
+                out.add(domainLower);
+            }
         }
         return out;
     }

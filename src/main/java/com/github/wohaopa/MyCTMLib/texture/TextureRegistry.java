@@ -1,5 +1,6 @@
 package com.github.wohaopa.MyCTMLib.texture;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -44,6 +45,19 @@ public class TextureRegistry {
 
     public void clear() {
         pathToData.clear();
+    }
+
+    /** 供 RegistryDumpUtil 导出，按 TextureTypeData 去重后每个 value 保留一个 representative key。 */
+    public Map<String, TextureTypeData> getPathToDataForDump() {
+        Map<TextureTypeData, String> firstKeyPerValue = new LinkedHashMap<>();
+        for (Map.Entry<String, TextureTypeData> e : pathToData.entrySet()) {
+            firstKeyPerValue.putIfAbsent(e.getValue(), e.getKey());
+        }
+        Map<String, TextureTypeData> result = new LinkedHashMap<>();
+        for (Map.Entry<TextureTypeData, String> e : firstKeyPerValue.entrySet()) {
+            result.put(e.getValue(), e.getKey());
+        }
+        return result;
     }
 
     /** debug 模式下仅打出 size 摘要，避免刷屏。 */

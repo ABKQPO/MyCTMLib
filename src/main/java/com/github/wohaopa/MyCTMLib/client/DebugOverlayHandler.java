@@ -101,8 +101,8 @@ public class DebugOverlayHandler {
 
         ScaledResolution res = event.resolution;
         int lineHeight = mc.fontRenderer.FONT_HEIGHT;
-        int yPos = res.getScaledHeight() - 4 - lines.size() * (lineHeight + 2);
         int xPos = 4;
+        int yPos = 4;
         for (String line : lines) {
             mc.fontRenderer.drawStringWithShadow(line, xPos, yPos, 0xFFFFFF);
             yPos += lineHeight + 2;

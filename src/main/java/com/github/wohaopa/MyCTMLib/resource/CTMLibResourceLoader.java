@@ -3,6 +3,7 @@ package com.github.wohaopa.MyCTMLib.resource;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Iterator;
+import java.util.Locale;
 
 import net.minecraft.block.Block;
 import net.minecraft.client.resources.IReloadableResourceManager;
@@ -16,6 +17,7 @@ import com.github.wohaopa.MyCTMLib.blockstate.BlockStateRegistry;
 import com.github.wohaopa.MyCTMLib.model.ModelData;
 import com.github.wohaopa.MyCTMLib.model.ModelParser;
 import com.github.wohaopa.MyCTMLib.model.ModelRegistry;
+import com.github.wohaopa.MyCTMLib.texture.TextureKeyNormalizer;
 import com.github.wohaopa.MyCTMLib.texture.TextureRegistry;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -69,13 +71,13 @@ public class CTMLibResourceLoader implements net.minecraft.client.resources.IRes
                 if (!(key instanceof String)) continue;
                 String blockId = (String) key;
                 int colon = blockId.indexOf(':');
-                String domain = colon >= 0 ? blockId.substring(0, colon) : "minecraft";
+                String domain = colon >= 0 ? blockId.substring(0, colon).toLowerCase(Locale.ROOT) : "minecraft";
                 String path = colon >= 0 ? blockId.substring(colon + 1) : blockId;
                 String blockstatePath = "blockstates/" + path + ".json";
                 try {
                     IResource res = resourceManager.getResource(new ResourceLocation(domain, blockstatePath));
                     try (InputStream in = res.getInputStream()) {
-                        blockStateParser.parseAndRegister(blockId, in);
+                        blockStateParser.parseAndRegister(TextureKeyNormalizer.normalizeDomain(blockId), in);
                     }
                 } catch (IOException ignored) {} catch (Exception e) {
                     if (MyCTMLib.debugMode) {
@@ -112,7 +114,7 @@ public class CTMLibResourceLoader implements net.minecraft.client.resources.IRes
      */
     public void loadModel(IResourceManager resourceManager, String modelId) {
         int colon = modelId.indexOf(':');
-        String domain = colon >= 0 ? modelId.substring(0, colon) : "minecraft";
+        String domain = colon >= 0 ? modelId.substring(0, colon).toLowerCase(Locale.ROOT) : "minecraft";
         String path = colon >= 0 ? modelId.substring(colon + 1) : modelId;
         String resourcePath = path.startsWith("block/") ? "models/" + path + ".json" : "models/block/" + path + ".json";
         try {
@@ -139,7 +141,7 @@ public class CTMLibResourceLoader implements net.minecraft.client.resources.IRes
             if (!modelParser.isSupported(root)) return;
             ModelData data = modelParser.parse(root);
             ModelRegistry.getInstance()
-                .put(modelId, data);
+                .put(TextureKeyNormalizer.normalizeDomain(modelId), data);
         }
     }
 }

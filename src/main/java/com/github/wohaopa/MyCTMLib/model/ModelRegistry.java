@@ -1,11 +1,13 @@
 package com.github.wohaopa.MyCTMLib.model;
 
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.github.wohaopa.MyCTMLib.MyCTMLib;
+import com.github.wohaopa.MyCTMLib.texture.TextureKeyNormalizer;
 
 /**
  * modelId → ModelData 的注册表。
@@ -24,27 +26,34 @@ public class ModelRegistry {
     }
 
     public void put(String modelId, ModelData data) {
-        modelById.put(modelId, data);
+        modelById.put(TextureKeyNormalizer.normalizeDomain(modelId), data);
     }
 
     public ModelData get(String modelId) {
-        return modelById.get(modelId);
+        return modelById.get(TextureKeyNormalizer.normalizeDomain(modelId));
     }
 
     public void putTextureFallback(String texturePath, String modelId, int faceOrdinal) {
         TextureModelEntry e = new TextureModelEntry(modelId, faceOrdinal);
-        textureToModel.computeIfAbsent(texturePath, k -> new java.util.ArrayList<>())
+        textureToModel.computeIfAbsent(TextureKeyNormalizer.normalizeDomain(texturePath),
+            k -> new java.util.ArrayList<>())
             .add(e);
     }
 
     public List<TextureModelEntry> getModelsForTexture(String texturePath) {
-        List<TextureModelEntry> list = textureToModel.get(texturePath);
+        List<TextureModelEntry> list = textureToModel
+            .get(TextureKeyNormalizer.normalizeDomain(texturePath));
         return list != null ? Collections.unmodifiableList(list) : Collections.emptyList();
     }
 
     public void clear() {
         modelById.clear();
         textureToModel.clear();
+    }
+
+    /** 供 RegistryDumpUtil 导出，返回不可修改的 modelId → ModelData 副本。 */
+    public Map<String, ModelData> getModelByIdForDump() {
+        return Collections.unmodifiableMap(new LinkedHashMap<>(modelById));
     }
 
     /** debug 模式下仅打出 size 摘要，避免刷屏。 */

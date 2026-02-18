@@ -6,6 +6,7 @@ import java.util.Set;
 
 import net.minecraft.block.Block;
 
+import com.github.wohaopa.MyCTMLib.texture.TextureKeyNormalizer;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 
@@ -77,6 +78,16 @@ public final class PredicateRegistry {
             String blockId = json.get("block")
                 .getAsString();
             Block block = (Block) Block.blockRegistry.getObject(blockId);
+            if (block == null) {
+                String norm = TextureKeyNormalizer.normalizeDomain(blockId);
+                for (Object k : Block.blockRegistry.getKeys()) {
+                    if (k instanceof String
+                        && TextureKeyNormalizer.normalizeDomain((String) k).equals(norm)) {
+                        block = (Block) Block.blockRegistry.getObject((String) k);
+                        break;
+                    }
+                }
+            }
             if (block == null) {
                 throw new JsonParseException("Unknown block: " + blockId);
             }
