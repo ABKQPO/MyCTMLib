@@ -80,6 +80,11 @@ public class DebugOverlayHandler {
             case MODEL:
                 lines.add("modelId: " + hitInfo.getModelId());
                 lines.add("textureKey: " + hitInfo.getTextureKey());
+                if (trace.getTexRegGetIconLookupKey() != null) {
+                    Boolean synced = trace.getTexRegTexMapSynced();
+                    lines.add(
+                        "TexReg/TexMap: " + (Boolean.TRUE.equals(synced) ? "synced" : "OUT OF SYNC (getIcon null, fallback to block icon)"));
+                }
                 lines.add("layout: " + hitInfo.getLayout());
                 if (hitInfo.getMask() >= 0) {
                     lines.add("mask: 0x" + Integer.toHexString(hitInfo.getMask()));

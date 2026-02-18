@@ -1,10 +1,17 @@
 package com.github.wohaopa.MyCTMLib.texture;
 
+import java.util.List;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.client.renderer.texture.TextureMap;
+import net.minecraft.util.IIcon;
+
 import com.github.wohaopa.MyCTMLib.MyCTMLib;
+import com.github.wohaopa.MyCTMLib.mixins.AccessorTextureMap;
 
 /**
  * 纹理路径（如 "modid:blocks/stone"）→ 解析后的 TextureTypeData。
@@ -39,6 +46,25 @@ public class TextureRegistry {
         for (String candidate : TextureKeyNormalizer.getLookupCandidates(normalizePath(texturePath))) {
             TextureTypeData data = pathToData.get(candidate);
             if (data != null) return data;
+        }
+        return null;
+    }
+
+    /**
+     * 从 blocks TextureMap 的 mapRegisteredSprites 中按 texturePath 查找 IIcon。
+     * 若 TexReg 无该路径数据则返回 null；否则用 getLookupCandidates 依次尝试，找到即返回。
+     */
+    public IIcon getIcon(String texturePath) {
+        if (get(texturePath) == null) return null;
+        Object texObj = Minecraft.getMinecraft()
+            .getTextureManager()
+            .getTexture(TextureMap.locationBlocksTexture);
+        if (!(texObj instanceof TextureMap textureMap)) return null;
+        Map<String, TextureAtlasSprite> map = ((AccessorTextureMap) textureMap).getMapRegisteredSprites();
+        List<String> candidates = TextureKeyNormalizer.getLookupCandidates(normalizePath(texturePath));
+        for (String candidate : candidates) {
+            TextureAtlasSprite sprite = map.get(candidate);
+            if (sprite != null) return sprite;
         }
         return null;
     }

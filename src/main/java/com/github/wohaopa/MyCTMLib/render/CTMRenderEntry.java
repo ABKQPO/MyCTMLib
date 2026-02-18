@@ -81,6 +81,9 @@ public final class CTMRenderEntry {
                             String textureLookupKey = TextureKeyNormalizer.toCanonicalTextureKey(domain, texturePath);
                             TextureTypeData data = getConnectingData(textureLookupKey);
                             if (!(data instanceof ConnectingTextureData texData)) continue;
+                            IIcon drawIcon = TextureRegistry.getInstance()
+                                .getIcon(textureLookupKey);
+                            if (drawIcon == null) drawIcon = icon;
                             ConnectingLayout layout = texData.getLayout();
                             LayoutHandler handler = LayoutHandlers.get(layout);
                             int[] pos = handler.getTilePosition(mask);
@@ -97,7 +100,7 @@ public final class CTMRenderEntry {
                                 y,
                                 z,
                                 face,
-                                icon,
+                                drawIcon,
                                 pos[0],
                                 pos[1],
                                 handler.getWidth(),
@@ -244,6 +247,17 @@ public final class CTMRenderEntry {
                                 out.addStep("6. element texKey " + textureKey + " -> lookup " + textureLookupKey + " -> " + (data instanceof ConnectingTextureData ? "HIT" : "miss"));
                             }
                             if (data instanceof ConnectingTextureData texData) {
+                                IIcon modelIcon = TextureRegistry.getInstance()
+                                    .getIcon(textureLookupKey);
+                                if (out != null) {
+                                    if (modelIcon == null) {
+                                        out.addStep("7. TexReg.getIcon(" + textureLookupKey + ") -> null (TexReg/TexMap OUT OF SYNC, fallback to block icon)");
+                                        out.setTexRegTexMapSync(false, textureLookupKey);
+                                    } else {
+                                        out.addStep("7. TexReg.getIcon(" + textureLookupKey + ") -> HIT (TexReg/TexMap synced)");
+                                        out.setTexRegTexMapSync(true, textureLookupKey);
+                                    }
+                                }
                                 ConnectingLayout layout = texData.getLayout();
                                 LayoutHandler handler = LayoutHandlers.get(layout);
                                 int[] pos = handler.getTilePosition(mask);
@@ -251,7 +265,7 @@ public final class CTMRenderEntry {
                                     out.setTilePos(pos[0], pos[1]);
                                     out.setConnectionBits(mask);
                                 }
-                                return PipelineInfo.model(iconName, modelId, textureKey, layout, mask);
+                                return PipelineInfo.model(textureLookupKey, modelId, textureKey, layout, mask);
                             }
                             failedTexKeys.add(textureLookupKey);
                         }
@@ -270,7 +284,7 @@ public final class CTMRenderEntry {
         TextureTypeData data = getConnectingData(iconName);
         List<String> texRegCandidates = TextureKeyNormalizer.getLookupCandidates(iconName);
         if (out != null) {
-            out.addStep("7. TexReg(iconName) candidates " + texRegCandidates + " -> " + (data instanceof ConnectingTextureData ? "HIT" : "miss"));
+            out.addStep("8. TexReg(iconName) candidates " + texRegCandidates + " -> " + (data instanceof ConnectingTextureData ? "HIT" : "miss"));
         }
         if (data instanceof ConnectingTextureData ctd) {
             ConnectionPredicate predicate = PredicateRegistry.defaultPredicate();
@@ -289,7 +303,7 @@ public final class CTMRenderEntry {
 
         // Legacy
         boolean legacyHit = Textures.contain(iconName);
-        if (out != null) out.addStep("8. Legacy ctmIconMap(" + iconName + ") -> " + (legacyHit ? "HIT" : "miss"));
+        if (out != null) out.addStep("9. Legacy ctmIconMap(" + iconName + ") -> " + (legacyHit ? "HIT" : "miss"));
         if (legacyHit) {
             return PipelineInfo.legacy(iconName);
         }

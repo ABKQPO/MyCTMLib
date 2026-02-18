@@ -8,6 +8,7 @@
     "mixins": [],
     "client": [
         "AccessorTextureAtlasSprite",
+        "AccessorTextureMap",
         "AccessorSimpleReloadableResourceManager",
         "AccessorMinecraft",
         "AccessorSimpleResource",

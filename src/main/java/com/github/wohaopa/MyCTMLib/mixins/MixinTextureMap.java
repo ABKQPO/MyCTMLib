@@ -45,8 +45,11 @@ import com.github.wohaopa.MyCTMLib.blockstate.BlockStateRegistry;
 import com.github.wohaopa.MyCTMLib.model.ModelRegistry;
 import com.github.wohaopa.MyCTMLib.resource.BlockTextureDumpUtil;
 import com.github.wohaopa.MyCTMLib.resource.DebugErrorCollector;
+import com.github.wohaopa.MyCTMLib.resource.CTMLibResourceLoader;
+import com.github.wohaopa.MyCTMLib.texture.ConnectingTextureData;
 import com.github.wohaopa.MyCTMLib.texture.TextureMetadataSection;
 import com.github.wohaopa.MyCTMLib.texture.TextureRegistry;
+import com.github.wohaopa.MyCTMLib.texture.TextureTypeData;
 import com.google.gson.JsonObject;
 
 import cpw.mods.fml.client.FMLClientHandler;
@@ -281,6 +284,25 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
         return Minecraft.getMinecraft()
             .getResourceManager()
             .getResource(res);
+    }
+
+    /**
+     * 在 loadTextureAtlas 入口确保预载完成，并将 TexReg 中预载的 ConnectingTextureData 对应 key 注册到 mapRegisteredSprites，
+     * 使 Model 分支能从 TextureMap 取到正确 IIcon。仅对 blocks 图集执行。
+     */
+    @Inject(method = "loadTextureAtlas", at = @At("HEAD"))
+    private void beforeLoadTextureAtlas(net.minecraft.client.resources.IResourceManager resourceManager, CallbackInfo ci) {
+        if (basePath == null || !basePath.contains("blocks")) return;
+        CTMLibResourceLoader.ensureLoaded(resourceManager);
+        Map<String, TextureTypeData> pathToData = TextureRegistry.getInstance()
+            .getPathToDataForDump();
+        for (Map.Entry<String, TextureTypeData> e : pathToData.entrySet()) {
+            if (!(e.getValue() instanceof ConnectingTextureData)) continue;
+            String key = e.getKey();
+            if (!mapRegisteredSprites.containsKey(key)) {
+                mapRegisteredSprites.put(key, new NewTextureAtlasSprite(key));
+            }
+        }
     }
 
     /**

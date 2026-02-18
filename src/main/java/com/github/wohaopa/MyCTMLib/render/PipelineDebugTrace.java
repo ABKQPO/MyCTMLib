@@ -14,6 +14,10 @@ public final class PipelineDebugTrace {
     private String predicateUsed;
     private int[] tilePos;
     private int[] connectionBits;
+    /** TexReg/TexMap 同步状态：null=不适用, true=同步, false=TexReg.getIcon 返回 null（不同步） */
+    private Boolean texRegTexMapSynced;
+    /** TexReg.getIcon 的 lookupKey，用于 debug 展示 */
+    private String texRegGetIconLookupKey;
 
     public PipelineDebugTrace() {}
 
@@ -40,6 +44,19 @@ public final class PipelineDebugTrace {
         for (int d = 0; d < 8; d++) {
             connectionBits[d] = (mask & (1 << d)) != 0 ? 1 : 0;
         }
+    }
+
+    public void setTexRegTexMapSync(boolean synced, String lookupKey) {
+        this.texRegTexMapSynced = synced;
+        this.texRegGetIconLookupKey = lookupKey;
+    }
+
+    public Boolean getTexRegTexMapSynced() {
+        return texRegTexMapSynced;
+    }
+
+    public String getTexRegGetIconLookupKey() {
+        return texRegGetIconLookupKey;
     }
 
     public List<String> getSteps() {
