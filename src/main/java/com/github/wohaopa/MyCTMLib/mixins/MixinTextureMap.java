@@ -90,29 +90,11 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
                     TextureRegistry.getInstance()
                         .put(textureName, ((TextureMetadataSection) ctmlibSec).getData());
                     hadCtmlib = true;
-                    if (MyCTMLib.isFusionTraceTarget(textureName)) {
-                        MyCTMLib.LOG.info("[CTMLibFusion] TextureRegistry.put ctmlib textureName={}", textureName);
-                    }
                 }
             } catch (Exception ignored) {}
 
-            boolean trace = MyCTMLib.isFusionTraceTarget(textureName);
-            if (trace) {
-                com.github.wohaopa.MyCTMLib.MyCTMLib.LOG.info(
-                    "[CTMLibFusion] registerIcon trace textureName={} hadCtmlib={} resourceClass={}",
-                    textureName,
-                    hadCtmlib,
-                    resource != null ? resource.getClass()
-                        .getSimpleName() : "null");
-            }
-
             if (!(resource instanceof SimpleResource simple)) {
                 if (hadCtmlib) {
-                    if (trace) {
-                        com.github.wohaopa.MyCTMLib.MyCTMLib.LOG.info(
-                            "[CTMLibFusion] registerIcon trace textureName={} branch=putSpriteNonSimpleResource",
-                            textureName);
-                    }
                     TextureAtlasSprite sprite = new NewTextureAtlasSprite(textureName);
                     mapRegisteredSprites.put(textureName, sprite);
                     cir.setReturnValue(sprite);
@@ -128,22 +110,12 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
 
             if (ctmObj == null) {
                 if (hadCtmlib) {
-                    if (trace) {
-                        com.github.wohaopa.MyCTMLib.MyCTMLib.LOG.info(
-                            "[CTMLibFusion] registerIcon trace textureName={} branch=putSpriteCtmObjNull",
-                            textureName);
-                    }
                     TextureAtlasSprite sprite = new NewTextureAtlasSprite(textureName);
                     mapRegisteredSprites.put(textureName, sprite);
                     cir.setReturnValue(sprite);
                     cir.cancel();
                 }
                 return;
-            }
-
-            if (trace) {
-                com.github.wohaopa.MyCTMLib.MyCTMLib.LOG
-                    .info("[CTMLibFusion] registerIcon trace textureName={} branch=myctmlibPath", textureName);
             }
 
             CTMIconManager.Builder builder = CTMIconManager.builder();
@@ -306,12 +278,11 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
     }
 
     /**
-     * 图集加载完成后打出三个 Registry 的数据（仅 debug 模式）。
+     * 图集加载完成后打出三个 Registry 的 size 摘要（仅 debug 模式，避免刷屏）。
      */
     @Inject(method = "loadTextureAtlas", at = @At("RETURN"))
     private void afterLoadTextureAtlas(net.minecraft.client.resources.IResourceManager p_110571_1_, CallbackInfo ci) {
         if (MyCTMLib.debugMode) {
-            MyCTMLib.LOG.info("[CTMLibFusion] --- dump after loadTextureAtlas ---");
             BlockStateRegistry.getInstance()
                 .dumpForDebug();
             ModelRegistry.getInstance()

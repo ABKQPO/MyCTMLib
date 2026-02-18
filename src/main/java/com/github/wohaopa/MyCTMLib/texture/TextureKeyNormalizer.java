@@ -13,6 +13,22 @@ public final class TextureKeyNormalizer {
     private TextureKeyNormalizer() {}
 
     /**
+     * 规范化 icon 名用于 Registry 查找。与 IIcon.getIconName() 配合：
+     * 第二个冒号及之后替换为 &，与 MixinRenderBlocks / CTMRenderEntry / Textures 一致。
+     */
+    public static String normalizeIconName(String name) {
+        if (name == null) return "";
+        int first = name.indexOf(':');
+        int second = name.indexOf(':', first + 1);
+        if (second != -1) {
+            return name.substring(0, second) + "&"
+                + name.substring(second + 1)
+                    .replace(":", "&");
+        }
+        return name;
+    }
+
+    /**
      * 将模型纹理路径转为规范键。
      * - minecraft:block/cobblestone → minecraft:blocks/cobblestone
      * - block/cobblestone + domain → domain:blocks/cobblestone

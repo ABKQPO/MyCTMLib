@@ -14,6 +14,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import com.github.wohaopa.MyCTMLib.Textures;
 import com.github.wohaopa.MyCTMLib.render.CTMRenderEntry;
+import com.github.wohaopa.MyCTMLib.texture.TextureKeyNormalizer;
 
 /**
  * 一个用于注入 Minecraft 渲染流程的 Mixin 类，用于拦截和替代 {@link RenderBlocks} 中的方块面渲染逻辑，
@@ -52,7 +53,7 @@ public abstract class MixinRenderBlocks {
             return;
         }
 
-        String iconName = normalizeIconName(iIcon.getIconName());
+        String iconName = TextureKeyNormalizer.normalizeIconName(iIcon.getIconName());
 
         if (CTMRenderEntry
             .tryRender((RenderBlocks) (Object) this, blockAccess, block, x, y, z, iIcon, ForgeDirection.DOWN)) {
@@ -89,7 +90,7 @@ public abstract class MixinRenderBlocks {
             return;
         }
 
-        String iconName = normalizeIconName(iIcon.getIconName());
+        String iconName = TextureKeyNormalizer.normalizeIconName(iIcon.getIconName());
 
         if (CTMRenderEntry
             .tryRender((RenderBlocks) (Object) this, blockAccess, block, x, y, z, iIcon, ForgeDirection.UP)) {
@@ -119,7 +120,7 @@ public abstract class MixinRenderBlocks {
             return;
         }
 
-        String iconName = normalizeIconName(iIcon.getIconName());
+        String iconName = TextureKeyNormalizer.normalizeIconName(iIcon.getIconName());
 
         if (CTMRenderEntry
             .tryRender((RenderBlocks) (Object) this, blockAccess, block, x, y, z, iIcon, ForgeDirection.NORTH)) {
@@ -156,7 +157,7 @@ public abstract class MixinRenderBlocks {
             return;
         }
 
-        String iconName = normalizeIconName(iIcon.getIconName());
+        String iconName = TextureKeyNormalizer.normalizeIconName(iIcon.getIconName());
 
         if (CTMRenderEntry
             .tryRender((RenderBlocks) (Object) this, blockAccess, block, x, y, z, iIcon, ForgeDirection.SOUTH)) {
@@ -193,7 +194,7 @@ public abstract class MixinRenderBlocks {
             return;
         }
 
-        String iconName = normalizeIconName(iIcon.getIconName());
+        String iconName = TextureKeyNormalizer.normalizeIconName(iIcon.getIconName());
 
         if (CTMRenderEntry
             .tryRender((RenderBlocks) (Object) this, blockAccess, block, x, y, z, iIcon, ForgeDirection.WEST)) {
@@ -230,7 +231,7 @@ public abstract class MixinRenderBlocks {
             return;
         }
 
-        String iconName = normalizeIconName(iIcon.getIconName());
+        String iconName = TextureKeyNormalizer.normalizeIconName(iIcon.getIconName());
 
         if (CTMRenderEntry
             .tryRender((RenderBlocks) (Object) this, blockAccess, block, x, y, z, iIcon, ForgeDirection.EAST)) {
@@ -251,16 +252,4 @@ public abstract class MixinRenderBlocks {
         }
     }
 
-    /** 与 CTMRenderEntry 中 iconName 处理一致：第二个冒号及之后替换为 & */
-    private static String normalizeIconName(String name) {
-        if (name == null) return "";
-        int first = name.indexOf(':');
-        int second = name.indexOf(':', first + 1);
-        if (second != -1) {
-            return name.substring(0, second) + "&"
-                + name.substring(second + 1)
-                    .replace(":", "&");
-        }
-        return name;
-    }
 }

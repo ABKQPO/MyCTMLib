@@ -46,17 +46,10 @@ public class TextureRegistry {
         pathToData.clear();
     }
 
-    /** debug 模式下打出 texturePath → 数据类型 便于查看数据。trace 目标（stone/cobblestone）单独标出。 */
+    /** debug 模式下仅打出 size 摘要，避免刷屏。 */
     public void dumpForDebug() {
         if (!MyCTMLib.debugMode) return;
-        MyCTMLib.LOG.info("[CTMLibFusion] --- TextureRegistry (size={}) ---", pathToData.size());
-        for (Map.Entry<String, TextureTypeData> e : pathToData.entrySet()) {
-            String type = e.getValue() != null ? e.getValue()
-                .getClass()
-                .getSimpleName() : "null";
-            String trace = MyCTMLib.isFusionTraceTarget(e.getKey()) ? " [trace]" : "";
-            MyCTMLib.LOG.info("[CTMLibFusion] TextureRegistry | path={} type={}{}", e.getKey(), type, trace);
-        }
+        MyCTMLib.LOG.info("[CTMLibFusion] TextureRegistry size={}", pathToData.size());
     }
 
     private static String normalizePath(String path) {

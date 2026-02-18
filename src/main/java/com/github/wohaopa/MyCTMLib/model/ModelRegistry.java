@@ -47,13 +47,10 @@ public class ModelRegistry {
         textureToModel.clear();
     }
 
-    /** debug 模式下打出 modelId 列表便于查看数据。 */
+    /** debug 模式下仅打出 size 摘要，避免刷屏。 */
     public void dumpForDebug() {
         if (!MyCTMLib.debugMode) return;
-        MyCTMLib.LOG.info("[CTMLibFusion] --- ModelRegistry (size={}) ---", modelById.size());
-        for (String modelId : modelById.keySet()) {
-            MyCTMLib.LOG.info("[CTMLibFusion] ModelRegistry | modelId={}", modelId);
-        }
+        MyCTMLib.LOG.info("[CTMLibFusion] ModelRegistry size={}", modelById.size());
     }
 
     public static class TextureModelEntry {

@@ -63,12 +63,9 @@ public class BlockStateRegistry {
         return blockToVariants;
     }
 
-    /** debug 模式下打出 blockId → (variantKey → modelId) 便于查看数据。 */
+    /** debug 模式下仅打出 size 摘要，避免刷屏。 */
     public void dumpForDebug() {
         if (!MyCTMLib.debugMode) return;
-        MyCTMLib.LOG.info("[CTMLibFusion] --- BlockStateRegistry (size={}) ---", blockToVariants.size());
-        for (Map.Entry<String, Map<String, String>> e : blockToVariants.entrySet()) {
-            MyCTMLib.LOG.info("[CTMLibFusion] BlockStateRegistry | blockId={} variants={}", e.getKey(), e.getValue());
-        }
+        MyCTMLib.LOG.info("[CTMLibFusion] BlockStateRegistry size={}", blockToVariants.size());
     }
 }

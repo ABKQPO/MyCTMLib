@@ -68,9 +68,6 @@ public class NewTextureAtlasSprite extends TextureAtlasSprite {
                 return false;
             }
         } catch (IOException e) {
-            if (MyCTMLib.debugMode && MyCTMLib.isFusionTraceTarget(location.getResourcePath())) {
-                MyCTMLib.LOG.warn("[CTMLibFusion] NewTextureAtlasSprite.load failed: {}", fullLocation, e);
-            }
             return true;
         }
     }

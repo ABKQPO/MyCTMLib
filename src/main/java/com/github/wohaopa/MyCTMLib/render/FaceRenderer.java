@@ -5,8 +5,6 @@ import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.util.IIcon;
 import net.minecraftforge.common.util.ForgeDirection;
 
-import com.github.wohaopa.MyCTMLib.MyCTMLib;
-
 /**
  * 根据 (tileX, tileY) 与 layout 网格尺寸将纹理切成单格 UV，用 Tessellator 绘制单面一个 quad。
  * 当 renderBlocks.enableAO 为 true 时使用四角亮度/颜色（与环境光遮挡一致），否则使用 fallback 单值。
@@ -123,34 +121,6 @@ public final class FaceRenderer {
         double maxU = icon.getMinU() + (icon.getMaxU() - icon.getMinU()) * (tileX + 1) / gridW;
         double minV = icon.getMinV() + (icon.getMaxV() - icon.getMinV()) * tileY / gridH;
         double maxV = icon.getMinV() + (icon.getMaxV() - icon.getMinV()) * (tileY + 1) / gridH;
-
-        if (MyCTMLib.debugMode && icon != null && MyCTMLib.isFusionTraceTarget(icon.getIconName())) {
-            double iconSpanU = icon.getMaxU() - icon.getMinU();
-            double iconSpanV = icon.getMaxV() - icon.getMinV();
-            MyCTMLib.LOG.info(
-                "[CTMLibFusion] FaceRenderer UV | iconName={} iconSize={}x{}",
-                icon.getIconName(),
-                icon.getIconWidth(),
-                icon.getIconHeight());
-            MyCTMLib.LOG.info(
-                "[CTMLibFusion] FaceRenderer UV | iconBounds: minU={} maxU={} minV={} maxV={} spanU={} spanV={}",
-                icon.getMinU(),
-                icon.getMaxU(),
-                icon.getMinV(),
-                icon.getMaxV(),
-                iconSpanU,
-                iconSpanV);
-            MyCTMLib.LOG.info(
-                "[CTMLibFusion] FaceRenderer UV | tile=({},{}) grid={}x{} -> quadUV: minU={} maxU={} minV={} maxV={}",
-                tileX,
-                tileY,
-                gridW,
-                gridH,
-                minU,
-                maxU,
-                minV,
-                maxV);
-        }
 
         drawFace(renderBlocks, x, y, z, face, minU, maxU, minV, maxV, fallbackBrightness, 0, 1, 0, 1, 0, 1);
     }

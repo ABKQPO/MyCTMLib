@@ -16,22 +16,41 @@ import com.github.wohaopa.MyCTMLib.texture.TextureMetadataSectionSerializer;
 import cpw.mods.fml.client.event.ConfigChangedEvent;
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.Mod;
+import cpw.mods.fml.common.SidedProxy;
+import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.event.FMLLoadCompleteEvent;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
-@Mod(modid = MyCTMLib.MODID, version = "v1.2.5_28x", name = "MyCTMLib", acceptedMinecraftVersions = "[1.7.10]")
+@Mod(
+    modid = MyCTMLib.MODID,
+    version = "v1.2.5_28x",
+    name = "MyCTMLib",
+    acceptedMinecraftVersions = "[1.7.10]",
+    guiFactory = "com.github.wohaopa.MyCTMLib.client.CTMLibGuiFactory")
 public class MyCTMLib {
 
     public static boolean isInit = false;
     public static final String MODID = "MyCTMLib";
+    /** 供 CTMLibGuiConfig 等客户端组件获取配置。 */
+    public static MyCTMLib instance;
+
+    @SidedProxy(
+        clientSide = "com.github.wohaopa.MyCTMLib.client.ClientProxy",
+        serverSide = "com.github.wohaopa.MyCTMLib.CommonProxy")
+    public static com.github.wohaopa.MyCTMLib.CommonProxy proxy;
     public static final Logger LOG = LogManager.getLogger(MODID);
     public static boolean debugMode = false;
     /** 为 true 时在资源重载后导出 block_texture_dump.json 供迁移脚本使用。 */
     public static boolean dumpBlockTextureMapping = false;
     public Configuration configuration;
+
+    /** 供 CTMLibGuiConfig 等客户端组件获取配置。 */
+    public Configuration getConfiguration() {
+        return configuration;
+    }
 
     /** 仅对 stone/cobblestone 打表与过滤 [CTMLibFusion] 日志，避免无效刷屏。支持 blockId、modelId、iconName 等格式。 */
     public static boolean isFusionTraceTarget(String name) {
@@ -46,6 +65,7 @@ public class MyCTMLib {
 
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event) {
+        instance = this;
         // 只在客户端注册元数据序列化器
         if (FMLCommonHandler.instance()
             .getSide()
@@ -74,6 +94,11 @@ public class MyCTMLib {
             ((IReloadableResourceManager) Minecraft.getMinecraft()
                 .getResourceManager()).registerReloadListener(new CTMLibResourceLoader());
         }
+    }
+
+    @Mod.EventHandler
+    public void init(FMLInitializationEvent event) {
+        proxy.init(event);
     }
 
     @Mod.EventHandler
