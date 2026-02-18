@@ -102,4 +102,20 @@ public final class PredicateRegistry {
     public static ConnectionPredicate defaultPredicate() {
         return IsSameTexturePredicate.INSTANCE;
     }
+
+    /**
+     * 获取谓词的可读调试名。用于 Debug HUD。
+     *
+     * @param predicate     谓词实例
+     * @param connectionKey  Model 中的 connectionKey，可为 null 表示 default
+     * @return 如 "default (is_same_texture)" 或 "blue (is_same_block)"
+     */
+    public static String getPredicateDebugName(ConnectionPredicate predicate, String connectionKey) {
+        if (predicate == null) return "null";
+        String type = predicate.getDebugName();
+        if (connectionKey != null && !connectionKey.isEmpty()) {
+            return connectionKey + " (" + type + ")";
+        }
+        return "default (" + type + ")";
+    }
 }

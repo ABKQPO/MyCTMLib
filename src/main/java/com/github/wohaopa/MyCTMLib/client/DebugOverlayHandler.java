@@ -15,6 +15,7 @@ import net.minecraftforge.common.util.ForgeDirection;
 
 import com.github.wohaopa.MyCTMLib.MyCTMLib;
 import com.github.wohaopa.MyCTMLib.render.CTMRenderEntry;
+import com.github.wohaopa.MyCTMLib.render.PipelineDebugTrace;
 import com.github.wohaopa.MyCTMLib.render.PipelineInfo;
 
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
@@ -70,7 +71,8 @@ public class DebugOverlayHandler {
         lines.add(summary.toString());
 
         // 当前面（准星所指）完整管线信息
-        PipelineInfo hitInfo = CTMRenderEntry.getPipelineInfo(world, block, x, y, z, hitFace);
+        PipelineDebugTrace trace = new PipelineDebugTrace();
+        PipelineInfo hitInfo = CTMRenderEntry.getPipelineInfo(world, block, x, y, z, hitFace, trace);
         lines.add("--- " + SIDE_NAMES_FULL[hitSide] + " ---");
         lines.add("pipeline: " + hitInfo.getType());
         lines.add("icon: " + hitInfo.getIconName());
@@ -90,6 +92,7 @@ public class DebugOverlayHandler {
                 }
                 break;
             case LEGACY:
+                lines.add("legacy: ctmIconMap");
                 break;
             case VANILLA:
                 if (hitInfo.getSkipReason() != null && !hitInfo.getSkipReason()
@@ -97,6 +100,37 @@ public class DebugOverlayHandler {
                     lines.add("skip: " + hitInfo.getSkipReason());
                 }
                 break;
+        }
+
+        // 决策流程与退化原因
+        if (trace.getPredicateUsed() != null) {
+            lines.add("predicate: " + trace.getPredicateUsed());
+        }
+        if (trace.getTilePos() != null) {
+            lines.add("tile: (" + trace.getTilePos()[0] + ", " + trace.getTilePos()[1] + ")");
+        }
+        if (trace.getConnectionBits() != null) {
+            int[] bits = trace.getConnectionBits();
+            StringBuilder conn = new StringBuilder("conn: T TR R BR B BL L TL = ");
+            for (int i = 0; i < 8; i++) {
+                if (i > 0) conn.append(" ");
+                conn.append(bits[i]);
+            }
+            lines.add(conn.toString());
+        }
+        if (trace.getDegradationReason() != null && !trace.getDegradationReason()
+            .isEmpty()) {
+            lines.add("degrade: " + trace.getDegradationReason());
+        }
+        if (!trace.getSteps().isEmpty()) {
+            lines.add("--- decision ---");
+            int maxSteps = 8;
+            for (int i = 0; i < Math.min(trace.getSteps().size(), maxSteps); i++) {
+                lines.add(trace.getSteps().get(i));
+            }
+            if (trace.getSteps().size() > maxSteps) {
+                lines.add("... (" + (trace.getSteps().size() - maxSteps) + " more)");
+            }
         }
 
         ScaledResolution res = event.resolution;

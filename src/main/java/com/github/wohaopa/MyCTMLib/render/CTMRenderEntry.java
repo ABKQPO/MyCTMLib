@@ -146,7 +146,18 @@ public final class CTMRenderEntry {
      */
     public static PipelineInfo getPipelineInfo(IBlockAccess blockAccess, Block block, int x, int y, int z,
         ForgeDirection face) {
+        return getPipelineInfo(blockAccess, block, x, y, z, face, null);
+    }
+
+    /**
+     * 获取单面渲染管线信息，可选填充 trace 用于 Debug HUD 展示决策流程。
+     *
+     * @param out 当非 null 时填充决策步骤、退化原因、谓词、连接状态、瓦片坐标
+     */
+    public static PipelineInfo getPipelineInfo(IBlockAccess blockAccess, Block block, int x, int y, int z,
+        ForgeDirection face, PipelineDebugTrace out) {
         if (blockAccess == null || block == null) {
+            if (out != null) out.addStep("blockAccess=null or block=null");
             return PipelineInfo.vanilla("", "blockAccess=null");
         }
         int meta = blockAccess.getBlockMetadata(x, y, z);
@@ -154,34 +165,67 @@ public final class CTMRenderEntry {
         try {
             icon = block.getIcon(face.ordinal(), meta);
         } catch (Throwable t) {
+            if (out != null) out.addStep("getIcon failed: " + t.getMessage());
             return PipelineInfo.vanilla("", "getIcon failed");
         }
         if (icon == null) {
+            if (out != null) out.addStep("icon=null");
             return PipelineInfo.vanilla("", "icon=null");
         }
         String iconName = TextureKeyNormalizer.normalizeIconName(icon.getIconName());
         String blockId = getBlockId(block);
 
+        // 用于构建 Vanilla 时的 skipReason 与 trace
+        String skipModelId = null;
+        String skipTexKey = null;
+        String skipDetail = null;
+        List<String> failedTexKeys = new ArrayList<>();
+
+        if (out != null) {
+            out.addStep("1. blockId=" + (blockId != null ? blockId : "null (unregistered)"));
+            out.addStep("2. icon=" + iconName + ", meta=" + meta);
+        }
+
         // Model 分支
         if (blockId != null) {
             String modelId = BlockStateRegistry.getInstance()
                 .getModelId(blockId, meta);
+            if (out != null) {
+                out.addStep("3. BlockStateRegistry(" + blockId + "," + meta + ") -> " + (modelId != null ? "modelId=" + modelId : "no modelId"));
+            }
             if (modelId == null) {
-                // 继续往下，但记录 skip
+                skipDetail = "BlockStateRegistry(blockId,meta) -> no modelId";
+                if (out != null) out.setDegradationReason(skipDetail);
             } else {
                 ModelData modelData = ModelRegistry.getInstance()
                     .get(modelId);
-                if (modelData != null) {
+                if (out != null) {
+                    out.addStep("4. ModelRegistry.get(" + modelId + ") -> " + (modelData != null ? "modelData found" : "no modelData"));
+                }
+                if (modelData == null) {
+                    skipModelId = modelId;
+                    skipDetail = "ModelRegistry(modelId) -> no modelData";
+                    if (out != null) out.setDegradationReason(skipDetail);
+                } else {
                     List<ModelElement> elements = getElementsWithFace(modelData, face);
-                    if (!elements.isEmpty()) {
+                    if (out != null) out.addStep("5. elements with face: " + elements.size());
+                    if (elements.isEmpty()) {
+                        skipModelId = modelId;
+                        skipDetail = "model has no elements for face";
+                        if (out != null) out.setDegradationReason(skipDetail);
+                    } else {
                         ConnectionPredicate predicate = PredicateRegistry.defaultPredicate();
+                        String connectionKey = null;
                         ModelFace firstFace = elements.get(0)
                             .getFace(face);
                         if (firstFace != null && firstFace.getConnectionKey() != null) {
+                            connectionKey = firstFace.getConnectionKey();
                             ConnectionPredicate p = PredicateRegistry
-                                .getPredicate(firstFace.getConnectionKey(), modelData.getConnections());
+                                .getPredicate(connectionKey, modelData.getConnections());
                             if (p != null) predicate = p;
                         }
+                        if (out != null) out.setPredicateUsed(PredicateRegistry.getPredicateDebugName(predicate, connectionKey));
+
                         int mask = ConnectionState.computeMask(blockAccess, x, y, z, face, block, meta, predicate);
                         String domain = modelId.indexOf(':') >= 0 ? modelId.substring(0, modelId.indexOf(':'))
                             : "minecraft";
@@ -193,32 +237,81 @@ public final class CTMRenderEntry {
                             String texturePath = resolveTexturePath(textureKey, modelData.getTextures());
                             if (texturePath == null) continue;
                             String textureLookupKey = TextureKeyNormalizer.toCanonicalTextureKey(domain, texturePath);
+                            skipModelId = modelId;
+                            skipTexKey = textureLookupKey;
                             TextureTypeData data = getConnectingData(textureLookupKey);
-                            if (data instanceof ConnectingTextureData texData) {
-                                return PipelineInfo.model(iconName, modelId, textureKey, texData.getLayout(), mask);
+                            if (out != null) {
+                                out.addStep("6. element texKey " + textureKey + " -> lookup " + textureLookupKey + " -> " + (data instanceof ConnectingTextureData ? "HIT" : "miss"));
                             }
+                            if (data instanceof ConnectingTextureData texData) {
+                                ConnectingLayout layout = texData.getLayout();
+                                LayoutHandler handler = LayoutHandlers.get(layout);
+                                int[] pos = handler.getTilePosition(mask);
+                                if (out != null) {
+                                    out.setTilePos(pos[0], pos[1]);
+                                    out.setConnectionBits(mask);
+                                }
+                                return PipelineInfo.model(iconName, modelId, textureKey, layout, mask);
+                            }
+                            failedTexKeys.add(textureLookupKey);
                         }
-                        return PipelineInfo.vanilla(iconName, "no ConnectingTextureData (Model)");
+                        if (out != null) {
+                            out.setDegradationReason("model texKeys " + failedTexKeys + " not in TexReg; icon=" + iconName + " not in TexReg/Legacy");
+                        }
+                        // fall-through：不 return，继续检查 TextureRegistry 与 Legacy
                     }
                 }
             }
+        } else {
+            if (out != null) out.setDegradationReason("blockId=null (unregistered block)");
         }
 
         // TextureRegistry 分支
         TextureTypeData data = getConnectingData(iconName);
+        List<String> texRegCandidates = TextureKeyNormalizer.getLookupCandidates(iconName);
+        if (out != null) {
+            out.addStep("7. TexReg(iconName) candidates " + texRegCandidates + " -> " + (data instanceof ConnectingTextureData ? "HIT" : "miss"));
+        }
         if (data instanceof ConnectingTextureData ctd) {
             ConnectionPredicate predicate = PredicateRegistry.defaultPredicate();
             int mask = ConnectionState.computeMask(blockAccess, x, y, z, face, block, meta, predicate);
+            if (out != null) {
+                int[] pos = LayoutHandlers.get(ctd.getLayout()).getTilePosition(mask);
+                out.setPredicateUsed(PredicateRegistry.getPredicateDebugName(predicate, null));
+                out.setTilePos(pos[0], pos[1]);
+                out.setConnectionBits(mask);
+            }
             return PipelineInfo.textureRegistry(iconName, ctd.getLayout(), mask);
+        }
+        if (out != null && !(data instanceof ConnectingTextureData) && out.getDegradationReason() == null) {
+            out.setDegradationReason("TexReg(iconName) + candidates " + texRegCandidates + " -> miss");
         }
 
         // Legacy
-        if (Textures.contain(iconName)) {
+        boolean legacyHit = Textures.contain(iconName);
+        if (out != null) out.addStep("8. Legacy ctmIconMap(" + iconName + ") -> " + (legacyHit ? "HIT" : "miss"));
+        if (legacyHit) {
             return PipelineInfo.legacy(iconName);
         }
+        if (out != null && !legacyHit) {
+            String dr = out.getDegradationReason();
+            if (dr == null) out.setDegradationReason("Legacy ctmIconMap(iconName) -> miss");
+        }
 
-        // Vanilla
-        return PipelineInfo.vanilla(iconName, "no Model/TexReg/Legacy");
+        // Vanilla：根据上下文构建 skipReason
+        String skipReason = buildVanillaSkipReason(skipModelId, skipTexKey, skipDetail, iconName);
+        return PipelineInfo.vanilla(iconName, skipReason);
+    }
+
+    private static String buildVanillaSkipReason(String skipModelId, String skipTexKey, String skipDetail,
+        String iconName) {
+        if (skipDetail != null) {
+            return skipDetail;
+        }
+        if (skipModelId != null && skipTexKey != null) {
+            return "model tex key=" + skipTexKey + " not in TexReg; icon=" + iconName + " not in TexReg/Legacy";
+        }
+        return "no CTM in Model/TexReg, not in Legacy";
     }
 
     private static String getBlockId(Block block) {

@@ -27,4 +27,11 @@ public interface ConnectionPredicate {
      */
     boolean connect(IBlockAccess world, int x, int y, int z, ForgeDirection face, Block block, int meta, int dx, int dy,
         int dz);
+
+    /**
+     * 返回谓词的可读调试名。用于 Debug HUD。默认返回类名，子类可覆盖。
+     */
+    default String getDebugName() {
+        return getClass().getSimpleName();
+    }
 }
