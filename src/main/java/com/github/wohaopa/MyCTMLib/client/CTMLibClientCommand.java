@@ -13,6 +13,7 @@ import net.minecraft.util.EnumChatFormatting;
 import com.github.wohaopa.MyCTMLib.MyCTMLib;
 import com.github.wohaopa.MyCTMLib.resource.BlockTextureDumpUtil;
 import com.github.wohaopa.MyCTMLib.resource.DebugErrorCollector;
+import com.github.wohaopa.MyCTMLib.resource.RegisteredSpritesDumpUtil;
 import com.github.wohaopa.MyCTMLib.resource.RegistryDumpUtil;
 
 import cpw.mods.fml.relauncher.Side;
@@ -28,7 +29,7 @@ public class CTMLibClientCommand extends CommandBase {
 
     @Override
     public String getCommandUsage(ICommandSender sender) {
-        return "/ctmlib <debug|dump_registry|dump_textures|dump_debug_errors>";
+        return "/ctmlib <debug|dump_registry|dump_registered_sprites|dump_textures|dump_debug_errors>";
     }
 
     @Override
@@ -39,7 +40,7 @@ public class CTMLibClientCommand extends CommandBase {
     @Override
     public List<String> addTabCompletionOptions(ICommandSender sender, String[] args) {
         if (args.length == 1) {
-            return getListOfStringsMatchingLastWord(args, "debug", "dump_registry", "dump_textures", "dump_debug_errors");
+            return getListOfStringsMatchingLastWord(args, "debug", "dump_registry", "dump_registered_sprites", "dump_textures", "dump_debug_errors");
         }
         return Collections.emptyList();
     }
@@ -53,6 +54,7 @@ public class CTMLibClientCommand extends CommandBase {
         switch (args[0].toLowerCase()) {
             case "debug" -> processDebug(sender);
             case "dump_registry" -> processDumpRegistry(sender);
+            case "dump_registered_sprites" -> processDumpRegisteredSprites(sender, args);
             case "dump_textures" -> processDumpTextures(sender);
             case "dump_debug_errors" -> processDumpDebugErrors(sender);
             default -> send(sender, EnumChatFormatting.RED + "Unknown subcommand: " + args[0]);
@@ -68,6 +70,13 @@ public class CTMLibClientCommand extends CommandBase {
         File f = new File(Minecraft.getMinecraft().mcDataDir, "config/ctmlib_registry_dump.json");
         RegistryDumpUtil.dumpToFile(f);
         send(sender, "Registry dump written to " + f.getAbsolutePath());
+    }
+
+    private void processDumpRegisteredSprites(ICommandSender sender, String[] args) {
+        String path = args.length >= 2 ? args[1] : "config/ctmlib_registered_sprites_dump.json";
+        File f = new File(Minecraft.getMinecraft().mcDataDir, path);
+        RegisteredSpritesDumpUtil.dumpToFile(f);
+        send(sender, "Registered sprites dump written to " + f.getAbsolutePath());
     }
 
     private void processDumpTextures(ICommandSender sender) {

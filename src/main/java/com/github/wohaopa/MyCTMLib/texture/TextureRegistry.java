@@ -1,6 +1,5 @@
 package com.github.wohaopa.MyCTMLib.texture;
 
-import java.util.List;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -16,7 +15,7 @@ import com.github.wohaopa.MyCTMLib.mixins.AccessorTextureMap;
 /**
  * 纹理路径（如 "modid:blocks/stone"）→ 解析后的 TextureTypeData。
  * 在 MixinTextureMap.registerIcon 或资源加载时，读取 .mcmeta 并调用 TextureTypeRegistry.deserialize 后 put 到此表。
- * 使用 TextureKeyNormalizer 做规范化与多键回退，put 时写入所有 lookup 候选键，get 时按候选顺序查找。
+ * 仅存 canonicalKey；put 只存规范键，get 转规范后单次查找；getIcon 取 sprite 时用 getLookupCandidates 回退 mapRegisteredSprites。
  */
 public class TextureRegistry {
 
@@ -29,40 +28,41 @@ public class TextureRegistry {
 
     public void put(String texturePath, TextureTypeData data) {
         if (texturePath == null || data == null) return;
-        String normalized = normalizePath(texturePath);
-        pathToData.put(normalized, data);
-        for (String candidate : TextureKeyNormalizer.getLookupCandidates(normalized)) {
-            if (!candidate.equals(normalized)) {
-                pathToData.put(candidate, data);
-            }
-        }
-        if (normalized.indexOf(':') < 0 && normalized.indexOf('/') < 0) {
-            pathToData.put(TextureKeyNormalizer.toCanonicalTextureKey("minecraft", normalized), data);
-        }
+        String canonicalKey = TextureKeyNormalizer.toCanonicalTextureKey(texturePath);
+        if (canonicalKey == null) return;
+        pathToData.put(canonicalKey, data);
     }
 
     public TextureTypeData get(String texturePath) {
         if (texturePath == null) return null;
-        for (String candidate : TextureKeyNormalizer.getLookupCandidates(normalizePath(texturePath))) {
-            TextureTypeData data = pathToData.get(candidate);
-            if (data != null) return data;
-        }
-        return null;
+        String canonicalKey = TextureKeyNormalizer.toCanonicalTextureKey(texturePath);
+        if (canonicalKey == null) return null;
+        return pathToData.get(canonicalKey);
     }
 
     /**
-     * 从 blocks TextureMap 的 mapRegisteredSprites 中按 texturePath 查找 IIcon。
-     * 若 TexReg 无该路径数据则返回 null；否则用 getLookupCandidates 依次尝试，找到即返回。
+     * 从 TextureMap 的 mapRegisteredSprites 中按 texturePath 查找 IIcon。
+     * 若 TexReg 无该路径数据则返回 null；否则用 getLookupCandidates 依次尝试 mapRegisteredSprites，找到即返回。
      */
     public IIcon getIcon(String texturePath) {
-        if (get(texturePath) == null) return null;
+        return getIcon(texturePath, TextureKeyNormalizer.TextureCategory.BLOCKS);
+    }
+
+    /**
+     * 根据 category 选择 blocks 或 items TextureMap 查询。
+     */
+    public IIcon getIcon(String texturePath, TextureKeyNormalizer.TextureCategory category) {
+        if (texturePath == null) return null;
+        String canonicalKey = TextureKeyNormalizer.toCanonicalTextureKey(texturePath);
+        if (canonicalKey == null) return null;
+        if (get(canonicalKey) == null) return null;
+        net.minecraft.util.ResourceLocation texMapLoc = TextureKeyNormalizer.getTextureMapLocation(category);
         Object texObj = Minecraft.getMinecraft()
             .getTextureManager()
-            .getTexture(TextureMap.locationBlocksTexture);
+            .getTexture(texMapLoc);
         if (!(texObj instanceof TextureMap textureMap)) return null;
         Map<String, TextureAtlasSprite> map = ((AccessorTextureMap) textureMap).getMapRegisteredSprites();
-        List<String> candidates = TextureKeyNormalizer.getLookupCandidates(normalizePath(texturePath));
-        for (String candidate : candidates) {
+        for (String candidate : TextureKeyNormalizer.getLookupCandidates(canonicalKey)) {
             TextureAtlasSprite sprite = map.get(candidate);
             if (sprite != null) return sprite;
         }
@@ -90,11 +90,5 @@ public class TextureRegistry {
     public void dumpForDebug() {
         if (!MyCTMLib.debugMode) return;
         MyCTMLib.LOG.info("[CTMLibFusion] TextureRegistry size={}", pathToData.size());
-    }
-
-    private static String normalizePath(String path) {
-        if (path == null) return "";
-        return path.replace('\\', '/')
-            .trim();
     }
 }

@@ -26,8 +26,6 @@ import cpw.mods.fml.relauncher.SideOnly;
 @SideOnly(Side.CLIENT)
 public class NewTextureAtlasSprite extends TextureAtlasSprite {
 
-    private static final String BLOCKS_PATH = "textures/blocks";
-
     public NewTextureAtlasSprite(String name) {
         super(name);
     }
@@ -48,9 +46,18 @@ public class NewTextureAtlasSprite extends TextureAtlasSprite {
     @Override
     public boolean load(IResourceManager manager, ResourceLocation location) {
         resetSprite();
+        String path = location.getResourcePath();
+        String resourcePath;
+        if (path.startsWith("textures/")) {
+            resourcePath = path.endsWith(".png") ? path : path + ".png";
+        } else if (path.startsWith("blocks/") || path.startsWith("items/") || path.startsWith("iconsets/")) {
+            resourcePath = "textures/" + path + ".png";
+        } else {
+            resourcePath = "textures/blocks/" + path + ".png";
+        }
         ResourceLocation fullLocation = new ResourceLocation(
             location.getResourceDomain(),
-            BLOCKS_PATH + "/" + location.getResourcePath() + ".png");
+            resourcePath);
         try {
             IResource resource = manager.getResource(fullLocation);
             try (InputStream in = resource.getInputStream()) {

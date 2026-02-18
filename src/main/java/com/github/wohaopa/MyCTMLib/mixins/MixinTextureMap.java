@@ -47,6 +47,7 @@ import com.github.wohaopa.MyCTMLib.resource.BlockTextureDumpUtil;
 import com.github.wohaopa.MyCTMLib.resource.DebugErrorCollector;
 import com.github.wohaopa.MyCTMLib.resource.CTMLibResourceLoader;
 import com.github.wohaopa.MyCTMLib.texture.ConnectingTextureData;
+import com.github.wohaopa.MyCTMLib.texture.TextureKeyNormalizer;
 import com.github.wohaopa.MyCTMLib.texture.TextureMetadataSection;
 import com.github.wohaopa.MyCTMLib.texture.TextureRegistry;
 import com.github.wohaopa.MyCTMLib.texture.TextureTypeData;
@@ -86,13 +87,16 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
                 return;
             }
 
-            // 新管线：若存在 ctmlib section 则写入 TextureRegistry，并替换 sprite 为整张连接图（否则 block 拿到的是 16x16）
+            // 新管线：若存在 ctmlib section 则写入 TextureRegistry（用 canonicalKey），并替换 sprite 为整张连接图（否则 block 拿到的是 16x16）
             boolean hadCtmlib = false;
             try {
                 IMetadataSection ctmlibSec = resource.getMetadata("ctmlib");
                 if (ctmlibSec != null && ctmlibSec instanceof TextureMetadataSection) {
-                    TextureRegistry.getInstance()
-                        .put(textureName, ((TextureMetadataSection) ctmlibSec).getData());
+                    String canonicalKey = TextureKeyNormalizer.toCanonicalTextureKey(textureName);
+                    if (canonicalKey != null) {
+                        TextureRegistry.getInstance()
+                            .put(canonicalKey, ((TextureMetadataSection) ctmlibSec).getData());
+                    }
                     hadCtmlib = true;
                 }
             } catch (Exception e) {
@@ -288,17 +292,23 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
 
     /**
      * 在 loadTextureAtlas 入口确保预载完成，并将 TexReg 中预载的 ConnectingTextureData 对应 key 注册到 mapRegisteredSprites，
-     * 使 Model 分支能从 TextureMap 取到正确 IIcon。仅对 blocks 图集执行。
+     * 使 Model 分支能从 TextureMap 取到正确 IIcon。对 blocks 与 items 图集都执行，按 category 过滤。
      */
     @Inject(method = "loadTextureAtlas", at = @At("HEAD"))
     private void beforeLoadTextureAtlas(net.minecraft.client.resources.IResourceManager resourceManager, CallbackInfo ci) {
-        if (basePath == null || !basePath.contains("blocks")) return;
+        if (basePath == null) return;
+        boolean isBlocks = basePath.contains("blocks") && !basePath.contains("items");
+        boolean isItems = basePath.contains("textures/items") || basePath.contains("textures\\items");
+        if (!isBlocks && !isItems) return;
         CTMLibResourceLoader.ensureLoaded(resourceManager);
         Map<String, TextureTypeData> pathToData = TextureRegistry.getInstance()
             .getPathToDataForDump();
         for (Map.Entry<String, TextureTypeData> e : pathToData.entrySet()) {
             if (!(e.getValue() instanceof ConnectingTextureData)) continue;
             String key = e.getKey();
+            TextureKeyNormalizer.TextureCategory cat = TextureKeyNormalizer.getTextureCategory(key);
+            if (isBlocks && cat != TextureKeyNormalizer.TextureCategory.BLOCKS) continue;
+            if (isItems && cat != TextureKeyNormalizer.TextureCategory.ITEMS) continue;
             if (!mapRegisteredSprites.containsKey(key)) {
                 mapRegisteredSprites.put(key, new NewTextureAtlasSprite(key));
             }

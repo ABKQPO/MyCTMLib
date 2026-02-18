@@ -163,14 +163,16 @@ public class CTMLibResourceLoader implements net.minecraft.client.resources.IRes
     }
 
     /**
-     * 按 modelId（如 "modid:block/stone"）加载并解析模型，写入 ModelRegistry。
-     * 标准路径：assets/&lt;domain&gt;/models/block/&lt;name&gt;.json。
+     * 按 modelId（如 "modid:block/stone" 或 "modid:item/diamond"）加载并解析模型，写入 ModelRegistry。
+     * 标准路径：assets/&lt;domain&gt;/models/block/&lt;name&gt;.json 或 models/item/&lt;name&gt;.json。
      */
     public void loadModel(IResourceManager resourceManager, String modelId) {
         int colon = modelId.indexOf(':');
         String domain = colon >= 0 ? modelId.substring(0, colon).toLowerCase(Locale.ROOT) : "minecraft";
         String path = colon >= 0 ? modelId.substring(colon + 1) : modelId;
-        String resourcePath = path.startsWith("block/") ? "models/" + path + ".json" : "models/block/" + path + ".json";
+        String resourcePath = (path.startsWith("block/") || path.startsWith("item/"))
+            ? "models/" + path + ".json"
+            : "models/block/" + path + ".json";
         ResourceLocation modelLoc = new ResourceLocation(domain, resourcePath);
         try {
             tryLoadOneModel(resourceManager, domain, resourcePath, modelId);
@@ -195,6 +197,11 @@ public class CTMLibResourceLoader implements net.minecraft.client.resources.IRes
             ModelData data = modelParser.parse(root);
             ModelRegistry.getInstance()
                 .put(TextureKeyNormalizer.normalizeDomain(modelId), data);
+            if (MyCTMLib.debugMode && data.getTextures() != null && !data.getTextures()
+                .isEmpty()) {
+                MyCTMLib.LOG.info("[CTMLibFusion] prefillTextureRegistry ENTRY modelId={} textures={}", modelId,
+                    data.getTextures());
+            }
             prefillTextureRegistryForModel(resourceManager, domain, data);
         }
     }
@@ -215,37 +222,81 @@ public class CTMLibResourceLoader implements net.minecraft.client.resources.IRes
                 resolvedPaths.add(resolved);
             }
         }
+        if (MyCTMLib.debugMode && !resolvedPaths.isEmpty()) {
+            MyCTMLib.LOG.info("[CTMLibFusion] prefillTextureRegistry modelDomain={} resolvedPaths={}", modelDomain,
+                resolvedPaths);
+        }
         TextureRegistry texReg = TextureRegistry.getInstance();
         for (String texturePath : resolvedPaths) {
             String lookupKey = TextureKeyNormalizer.toCanonicalTextureKey(modelDomain, texturePath);
-            if (lookupKey == null) continue;
-            if (texReg.get(lookupKey) != null) continue;
+            if (lookupKey == null) {
+                if (MyCTMLib.debugMode) {
+                    MyCTMLib.LOG.warn("[CTMLibFusion] prefillTextureRegistry lookupKey=null modelDomain={} texturePath={}",
+                        modelDomain, texturePath);
+                }
+                continue;
+            }
+            if (texReg.get(lookupKey) != null) {
+                if (MyCTMLib.debugMode) {
+                    MyCTMLib.LOG.debug("[CTMLibFusion] prefillTextureRegistry skip existing lookupKey={}", lookupKey);
+                }
+                continue;
+            }
+            ResourceLocation texRes = toTextureResourceLocation(modelDomain, texturePath);
+            if (texRes == null) {
+                if (MyCTMLib.debugMode) {
+                    MyCTMLib.LOG.warn("[CTMLibFusion] prefillTextureRegistry texRes=null modelDomain={} texturePath={} lookupKey={}",
+                        modelDomain, texturePath, lookupKey);
+                }
+                continue;
+            }
+            if (MyCTMLib.debugMode) {
+                MyCTMLib.LOG.info("[CTMLibFusion] prefillTextureRegistry try resource domain={} path={} full={}",
+                    texRes.getResourceDomain(), texRes.getResourcePath(),
+                    "assets/" + texRes.getResourceDomain() + "/" + texRes.getResourcePath());
+            }
             try {
-                ResourceLocation texRes = toTextureResourceLocation(modelDomain, texturePath);
-                if (texRes == null) continue;
                 IResource resource = resourceManager.getResource(texRes);
-                IMetadataSection sec = resource.getMetadata("ctmlib");
+                if (MyCTMLib.debugMode) {
+                    MyCTMLib.LOG.info("[CTMLibFusion] prefillTextureRegistry resource found for lookupKey={}", lookupKey);
+                }
+                IMetadataSection sec;
+                try {
+                    sec = resource.getMetadata("ctmlib");
+                } catch (Exception deserEx) {
+                    String attemptedPath = "assets/" + texRes.getResourceDomain() + "/" + texRes.getResourcePath();
+                    MyCTMLib.LOG.warn("[CTMLibFusion] prefillTextureRegistry ctmlib deserialize failed lookupKey={} path={}",
+                        lookupKey, attemptedPath, deserEx);
+                    DebugErrorCollector.getInstance()
+                        .add("texture_prefill_deserialize", lookupKey, attemptedPath, deserEx);
+                    continue;
+                }
                 if (sec instanceof TextureMetadataSection tms) {
                     texReg.put(lookupKey, tms.getData());
+                    if (MyCTMLib.debugMode) {
+                        MyCTMLib.LOG.info("[CTMLibFusion] prefillTextureRegistry REGISTERED lookupKey={}", lookupKey);
+                    }
+                } else {
+                    if (MyCTMLib.debugMode) {
+                        MyCTMLib.LOG.debug("[CTMLibFusion] prefillTextureRegistry no ctmlib metadata lookupKey={} sec={}",
+                            lookupKey, sec != null ? sec.getClass()
+                                .getName() : "null");
+                    }
                 }
             } catch (IOException e) {
+                String attemptedPath = "assets/" + texRes.getResourceDomain() + "/" + texRes.getResourcePath();
                 if (MyCTMLib.debugMode) {
-                    ResourceLocation texRes = toTextureResourceLocation(modelDomain, texturePath);
-                    String attemptedPath = texRes != null
-                        ? "assets/" + texRes.getResourceDomain() + "/" + texRes.getResourcePath()
-                        : null;
-                    DebugErrorCollector.getInstance()
-                        .add("texture_prefill", lookupKey, attemptedPath, e);
+                    MyCTMLib.LOG.warn("[CTMLibFusion] prefillTextureRegistry resource not found lookupKey={} path={}",
+                        lookupKey, attemptedPath);
                 }
+                DebugErrorCollector.getInstance()
+                    .add("texture_prefill", lookupKey, attemptedPath, e);
             } catch (Exception e) {
-                if (MyCTMLib.debugMode) {
-                    ResourceLocation texRes = toTextureResourceLocation(modelDomain, texturePath);
-                    String attemptedPath = texRes != null
-                        ? "assets/" + texRes.getResourceDomain() + "/" + texRes.getResourcePath()
-                        : null;
-                    DebugErrorCollector.getInstance()
-                        .add("texture_prefill", lookupKey, attemptedPath, e);
-                }
+                String attemptedPath = "assets/" + texRes.getResourceDomain() + "/" + texRes.getResourcePath();
+                MyCTMLib.LOG.warn("[CTMLibFusion] prefillTextureRegistry unexpected lookupKey={} path={}", lookupKey,
+                    attemptedPath, e);
+                DebugErrorCollector.getInstance()
+                    .add("texture_prefill", lookupKey, attemptedPath, e);
             }
         }
     }
