@@ -29,14 +29,19 @@ public class MyCTMLib {
     public static final String MODID = "MyCTMLib";
     public static final Logger LOG = LogManager.getLogger(MODID);
     public static boolean debugMode = false;
+    /** 为 true 时在资源重载后导出 block_texture_dump.json 供迁移脚本使用。 */
+    public static boolean dumpBlockTextureMapping = false;
     public Configuration configuration;
 
     /** 仅对 stone/cobblestone 打表与过滤 [CTMLibFusion] 日志，避免无效刷屏。支持 blockId、modelId、iconName 等格式。 */
     public static boolean isFusionTraceTarget(String name) {
         if (name == null) return false;
         String s = name.indexOf(':') >= 0 ? name.substring(name.indexOf(':') + 1) : name;
-        return "stone".equals(s) || "cobblestone".equals(s) || "block/stone".equals(s) || "block/cobblestone".equals(s)
-            || "blocks/stone".equals(s) || "blocks/cobblestone".equals(s);
+        return "stone".equals(s) || "cobblestone".equals(s)
+            || "block/stone".equals(s)
+            || "block/cobblestone".equals(s)
+            || "blocks/stone".equals(s)
+            || "blocks/cobblestone".equals(s);
     }
 
     @Mod.EventHandler
@@ -85,9 +90,13 @@ public class MyCTMLib {
 
     private void loadConfig() {
         debugMode = configuration.getBoolean("debug", Configuration.CATEGORY_GENERAL, false, "Enable debug mode");
+        dumpBlockTextureMapping = configuration.getBoolean(
+            "dumpBlockTextureMapping",
+            Configuration.CATEGORY_GENERAL,
+            false,
+            "Export block ID and texture mapping to ctmlib_block_texture_dump.json on resource reload");
         if (configuration.hasChanged()) {
             configuration.save();
         }
-
     }
 }

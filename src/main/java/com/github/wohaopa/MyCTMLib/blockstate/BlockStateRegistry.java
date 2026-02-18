@@ -58,6 +58,11 @@ public class BlockStateRegistry {
         blockToVariants.clear();
     }
 
+    /** 供 BlockTextureDumpUtil 导出 blockId → (variantKey → modelId) 到 JSON。 */
+    public Map<String, Map<String, String>> getBlockToVariantsForDump() {
+        return blockToVariants;
+    }
+
     /** debug 模式下打出 blockId → (variantKey → modelId) 便于查看数据。 */
     public void dumpForDebug() {
         if (!MyCTMLib.debugMode) return;

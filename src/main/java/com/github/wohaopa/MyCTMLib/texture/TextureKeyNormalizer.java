@@ -21,7 +21,8 @@ public final class TextureKeyNormalizer {
     public static String toCanonicalTextureKey(String domain, String path) {
         if (path == null) return null;
         String d = domain != null ? domain : "minecraft";
-        String p = path.replace('\\', '/').trim();
+        String p = path.replace('\\', '/')
+            .trim();
         if (p.isEmpty()) return null;
         String pathPart;
         if (p.indexOf(':') >= 0) {
@@ -47,7 +48,8 @@ public final class TextureKeyNormalizer {
     public static List<String> getLookupCandidates(String key) {
         if (key == null || key.isEmpty()) return Collections.emptyList();
         List<String> out = new ArrayList<>();
-        String k = key.replace('\\', '/').trim();
+        String k = key.replace('\\', '/')
+            .trim();
         out.add(k);
         int colon = k.indexOf(':');
         if (colon >= 0) {

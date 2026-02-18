@@ -8,6 +8,7 @@ import static com.github.wohaopa.MyCTMLib.Textures.gtBWBlocksGlassCTM;
 import static com.github.wohaopa.MyCTMLib.Textures.gtBlockCasings4CTM;
 import static com.github.wohaopa.MyCTMLib.Textures.gtGregtechMetaCasingBlocks3CTM;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -42,6 +43,7 @@ import com.github.wohaopa.MyCTMLib.MyCTMLibMetadataSectionSerializer.MyCTMLibMet
 import com.github.wohaopa.MyCTMLib.NewTextureAtlasSprite;
 import com.github.wohaopa.MyCTMLib.blockstate.BlockStateRegistry;
 import com.github.wohaopa.MyCTMLib.model.ModelRegistry;
+import com.github.wohaopa.MyCTMLib.resource.BlockTextureDumpUtil;
 import com.github.wohaopa.MyCTMLib.texture.TextureMetadataSection;
 import com.github.wohaopa.MyCTMLib.texture.TextureRegistry;
 import com.google.gson.JsonObject;
@@ -316,6 +318,11 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
                 .dumpForDebug();
             TextureRegistry.getInstance()
                 .dumpForDebug();
+        }
+        if (MyCTMLib.dumpBlockTextureMapping && basePath != null
+            && (basePath.contains("blocks") && !basePath.contains("items"))) {
+            File dumpFile = new File(Minecraft.getMinecraft().mcDataDir, "config/ctmlib_block_texture_dump.json");
+            BlockTextureDumpUtil.dumpToFile(dumpFile);
         }
     }
 
