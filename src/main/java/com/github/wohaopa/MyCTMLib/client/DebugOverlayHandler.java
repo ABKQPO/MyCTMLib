@@ -85,12 +85,18 @@ public class DebugOverlayHandler {
                     lines.add(
                         "TexReg/TexMap: " + (Boolean.TRUE.equals(synced) ? "synced" : "OUT OF SYNC (getIcon null, fallback to block icon)"));
                 }
+                if (trace.getDrawSpriteName() != null) {
+                    lines.add("drawSprite: " + trace.getDrawSpriteName() + " " + trace.getDrawSpriteLoaded());
+                }
                 lines.add("layout: " + hitInfo.getLayout());
                 if (hitInfo.getMask() >= 0) {
                     lines.add("mask: 0x" + Integer.toHexString(hitInfo.getMask()));
                 }
                 break;
             case TEXTURE_REGISTRY:
+                if (trace.getDrawSpriteName() != null) {
+                    lines.add("drawSprite: " + trace.getDrawSpriteName() + " " + trace.getDrawSpriteLoaded());
+                }
                 lines.add("layout: " + hitInfo.getLayout());
                 if (hitInfo.getMask() >= 0) {
                     lines.add("mask: 0x" + Integer.toHexString(hitInfo.getMask()));
@@ -129,7 +135,7 @@ public class DebugOverlayHandler {
         }
         if (!trace.getSteps().isEmpty()) {
             lines.add("--- decision ---");
-            int maxSteps = 8;
+            int maxSteps = 12;
             for (int i = 0; i < Math.min(trace.getSteps().size(), maxSteps); i++) {
                 lines.add(trace.getSteps().get(i));
             }

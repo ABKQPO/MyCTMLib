@@ -256,6 +256,7 @@ public final class CTMRenderEntry {
                                     } else {
                                         out.addStep("7. TexReg.getIcon(" + textureLookupKey + ") -> HIT (TexReg/TexMap synced)");
                                         out.setTexRegTexMapSync(true, textureLookupKey);
+                                        out.setDrawSpriteInfo(modelIcon.getIconName(), modelIcon.getIconWidth(), modelIcon.getIconHeight());
                                     }
                                 }
                                 ConnectingLayout layout = texData.getLayout();
@@ -294,6 +295,10 @@ public final class CTMRenderEntry {
                 out.setPredicateUsed(PredicateRegistry.getPredicateDebugName(predicate, null));
                 out.setTilePos(pos[0], pos[1]);
                 out.setConnectionBits(mask);
+                IIcon regIcon = TextureRegistry.getInstance().getIcon(iconName);
+                if (regIcon != null) {
+                    out.setDrawSpriteInfo(regIcon.getIconName(), regIcon.getIconWidth(), regIcon.getIconHeight());
+                }
             }
             return PipelineInfo.textureRegistry(iconName, ctd.getLayout(), mask);
         }

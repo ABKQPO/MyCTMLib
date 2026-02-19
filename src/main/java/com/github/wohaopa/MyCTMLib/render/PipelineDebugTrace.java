@@ -18,6 +18,10 @@ public final class PipelineDebugTrace {
     private Boolean texRegTexMapSynced;
     /** TexReg.getIcon 的 lookupKey，用于 debug 展示 */
     private String texRegGetIconLookupKey;
+    /** 实际用于绘制的 sprite 的 getIconName()，用于排查紫黑块 */
+    private String drawSpriteName;
+    /** sprite 是否已加载（宽高>0），"WxH" 或 "0x0(unloaded)" */
+    private String drawSpriteLoaded;
 
     public PipelineDebugTrace() {}
 
@@ -57,6 +61,20 @@ public final class PipelineDebugTrace {
 
     public String getTexRegGetIconLookupKey() {
         return texRegGetIconLookupKey;
+    }
+
+    /** 设置实际用于绘制的 icon 的调试信息（名称与是否已加载），便于排查紫黑块。 */
+    public void setDrawSpriteInfo(String iconName, int width, int height) {
+        this.drawSpriteName = iconName;
+        this.drawSpriteLoaded = (width > 0 && height > 0) ? (width + "x" + height) : "0x0(unloaded)";
+    }
+
+    public String getDrawSpriteName() {
+        return drawSpriteName;
+    }
+
+    public String getDrawSpriteLoaded() {
+        return drawSpriteLoaded;
     }
 
     public List<String> getSteps() {

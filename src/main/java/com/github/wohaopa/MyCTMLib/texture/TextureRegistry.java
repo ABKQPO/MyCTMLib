@@ -1,5 +1,6 @@
 package com.github.wohaopa.MyCTMLib.texture;
 
+import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -14,13 +15,20 @@ import com.github.wohaopa.MyCTMLib.mixins.AccessorTextureMap;
 
 /**
  * 纹理路径（如 "modid:blocks/stone"）→ 解析后的 TextureTypeData。
- * 在 MixinTextureMap.registerIcon 或资源加载时，读取 .mcmeta 并调用 TextureTypeRegistry.deserialize 后 put 到此表。
- * 仅存 canonicalKey；put 只存规范键，get 转规范后单次查找；getIcon 取 sprite 时用 getLookupCandidates 回退 mapRegisteredSprites。
+ * 键语义：TexReg 内部统一用 canonicalKey（domain:blocks/name 或 domain:items/name）；图集 mapRegisteredSprites 的键为 mapKey（registerIcon 传入名，各 mod 不统一）。
+ * 本类维护 canonicalKey → mapKey 登记表（按 BLOCKS/ITEMS 分），每次我们向 map 写入 sprite 时登记；getIcon 优先用登记表单键查找，无记录时回退 getLookupCandidates。
  */
 public class TextureRegistry {
 
     private static final TextureRegistry INSTANCE = new TextureRegistry();
     private final Map<String, TextureTypeData> pathToData = new ConcurrentHashMap<>();
+    private final Map<TextureKeyNormalizer.TextureCategory, Map<String, String>> canonicalToMapKey = new EnumMap<>(
+        TextureKeyNormalizer.TextureCategory.class);
+
+    {
+        canonicalToMapKey.put(TextureKeyNormalizer.TextureCategory.BLOCKS, new ConcurrentHashMap<>());
+        canonicalToMapKey.put(TextureKeyNormalizer.TextureCategory.ITEMS, new ConcurrentHashMap<>());
+    }
 
     public static TextureRegistry getInstance() {
         return INSTANCE;
@@ -41,8 +49,18 @@ public class TextureRegistry {
     }
 
     /**
+     * 登记 canonicalKey → mapKey（按图集分类）。在每次向 mapRegisteredSprites put 时调用，便于 getIcon 单键查找。
+     */
+    public void putCanonicalToMapKey(String canonicalKey, String mapKey,
+        TextureKeyNormalizer.TextureCategory category) {
+        if (canonicalKey == null || mapKey == null || category == null) return;
+        Map<String, String> per = canonicalToMapKey.get(category);
+        if (per != null) per.put(canonicalKey, mapKey);
+    }
+
+    /**
      * 从 TextureMap 的 mapRegisteredSprites 中按 texturePath 查找 IIcon。
-     * 若 TexReg 无该路径数据则返回 null；否则用 getLookupCandidates 依次尝试 mapRegisteredSprites，找到即返回。
+     * 优先用登记表 canonical→mapKey 单键查找；无记录时回退 getLookupCandidates。
      */
     public IIcon getIcon(String texturePath) {
         return getIcon(texturePath, TextureKeyNormalizer.TextureCategory.BLOCKS);
@@ -62,6 +80,14 @@ public class TextureRegistry {
             .getTexture(texMapLoc);
         if (!(texObj instanceof TextureMap textureMap)) return null;
         Map<String, TextureAtlasSprite> map = ((AccessorTextureMap) textureMap).getMapRegisteredSprites();
+        Map<String, String> per = canonicalToMapKey.get(category);
+        if (per != null) {
+            String mapKey = per.get(canonicalKey);
+            if (mapKey != null) {
+                TextureAtlasSprite sprite = map.get(mapKey);
+                if (sprite != null) return sprite;
+            }
+        }
         for (String candidate : TextureKeyNormalizer.getLookupCandidates(canonicalKey)) {
             TextureAtlasSprite sprite = map.get(candidate);
             if (sprite != null) return sprite;
@@ -71,6 +97,9 @@ public class TextureRegistry {
 
     public void clear() {
         pathToData.clear();
+        for (Map<String, String> per : canonicalToMapKey.values()) {
+            if (per != null) per.clear();
+        }
     }
 
     /** 供 RegistryDumpUtil 导出，按 TextureTypeData 去重后每个 value 保留一个 representative key。 */

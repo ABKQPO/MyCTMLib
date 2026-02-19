@@ -17,5 +17,6 @@ public class ClientProxy extends CommonProxy {
         super.init(event);
         ClientCommandHandler.instance.registerCommand(new CTMLibClientCommand());
         MinecraftForge.EVENT_BUS.register(new DebugOverlayHandler());
+        MinecraftForge.EVENT_BUS.register(new TextureStitchEventHandler());
     }
 }
