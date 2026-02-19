@@ -120,9 +120,11 @@ public final class CTMRenderEntry {
             }
         }
 
-        // 回退到 TextureRegistry(iconName)
+        // 回退到 TextureRegistry(iconName)：用 TexReg 查到的 sprite 绘制，无则用 block icon
         TextureTypeData data = getConnectingData(iconName);
         if (!(data instanceof ConnectingTextureData ctd)) return false;
+        IIcon drawIcon = TextureRegistry.getInstance().getIcon(iconName);
+        if (drawIcon == null) drawIcon = icon;
         ConnectionPredicate predicate = PredicateRegistry.defaultPredicate();
         ConnectingLayout layout = ctd.getLayout();
         LayoutHandler handler = LayoutHandlers.get(layout);
@@ -135,7 +137,7 @@ public final class CTMRenderEntry {
             y,
             z,
             face,
-            icon,
+            drawIcon,
             pos[0],
             pos[1],
             handler.getWidth(),
@@ -298,6 +300,8 @@ public final class CTMRenderEntry {
                 IIcon regIcon = TextureRegistry.getInstance().getIcon(iconName);
                 if (regIcon != null) {
                     out.setDrawSpriteInfo(regIcon.getIconName(), regIcon.getIconWidth(), regIcon.getIconHeight());
+                } else {
+                    out.setDrawSpriteInfo(icon.getIconName(), icon.getIconWidth(), icon.getIconHeight());
                 }
             }
             return PipelineInfo.textureRegistry(iconName, ctd.getLayout(), mask);

@@ -15,6 +15,7 @@ import com.github.wohaopa.MyCTMLib.resource.BlockTextureDumpUtil;
 import com.github.wohaopa.MyCTMLib.resource.DebugErrorCollector;
 import com.github.wohaopa.MyCTMLib.resource.RegisteredSpritesDumpUtil;
 import com.github.wohaopa.MyCTMLib.resource.RegistryDumpUtil;
+import com.github.wohaopa.MyCTMLib.resource.ResourceLoadTrace;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
@@ -29,7 +30,7 @@ public class CTMLibClientCommand extends CommandBase {
 
     @Override
     public String getCommandUsage(ICommandSender sender) {
-        return "/ctmlib <debug|dump_registry|dump_registered_sprites|dump_textures|dump_debug_errors>";
+        return "/ctmlib <debug|dump_registry|dump_registered_sprites|dump_textures|dump_debug_errors|dump_debug_load>";
     }
 
     @Override
@@ -40,7 +41,7 @@ public class CTMLibClientCommand extends CommandBase {
     @Override
     public List<String> addTabCompletionOptions(ICommandSender sender, String[] args) {
         if (args.length == 1) {
-            return getListOfStringsMatchingLastWord(args, "debug", "dump_registry", "dump_registered_sprites", "dump_textures", "dump_debug_errors");
+            return getListOfStringsMatchingLastWord(args, "debug", "dump_registry", "dump_registered_sprites", "dump_textures", "dump_debug_errors", "dump_debug_load");
         }
         return Collections.emptyList();
     }
@@ -57,6 +58,7 @@ public class CTMLibClientCommand extends CommandBase {
             case "dump_registered_sprites" -> processDumpRegisteredSprites(sender, args);
             case "dump_textures" -> processDumpTextures(sender);
             case "dump_debug_errors" -> processDumpDebugErrors(sender);
+            case "dump_debug_load" -> processDumpDebugLoad(sender);
             default -> send(sender, EnumChatFormatting.RED + "Unknown subcommand: " + args[0]);
         }
     }
@@ -90,6 +92,13 @@ public class CTMLibClientCommand extends CommandBase {
         DebugErrorCollector.getInstance()
             .flushToFile(f);
         send(sender, "Debug errors written to " + f.getAbsolutePath());
+    }
+
+    private void processDumpDebugLoad(ICommandSender sender) {
+        File f = new File(Minecraft.getMinecraft().mcDataDir, "config/ctmlib_debug_load.json");
+        ResourceLoadTrace.getInstance()
+            .flushToFile(f);
+        send(sender, "Debug load trace written to " + f.getAbsolutePath());
     }
 
     private static void send(ICommandSender sender, String msg) {

@@ -73,6 +73,10 @@ public class CTMLibResourceLoader implements net.minecraft.client.resources.IRes
             .clear();
         DebugErrorCollector.getInstance()
             .clear();
+        ResourceLoadTrace.getInstance()
+            .clear();
+        ResourceLoadTrace.getInstance()
+            .add("reload_start", "", null, true);
 
         if (!(resourceManager instanceof IReloadableResourceManager)) {
             return;
@@ -80,6 +84,8 @@ public class CTMLibResourceLoader implements net.minecraft.client.resources.IRes
 
         doLoad(resourceManager);
         loaded = true;
+        ResourceLoadTrace.getInstance()
+            .add("reload_end", "", null, true);
 
         if (MyCTMLib.debugMode) {
             BlockStateRegistry.getInstance()
@@ -114,21 +120,26 @@ public class CTMLibResourceLoader implements net.minecraft.client.resources.IRes
                 String path = colon >= 0 ? blockId.substring(colon + 1) : blockId;
                 String blockstatePath = "blockstates/" + path + ".json";
                 ResourceLocation blockstateLoc = new ResourceLocation(domain, blockstatePath);
+                String attemptedPath = "assets/" + blockstateLoc.getResourceDomain() + "/" + blockstateLoc.getResourcePath();
                 try {
                     IResource res = resourceManager.getResource(blockstateLoc);
                     try (InputStream in = res.getInputStream()) {
                         blockStateParser.parseAndRegister(TextureKeyNormalizer.normalizeDomain(blockId), in);
                     }
+                    ResourceLoadTrace.getInstance()
+                        .add("blockstate_file", domain + ":" + blockstatePath, attemptedPath, true);
                 } catch (IOException e) {
+                    ResourceLoadTrace.getInstance()
+                        .add("blockstate_file", domain + ":" + blockstatePath, attemptedPath, false, null, e);
                     if (MyCTMLib.debugMode) {
-                        String attemptedPath = "assets/" + blockstateLoc.getResourceDomain() + "/" + blockstateLoc.getResourcePath();
                         DebugErrorCollector.getInstance()
                             .add("blockstate", domain + ":" + blockstatePath, attemptedPath, e);
                         MyCTMLib.LOG.warn("BlockState parse failed: " + attemptedPath, e);
                     }
                 } catch (Exception e) {
+                    ResourceLoadTrace.getInstance()
+                        .add("blockstate_file", domain + ":" + blockstatePath, attemptedPath, false, null, e);
                     if (MyCTMLib.debugMode) {
-                        String attemptedPath = "assets/" + blockstateLoc.getResourceDomain() + "/" + blockstateLoc.getResourcePath();
                         DebugErrorCollector.getInstance()
                             .add("blockstate", domain + ":" + blockstatePath, attemptedPath, e);
                         MyCTMLib.LOG.warn("BlockState parse failed: " + attemptedPath, e);
@@ -136,6 +147,8 @@ public class CTMLibResourceLoader implements net.minecraft.client.resources.IRes
                 }
             }
         } catch (Throwable t) {
+            ResourceLoadTrace.getInstance()
+                .add("blockstate_scan", "blockstate_scan", null, false, null, t);
             if (MyCTMLib.debugMode) {
                 DebugErrorCollector.getInstance()
                     .add("blockstate", "blockstate_scan", t);
@@ -153,6 +166,8 @@ public class CTMLibResourceLoader implements net.minecraft.client.resources.IRes
             try {
                 loadModel(resourceManager, modelId);
             } catch (Throwable t) {
+                ResourceLoadTrace.getInstance()
+                    .add("model_file", modelId, null, false, null, t);
                 if (MyCTMLib.debugMode) {
                     DebugErrorCollector.getInstance()
                         .add("model", modelId, t);
@@ -174,11 +189,15 @@ public class CTMLibResourceLoader implements net.minecraft.client.resources.IRes
             ? "models/" + path + ".json"
             : "models/block/" + path + ".json";
         ResourceLocation modelLoc = new ResourceLocation(domain, resourcePath);
+        String attemptedPath = "assets/" + modelLoc.getResourceDomain() + "/" + modelLoc.getResourcePath();
         try {
             tryLoadOneModel(resourceManager, domain, resourcePath, modelId);
+            ResourceLoadTrace.getInstance()
+                .add("model_file", modelId, attemptedPath, true);
         } catch (Exception e) {
+            ResourceLoadTrace.getInstance()
+                .add("model_file", modelId, attemptedPath, false, null, e);
             if (MyCTMLib.debugMode) {
-                String attemptedPath = "assets/" + modelLoc.getResourceDomain() + "/" + modelLoc.getResourcePath();
                 DebugErrorCollector.getInstance()
                     .add("model", modelId, attemptedPath, e);
                 MyCTMLib.LOG.warn("Model load failed: " + attemptedPath, e);
@@ -237,6 +256,8 @@ public class CTMLibResourceLoader implements net.minecraft.client.resources.IRes
                 continue;
             }
             if (texReg.get(lookupKey) != null) {
+                ResourceLoadTrace.getInstance()
+                    .add("texture_prefill_skip", lookupKey, null, true);
                 if (MyCTMLib.debugMode) {
                     MyCTMLib.LOG.debug("[CTMLibFusion] prefillTextureRegistry skip existing lookupKey={}", lookupKey);
                 }
@@ -244,12 +265,15 @@ public class CTMLibResourceLoader implements net.minecraft.client.resources.IRes
             }
             ResourceLocation texRes = toTextureResourceLocation(modelDomain, texturePath);
             if (texRes == null) {
+                ResourceLoadTrace.getInstance()
+                    .add("texture_prefill", lookupKey, null, false);
                 if (MyCTMLib.debugMode) {
                     MyCTMLib.LOG.warn("[CTMLibFusion] prefillTextureRegistry texRes=null modelDomain={} texturePath={} lookupKey={}",
                         modelDomain, texturePath, lookupKey);
                 }
                 continue;
             }
+            String fullPath = "assets/" + texRes.getResourceDomain() + "/" + texRes.getResourcePath();
             if (MyCTMLib.debugMode) {
                 MyCTMLib.LOG.info("[CTMLibFusion] prefillTextureRegistry try resource domain={} path={} full={}",
                     texRes.getResourceDomain(), texRes.getResourcePath(),
@@ -264,19 +288,24 @@ public class CTMLibResourceLoader implements net.minecraft.client.resources.IRes
                 try {
                     sec = resource.getMetadata("ctmlib");
                 } catch (Exception deserEx) {
-                    String attemptedPath = "assets/" + texRes.getResourceDomain() + "/" + texRes.getResourcePath();
+                    ResourceLoadTrace.getInstance()
+                        .add("texture_prefill", lookupKey, fullPath, false, null, deserEx);
                     MyCTMLib.LOG.warn("[CTMLibFusion] prefillTextureRegistry ctmlib deserialize failed lookupKey={} path={}",
-                        lookupKey, attemptedPath, deserEx);
+                        lookupKey, fullPath, deserEx);
                     DebugErrorCollector.getInstance()
-                        .add("texture_prefill_deserialize", lookupKey, attemptedPath, deserEx);
+                        .add("texture_prefill_deserialize", lookupKey, fullPath, deserEx);
                     continue;
                 }
                 if (sec instanceof TextureMetadataSection tms) {
                     texReg.put(lookupKey, tms.getData());
+                    ResourceLoadTrace.getInstance()
+                        .add("texture_prefill_ok", lookupKey, fullPath, true);
                     if (MyCTMLib.debugMode) {
                         MyCTMLib.LOG.info("[CTMLibFusion] prefillTextureRegistry REGISTERED lookupKey={}", lookupKey);
                     }
                 } else {
+                    ResourceLoadTrace.getInstance()
+                        .add("texture_prefill_skip", lookupKey, fullPath, true);
                     if (MyCTMLib.debugMode) {
                         MyCTMLib.LOG.debug("[CTMLibFusion] prefillTextureRegistry no ctmlib metadata lookupKey={} sec={}",
                             lookupKey, sec != null ? sec.getClass()
@@ -284,19 +313,21 @@ public class CTMLibResourceLoader implements net.minecraft.client.resources.IRes
                     }
                 }
             } catch (IOException e) {
-                String attemptedPath = "assets/" + texRes.getResourceDomain() + "/" + texRes.getResourcePath();
+                ResourceLoadTrace.getInstance()
+                    .add("texture_prefill", lookupKey, fullPath, false, null, e);
                 if (MyCTMLib.debugMode) {
                     MyCTMLib.LOG.warn("[CTMLibFusion] prefillTextureRegistry resource not found lookupKey={} path={}",
-                        lookupKey, attemptedPath);
+                        lookupKey, fullPath);
                 }
                 DebugErrorCollector.getInstance()
-                    .add("texture_prefill", lookupKey, attemptedPath, e);
+                    .add("texture_prefill", lookupKey, fullPath, e);
             } catch (Exception e) {
-                String attemptedPath = "assets/" + texRes.getResourceDomain() + "/" + texRes.getResourcePath();
+                ResourceLoadTrace.getInstance()
+                    .add("texture_prefill", lookupKey, fullPath, false, null, e);
                 MyCTMLib.LOG.warn("[CTMLibFusion] prefillTextureRegistry unexpected lookupKey={} path={}", lookupKey,
-                    attemptedPath, e);
+                    fullPath, e);
                 DebugErrorCollector.getInstance()
-                    .add("texture_prefill", lookupKey, attemptedPath, e);
+                    .add("texture_prefill", lookupKey, fullPath, e);
             }
         }
     }

@@ -96,7 +96,7 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
                 return;
             }
 
-            // 新管线：若存在 ctmlib section 则写入 TextureRegistry（用 canonicalKey），并替换 sprite 为整张连接图（否则 block 拿到的是 16x16）
+            // 新管线：若存在 ctmlib section 则写入 TextureRegistry（用 canonicalKey），并替换 sprite 为整张连接图
             boolean hadCtmlib = false;
             try {
                 IMetadataSection ctmlibSec = resource.getMetadata("ctmlib");

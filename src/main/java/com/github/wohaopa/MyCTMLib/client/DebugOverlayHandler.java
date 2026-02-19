@@ -6,7 +6,6 @@ import java.util.List;
 
 import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.util.MovingObjectPosition.MovingObjectType;
 import net.minecraft.world.World;
@@ -49,11 +48,11 @@ public class DebugOverlayHandler {
 
         List<String> lines = new ArrayList<>();
         String blockId = getBlockId(block);
+        int meta = world.getBlockMetadata(x, y, z);
         lines.add(
             "block: " + (blockId != null ? blockId
                 : block.getClass()
-                    .getSimpleName()));
-        lines.add("meta: " + world.getBlockMetadata(x, y, z));
+                    .getSimpleName()) + " meta: " + meta);
 
         int hitSide = Math.min(mop.sideHit, 5);
         ForgeDirection hitFace = ForgeDirection.getOrientation(hitSide);
@@ -73,8 +72,7 @@ public class DebugOverlayHandler {
         // 当前面（准星所指）完整管线信息
         PipelineDebugTrace trace = new PipelineDebugTrace();
         PipelineInfo hitInfo = CTMRenderEntry.getPipelineInfo(world, block, x, y, z, hitFace, trace);
-        lines.add("--- " + SIDE_NAMES_FULL[hitSide] + " ---");
-        lines.add("pipeline: " + hitInfo.getType());
+        lines.add("face: " + SIDE_NAMES_FULL[hitSide] + " | pipeline: " + shortName(hitInfo.getType()));
         lines.add("icon: " + hitInfo.getIconName());
         switch (hitInfo.getType()) {
             case MODEL:
@@ -85,22 +83,13 @@ public class DebugOverlayHandler {
                     lines.add(
                         "TexReg/TexMap: " + (Boolean.TRUE.equals(synced) ? "synced" : "OUT OF SYNC (getIcon null, fallback to block icon)"));
                 }
-                if (trace.getDrawSpriteName() != null) {
-                    lines.add("drawSprite: " + trace.getDrawSpriteName() + " " + trace.getDrawSpriteLoaded());
-                }
-                lines.add("layout: " + hitInfo.getLayout());
-                if (hitInfo.getMask() >= 0) {
-                    lines.add("mask: 0x" + Integer.toHexString(hitInfo.getMask()));
-                }
+                addDrawSpriteLine(lines, trace);
+                addLayoutMaskLine(lines, hitInfo);
                 break;
             case TEXTURE_REGISTRY:
-                if (trace.getDrawSpriteName() != null) {
-                    lines.add("drawSprite: " + trace.getDrawSpriteName() + " " + trace.getDrawSpriteLoaded());
-                }
-                lines.add("layout: " + hitInfo.getLayout());
-                if (hitInfo.getMask() >= 0) {
-                    lines.add("mask: 0x" + Integer.toHexString(hitInfo.getMask()));
-                }
+                lines.add("lookupKey: " + hitInfo.getIconName());
+                addDrawSpriteLine(lines, trace);
+                addLayoutMaskLine(lines, hitInfo);
                 break;
             case LEGACY:
                 lines.add("legacy: ctmIconMap");
@@ -113,44 +102,102 @@ public class DebugOverlayHandler {
                 break;
         }
 
-        // 决策流程与退化原因
-        if (trace.getPredicateUsed() != null) {
-            lines.add("predicate: " + trace.getPredicateUsed());
-        }
-        if (trace.getTilePos() != null) {
-            lines.add("tile: (" + trace.getTilePos()[0] + ", " + trace.getTilePos()[1] + ")");
-        }
-        if (trace.getConnectionBits() != null) {
-            int[] bits = trace.getConnectionBits();
-            StringBuilder conn = new StringBuilder("conn: T TR R BR B BL L TL = ");
-            for (int i = 0; i < 8; i++) {
-                if (i > 0) conn.append(" ");
-                conn.append(bits[i]);
-            }
-            lines.add(conn.toString());
-        }
+        // predicate / tile / conn 合并一行
+        addPredicateTileConnLine(lines, trace);
         if (trace.getDegradationReason() != null && !trace.getDegradationReason()
             .isEmpty()) {
             lines.add("degrade: " + trace.getDegradationReason());
         }
-        if (!trace.getSteps().isEmpty()) {
-            lines.add("--- decision ---");
-            int maxSteps = 12;
-            for (int i = 0; i < Math.min(trace.getSteps().size(), maxSteps); i++) {
-                lines.add(trace.getSteps().get(i));
-            }
-            if (trace.getSteps().size() > maxSteps) {
-                lines.add("... (" + (trace.getSteps().size() - maxSteps) + " more)");
-            }
-        }
+        addDecisionSteps(lines, trace);
 
-        ScaledResolution res = event.resolution;
         int lineHeight = mc.fontRenderer.FONT_HEIGHT;
         int xPos = 4;
         int yPos = 4;
         for (String line : lines) {
             mc.fontRenderer.drawStringWithShadow(line, xPos, yPos, 0xFFFFFF);
             yPos += lineHeight + 2;
+        }
+    }
+
+    private static void addDrawSpriteLine(List<String> lines, PipelineDebugTrace trace) {
+        if (trace.getDrawSpriteName() == null) return;
+        String loaded = trace.getDrawSpriteLoaded();
+        String suffix = "";
+        if (loaded != null) {
+            if (loaded.contains("0x0")) suffix = " (unloaded?)";
+            else if ("16x16".equals(loaded)) suffix = " (16x16?)";
+        }
+        lines.add("drawSprite: " + trace.getDrawSpriteName() + (loaded != null && !loaded.isEmpty() ? " " + loaded : "") + suffix);
+    }
+
+    private static void addLayoutMaskLine(List<String> lines, PipelineInfo hitInfo) {
+        if (hitInfo.getLayout() == null) return;
+        if (hitInfo.getMask() >= 0) {
+            lines.add("layout: " + hitInfo.getLayout() + " mask: 0x" + Integer.toHexString(hitInfo.getMask()));
+        } else {
+            lines.add("layout: " + hitInfo.getLayout());
+        }
+    }
+
+    private static void addPredicateTileConnLine(List<String> lines, PipelineDebugTrace trace) {
+        String pred = trace.getPredicateUsed();
+        int[] tile = trace.getTilePos();
+        int[] bits = trace.getConnectionBits();
+        if (pred == null && tile == null && bits == null) return;
+        StringBuilder sb = new StringBuilder();
+        if (pred != null) sb.append("pred: ").append(pred);
+        if (tile != null) {
+            if (sb.length() > 0) sb.append(" ");
+            sb.append("tile:(").append(tile[0]).append(",").append(tile[1]).append(")");
+        }
+        if (bits != null) {
+            if (sb.length() > 0) sb.append(" ");
+            sb.append("conn:");
+            for (int i = 0; i < 8; i++) {
+                if (i > 0) sb.append(" ");
+                sb.append(bits[i]);
+            }
+        }
+        if (sb.length() > 0) lines.add(sb.toString());
+    }
+
+    private static final String[] DECISION_KEYWORDS = {
+        "getIcon", "HIT", "null", "miss", "degrade", "OUT OF SYNC", "不同步"
+    };
+
+    private static void addDecisionSteps(List<String> lines, PipelineDebugTrace trace) {
+        List<String> steps = trace.getSteps();
+        if (steps.isEmpty()) return;
+        lines.add("--- decision ---");
+        List<String> keySteps = new ArrayList<>();
+        List<String> rest = new ArrayList<>();
+        for (String s : steps) {
+            boolean key = false;
+            if (s != null) {
+                for (String kw : DECISION_KEYWORDS) {
+                    if (s.contains(kw)) {
+                        key = true;
+                        break;
+                    }
+                }
+            }
+            if (key) keySteps.add(s);
+            else rest.add(s);
+        }
+        int maxSteps = 5;
+        int shown = 0;
+        for (String s : keySteps) {
+            if (shown >= maxSteps) break;
+            lines.add(s);
+            shown++;
+        }
+        for (String s : rest) {
+            if (shown >= maxSteps) break;
+            lines.add(s);
+            shown++;
+        }
+        if (steps.size() > maxSteps) {
+            lines.add("... (" + (steps.size() - maxSteps) + " more)");
         }
     }
 
