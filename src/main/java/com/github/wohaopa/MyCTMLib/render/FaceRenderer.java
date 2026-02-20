@@ -92,10 +92,49 @@ public final class FaceRenderer {
     public static void drawFace(RenderBlocks renderBlocks, double x, double y, double z, ForgeDirection face,
         IIcon icon, int tileX, int tileY, int gridW, int gridH, int fallbackBrightness, double relMinX, double relMaxX,
         double relMinY, double relMaxY, double relMinZ, double relMaxZ) {
-        double minU = icon.getMinU() + (icon.getMaxU() - icon.getMinU()) * tileX / gridW;
-        double maxU = icon.getMinU() + (icon.getMaxU() - icon.getMinU()) * (tileX + 1) / gridW;
-        double minV = icon.getMinV() + (icon.getMaxV() - icon.getMinV()) * tileY / gridH;
-        double maxV = icon.getMinV() + (icon.getMaxV() - icon.getMinV()) * (tileY + 1) / gridH;
+        // 1. 计算连接纹理的基础 UV（基于 tileX/tileY 在 layout 网格中的位置）
+        double baseMinU = icon.getMinU() + (icon.getMaxU() - icon.getMinU()) * tileX / gridW;
+        double baseMaxU = icon.getMinU() + (icon.getMaxU() - icon.getMinU()) * (tileX + 1) / gridW;
+        double baseMinV = icon.getMinV() + (icon.getMaxV() - icon.getMinV()) * tileY / gridH;
+        double baseMaxV = icon.getMinV() + (icon.getMaxV() - icon.getMinV()) * (tileY + 1) / gridH;
+
+        // 2. 根据 face 和 bounds 对 UV 进行插值，使台阶等非标准方块的纹理正确裁剪
+        double minU, maxU, minV, maxV;
+        double uRange = baseMaxU - baseMinU;
+        double vRange = baseMaxV - baseMinV;
+
+        switch (face) {
+            case DOWN:
+            case UP:
+                // 水平面：U 对应 X 轴，V 对应 Z 轴
+                minU = baseMinU + uRange * relMinX;
+                maxU = baseMinU + uRange * relMaxX;
+                minV = baseMinV + vRange * relMinZ;
+                maxV = baseMinV + vRange * relMaxZ;
+                break;
+            case NORTH:
+            case SOUTH:
+                // 南北面：U 对应 X 轴，V 对应 Y 轴
+                minU = baseMinU + uRange * relMinX;
+                maxU = baseMinU + uRange * relMaxX;
+                minV = baseMinV + vRange * relMinY;
+                maxV = baseMinV + vRange * relMaxY;
+                break;
+            case WEST:
+            case EAST:
+                // 东西面：U 对应 Z 轴，V 对应 Y 轴
+                minU = baseMinU + uRange * relMinZ;
+                maxU = baseMinU + uRange * relMaxZ;
+                minV = baseMinV + vRange * relMinY;
+                maxV = baseMinV + vRange * relMaxY;
+                break;
+            default:
+                minU = baseMinU;
+                maxU = baseMaxU;
+                minV = baseMinV;
+                maxV = baseMaxV;
+        }
+
         drawFace(
             renderBlocks,
             x,
