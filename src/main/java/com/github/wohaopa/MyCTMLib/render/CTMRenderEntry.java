@@ -131,6 +131,15 @@ public final class CTMRenderEntry {
         int mask = ConnectionState.computeMask(blockAccess, (int) x, (int) y, (int) z, face, block, meta, predicate);
         int[] pos = handler.getTilePosition(mask);
         int brightness = block.getMixedBrightnessForBlock(blockAccess, (int) x, (int) y, (int) z);
+
+        // 使用 RenderBlocks 的 bounds，支持台阶、楼梯等非标准方块
+        double relMinX = renderBlocks.renderMinX;
+        double relMaxX = renderBlocks.renderMaxX;
+        double relMinY = renderBlocks.renderMinY;
+        double relMaxY = renderBlocks.renderMaxY;
+        double relMinZ = renderBlocks.renderMinZ;
+        double relMaxZ = renderBlocks.renderMaxZ;
+
         FaceRenderer.drawFace(
             renderBlocks,
             x,
@@ -142,7 +151,13 @@ public final class CTMRenderEntry {
             pos[1],
             handler.getWidth(),
             handler.getHeight(),
-            brightness);
+            brightness,
+            relMinX,
+            relMaxX,
+            relMinY,
+            relMaxY,
+            relMinZ,
+            relMaxZ);
         return true;
     }
 
@@ -382,6 +397,15 @@ public final class CTMRenderEntry {
         int tileX = 0;
         int tileY = 0;
         int brightness = 15728880;
+
+        // 使用 RenderBlocks 的 bounds，支持台阶、楼梯等非标准方块的物品渲染
+        double relMinX = renderBlocks.renderMinX;
+        double relMaxX = renderBlocks.renderMaxX;
+        double relMinY = renderBlocks.renderMinY;
+        double relMaxY = renderBlocks.renderMaxY;
+        double relMinZ = renderBlocks.renderMinZ;
+        double relMaxZ = renderBlocks.renderMaxZ;
+
         FaceRenderer.drawFace(
             renderBlocks,
             x,
@@ -393,7 +417,13 @@ public final class CTMRenderEntry {
             tileY,
             handler.getWidth(),
             handler.getHeight(),
-            brightness);
+            brightness,
+            relMinX,
+            relMaxX,
+            relMinY,
+            relMaxY,
+            relMinZ,
+            relMaxZ);
         return true;
     }
 
