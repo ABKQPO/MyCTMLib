@@ -69,12 +69,25 @@ public final class TextureKeyNormalizer {
 
     /**
      * 将模型纹理路径转为规范键。
-     * - minecraft:block/cobblestone → minecraft:blocks/cobblestone
-     * - minecraft:item/diamond → minecraft:items/diamond
-     * - block/cobblestone + domain → domain:blocks/cobblestone
-     * - item/diamond + domain → domain:items/diamond
-     * - stone + domain → domain:blocks/stone（默认 blocks）
-     * - iconsets/xxx 保留原 path
+     * <p>
+     * <strong>输入来源</strong>：{@code TexturePathSource#MODEL_TEXTURES}
+     * <p>
+     * <strong>转换规则</strong>：
+     * <ul>
+     *   <li>{@code minecraft:block/cobblestone} → {@code minecraft:blocks/cobblestone}</li>
+     *   <li>{@code minecraft:item/diamond} → {@code minecraft:items/diamond}</li>
+     *   <li>{@code block/cobblestone + domain} → {@code domain:blocks/cobblestone}</li>
+     *   <li>{@code item/diamond + domain} → {@code domain:items/diamond}</li>
+     *   <li>{@code stone + domain} → {@code domain:blocks/stone}（默认 blocks）</li>
+     *   <li>{@code iconsets/xxx + domain} → {@code domain:blocks/iconsets/xxx}（添加 blocks/ 前缀）</li>
+     * </ul>
+     * <p>
+     * <strong>注意</strong>：所有非 {@code blocks/} 和 {@code items/} 的路径都会添加 {@code blocks/} 前缀，
+     * 确保 canonicalKey 格式统一为 {@code <domain>:blocks/<path>} 或 {@code <domain>:items/<path>}。
+     *
+     * @param domain 命名空间（如 "minecraft", "gregtech"）
+     * @param path   纹理路径（如 "block/stone", "iconsets/xxx"）
+     * @return 规范化的纹理键（如 "minecraft:blocks/stone"）
      */
     public static String toCanonicalTextureKey(String domain, String path) {
         if (path == null) return null;
@@ -93,12 +106,9 @@ public final class TextureKeyNormalizer {
         }
         pathPart = pathPart.replace("block/", "blocks/");
         pathPart = pathPart.replace("item/", "items/");
+        // 所有非 blocks/ 和 items/ 的路径都添加 blocks/ 前缀，确保格式统一
         if (!pathPart.startsWith("blocks/") && !pathPart.startsWith("items/")) {
-            if (pathPart.startsWith("iconsets/") || pathPart.startsWith("textures/")) {
-                // 保留原 path
-            } else {
-                pathPart = "blocks/" + pathPart;
-            }
+            pathPart = "blocks/" + pathPart;
         }
         return d + ":" + pathPart;
     }

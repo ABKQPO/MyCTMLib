@@ -334,7 +334,63 @@ public class CTMLibResourceLoader implements net.minecraft.client.resources.IRes
 
     /**
      * 将模型纹理路径转为 ResourceLocation。
-     * 如 ic2:block/blockAlloyGlass&0 → (ic2, textures/blocks/blockAlloyGlass&0)。
+     *
+     * <h2>Minecraft 模型纹理路径规范</h2>
+     * <p>
+     * 根据 Minecraft 官方模型系统规范，模型 JSON 中的纹理引用格式为：
+     * </p>
+     * <pre>{@code
+     * {
+     *   "textures": {
+     *     "all": "block/stone",           // Minecraft 原生：block/ 前缀
+     *     "layer0": "item/diamond",       // Minecraft 原生：item/ 前缀
+     *     "default": "ic2:block/xxx"      // Mod 纹理：modid:block/ 前缀
+     *   }
+     * }
+     * }</pre>
+     * <p>
+     * 纹理实际文件路径为：
+     * </p>
+     * <pre>
+     * assets/&lt;namespace&gt;/textures/&lt;path&gt;.png
+     *                             ^^^^^^
+     *                    必须包含 block/ 或 item/ 前缀
+     * </pre>
+     * <p>
+     * 例如：
+     * </p>
+     * <ul>
+     *   <li>{@code "block/stone"} → {@code assets/minecraft/textures/block/stone.png}</li>
+     *   <li>{@code "ic2:block/xxx"} → {@code assets/ic2/textures/block/xxx.png}</li>
+     * </ul>
+     *
+     * <h2>CTMLib 的规范化处理</h2>
+     * <p>
+     * {@link TextureKeyNormalizer#toCanonicalTextureKey(String, String)} 会将路径规范化为：
+     * </p>
+     * <ul>
+     *   <li>{@code "block/xxx"} → {@code "blocks/xxx"} (单数 → 复数)</li>
+     *   <li>{@code "item/xxx"} → {@code "items/xxx"} (单数 → 复数)</li>
+     * </ul>
+     *
+     * <h2>转换示例</h2>
+     * <pre>
+     * 输入：modelDomain = "ic2", texturePath = "ic2:block/blockAlloyGlass"
+     * ↓
+     * canonical = "ic2:blocks/blockAlloyGlass"  (block/ → blocks/)
+     * ↓
+     * pathPart = "blocks/blockAlloyGlass"
+     * ↓
+     * resourcePath = "textures/" + pathPart + ".png"
+     *              = "textures/blocks/blockAlloyGlass.png"
+     * ↓
+     * 返回：ResourceLocation("ic2", "textures/blocks/blockAlloyGlass.png")
+     * </pre>
+     *
+     * @param modelDomain   模型所在的 domain（如 "minecraft", "ic2", "gregtech"）
+     * @param texturePath   模型 textures 对象中的值（如 "block/stone", "ic2:block/xxx"）
+     * @return 用于 ResourceManager 查找纹理的 ResourceLocation
+     * @see TextureKeyNormalizer#toCanonicalTextureKey(String, String)
      */
     private static ResourceLocation toTextureResourceLocation(String modelDomain, String texturePath) {
         String canonical = TextureKeyNormalizer.toCanonicalTextureKey(modelDomain, texturePath);
@@ -344,6 +400,8 @@ public class CTMLibResourceLoader implements net.minecraft.client.resources.IRes
         String domain = canonical.substring(0, colon);
         String pathPart = canonical.substring(colon + 1);
         if (pathPart.isEmpty()) return null;
+        // 此时 pathPart 格式为 "blocks/xxx"、"items/xxx" 或 "iconsets/xxx" 等
+        // 构建完整资源路径：textures/blocks/xxx.png 或 textures/items/xxx.png
         String resourcePath = "textures/" + pathPart + ".png";
         return new ResourceLocation(domain, resourcePath);
     }

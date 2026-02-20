@@ -54,10 +54,29 @@ public class NewTextureAtlasSprite extends TextureAtlasSprite {
      *   <li><strong>注意</strong>：传入的是原始的 {@code resourcelocation}，不是经 {@code completeResourceLocation()} 构建的完整路径</li>
      * </ol>
      *
+     * <h3>与 TextureMap.basePath 的关系</h3>
+     * <p>
+     * 在原版 {@code TextureMap.loadTextureAtlas()} 中，完整路径通过 {@code completeResourceLocation()} 构建：
+     * </p>
+     * <pre>{@code
+     * // TextureMap 构造函数
+     * TextureMap blocksMap = new TextureMap(0, "textures/blocks");  // basePath = "textures/blocks"
+     * 
+     * // completeResourceLocation()
+     * ResourceLocation complete = new ResourceLocation(
+     *     location.getResourceDomain(),
+     *     this.basePath + "/" + location.getResourcePath() + ".png"
+     * );
+     * // 结果 = ("gregtech", "textures/blocks/iconsets/MACHINE_CASING_LASER.png")
+     * }</pre>
+     * <p>
+     * 但 {@code load()} 方法接收的是原始的 {@code location}，需要自行构建完整路径。
+     * </p>
+     *
      * <h3>location 参数格式</h3>
      * <pre>
      * location.getResourceDomain() = "gregtech"
-     * location.getResourcePath()  = "iconsets/MACHINE_CASING_LASER"  // 不含 "blocks/" 前缀
+     * location.getResourcePath()  = "iconsets/MACHINE_CASING_LASER"  // 相对路径，不含 "textures/blocks/"
      * </pre>
      *
      * <h3>实际文件路径</h3>
@@ -80,6 +99,12 @@ public class NewTextureAtlasSprite extends TextureAtlasSprite {
      *   <tr><td>{@code gregtech:basicmachines/mixer/OVERLAY}</td>
      *       <td>{@code basicmachines/mixer/OVERLAY}</td>
      *       <td>{@code textures/blocks/basicmachines/mixer/OVERLAY.png}</td></tr>
+     *   <tr><td>{@code ic2:blockAlloyGlass&5}</td>
+     *       <td>{@code blockAlloyGlass&5}</td>
+     *       <td>{@code textures/blocks/blockAlloyGlass&5.png}</td></tr>
+     *   <tr><td>{@code stone}</td>
+     *       <td>{@code stone}</td>
+     *       <td>{@code textures/blocks/stone.png}</td></tr>
      * </table>
      *
      * <h3>关于 items 图集</h3>
@@ -93,12 +118,11 @@ public class NewTextureAtlasSprite extends TextureAtlasSprite {
      * }
      * }</pre>
      * <p>
-     * 若未来需要支持 items 图集，需在此处判断图集类型，并构建对应的路径：
+     * 若未来需要支持 items 图集，需根据 basePath 构建对应的路径：
      * </p>
      * <pre>{@code
-     * // 伪代码示例
-     * String basePath = isItemsAtlas ? "textures/items/" : "textures/blocks/";
-     * String resourcePath = basePath + path + ".png";
+     * // basePath = "textures/blocks" 或 "textures/items"
+     * String resourcePath = basePath + "/" + path + ".png";
      * }</pre>
      */
     @Override
