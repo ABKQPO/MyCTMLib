@@ -18,6 +18,7 @@ public class TextureTypeRegistry {
     static {
         register("connecting", ConnectingTextureDataDeserializer.INSTANCE);
         register("base", BaseTextureDataDeserializer.INSTANCE);
+        register("random", RandomTextureDataDeserializer.INSTANCE);
     }
 
     public static synchronized void register(String typeId, TextureTypeDeserializer<?> deserializer) {

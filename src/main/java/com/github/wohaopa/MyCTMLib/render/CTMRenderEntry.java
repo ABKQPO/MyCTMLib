@@ -20,6 +20,7 @@ import com.github.wohaopa.MyCTMLib.model.ModelRegistry;
 import com.github.wohaopa.MyCTMLib.predicate.ConnectionPredicate;
 import com.github.wohaopa.MyCTMLib.predicate.PredicateRegistry;
 import com.github.wohaopa.MyCTMLib.texture.ConnectingTextureData;
+import com.github.wohaopa.MyCTMLib.texture.RandomTextureData;
 import com.github.wohaopa.MyCTMLib.texture.TextureKeyNormalizer;
 import com.github.wohaopa.MyCTMLib.texture.TextureRegistry;
 import com.github.wohaopa.MyCTMLib.texture.TextureTypeData;
@@ -80,13 +81,11 @@ public final class CTMRenderEntry {
                             if (texturePath == null) continue;
                             String textureLookupKey = TextureKeyNormalizer.toCanonicalTextureKey(domain, texturePath);
                             TextureTypeData data = getConnectingData(textureLookupKey);
-                            if (!(data instanceof ConnectingTextureData texData)) continue;
+                            
                             IIcon drawIcon = TextureRegistry.getInstance()
                                 .getIcon(textureLookupKey);
                             if (drawIcon == null) drawIcon = icon;
-                            ConnectingLayout layout = texData.getLayout();
-                            LayoutHandler handler = LayoutHandlers.get(layout);
-                            int[] pos = handler.getTilePosition(mask);
+                            
                             float[] f = el.getFrom(), t = el.getTo();
                             double relMinX = Math.min(f[0], t[0]) / 16.0;
                             double relMaxX = Math.max(f[0], t[0]) / 16.0;
@@ -94,6 +93,46 @@ public final class CTMRenderEntry {
                             double relMaxY = Math.max(f[1], t[1]) / 16.0;
                             double relMinZ = Math.min(f[2], t[2]) / 16.0;
                             double relMaxZ = Math.max(f[2], t[2]) / 16.0;
+                            
+                            // 处理 RandomTextureData
+                            if (data instanceof RandomTextureData randomData) {
+                                long worldSeed = 0;
+                                if (blockAccess instanceof net.minecraft.world.World) {
+                                    worldSeed = ((net.minecraft.world.World) blockAccess).getSeed();
+                                }
+                                int randomIndex = com.github.wohaopa.MyCTMLib.FastRandom.getRandomIndex(
+                                    worldSeed, (int) x, (int) y, (int) z, randomData.getCount());
+                                int tileX = randomIndex % randomData.getColumns();
+                                int tileY = randomIndex / randomData.getColumns();
+                                
+                                FaceRenderer.drawFace(
+                                    renderBlocks,
+                                    x,
+                                    y,
+                                    z,
+                                    face,
+                                    drawIcon,
+                                    tileX,
+                                    tileY,
+                                    randomData.getColumns(),
+                                    randomData.getRows(),
+                                    brightness,
+                                    relMinX,
+                                    relMaxX,
+                                    relMinY,
+                                    relMaxY,
+                                    relMinZ,
+                                    relMaxZ);
+                                drewAny = true;
+                                continue;
+                            }
+                            
+                            // 处理 ConnectingTextureData
+                            if (!(data instanceof ConnectingTextureData texData)) continue;
+                            ConnectingLayout layout = texData.getLayout();
+                            LayoutHandler handler = LayoutHandlers.get(layout);
+                            int[] pos = handler.getTilePosition(mask);
+                            
                             FaceRenderer.drawFace(
                                 renderBlocks,
                                 x,
@@ -122,14 +161,9 @@ public final class CTMRenderEntry {
 
         // 回退到 TextureRegistry(iconName)：用 TexReg 查到的 sprite 绘制，无则用 block icon
         TextureTypeData data = getConnectingData(iconName);
-        if (!(data instanceof ConnectingTextureData ctd)) return false;
+        if (!(data instanceof ConnectingTextureData) && !(data instanceof RandomTextureData)) return false;
         IIcon drawIcon = TextureRegistry.getInstance().getIcon(iconName);
         if (drawIcon == null) drawIcon = icon;
-        ConnectionPredicate predicate = PredicateRegistry.defaultPredicate();
-        ConnectingLayout layout = ctd.getLayout();
-        LayoutHandler handler = LayoutHandlers.get(layout);
-        int mask = ConnectionState.computeMask(blockAccess, (int) x, (int) y, (int) z, face, block, meta, predicate);
-        int[] pos = handler.getTilePosition(mask);
         int brightness = block.getMixedBrightnessForBlock(blockAccess, (int) x, (int) y, (int) z);
 
         // 使用 RenderBlocks 的 bounds，支持台阶、楼梯等非标准方块
@@ -139,6 +173,47 @@ public final class CTMRenderEntry {
         double relMaxY = renderBlocks.renderMaxY;
         double relMinZ = renderBlocks.renderMinZ;
         double relMaxZ = renderBlocks.renderMaxZ;
+
+        // 处理 RandomTextureData
+        if (data instanceof RandomTextureData randomData) {
+            int tileX, tileY;
+            long worldSeed = 0;
+            if (blockAccess instanceof net.minecraft.world.World) {
+                worldSeed = ((net.minecraft.world.World) blockAccess).getSeed();
+            }
+            int randomIndex = com.github.wohaopa.MyCTMLib.FastRandom.getRandomIndex(
+                worldSeed, (int) x, (int) y, (int) z, randomData.getCount());
+            tileX = randomIndex % randomData.getColumns();
+            tileY = randomIndex / randomData.getColumns();
+
+            FaceRenderer.drawFace(
+                renderBlocks,
+                x,
+                y,
+                z,
+                face,
+                drawIcon,
+                tileX,
+                tileY,
+                randomData.getColumns(),
+                randomData.getRows(),
+                brightness,
+                relMinX,
+                relMaxX,
+                relMinY,
+                relMaxY,
+                relMinZ,
+                relMaxZ);
+            return true;
+        }
+
+        // 处理 ConnectingTextureData
+        ConnectingTextureData ctd = (ConnectingTextureData) data;
+        ConnectionPredicate predicate = PredicateRegistry.defaultPredicate();
+        ConnectingLayout layout = ctd.getLayout();
+        LayoutHandler handler = LayoutHandlers.get(layout);
+        int mask = ConnectionState.computeMask(blockAccess, (int) x, (int) y, (int) z, face, block, meta, predicate);
+        int[] pos = handler.getTilePosition(mask);
 
         FaceRenderer.drawFace(
             renderBlocks,
@@ -261,8 +336,35 @@ public final class CTMRenderEntry {
                             skipTexKey = textureLookupKey;
                             TextureTypeData data = getConnectingData(textureLookupKey);
                             if (out != null) {
-                                out.addStep("6. element texKey " + textureKey + " -> lookup " + textureLookupKey + " -> " + (data instanceof ConnectingTextureData ? "HIT" : "miss"));
+                                String dataTypeName = data != null ? data.getClass().getSimpleName() : "null";
+                                out.addStep("6. element texKey " + textureKey + " -> lookup " + textureLookupKey + " -> " + dataTypeName);
                             }
+                            // 处理 RandomTextureData
+                            if (data instanceof RandomTextureData randomData) {
+                                IIcon modelIcon = TextureRegistry.getInstance()
+                                    .getIcon(textureLookupKey);
+                                if (out != null) {
+                                    if (modelIcon == null) {
+                                        out.addStep("7. TexReg.getIcon(" + textureLookupKey + ") -> null (TexReg/TexMap OUT OF SYNC, fallback to block icon)");
+                                        out.setTexRegTexMapSync(false, textureLookupKey);
+                                    } else {
+                                        out.addStep("7. TexReg.getIcon(" + textureLookupKey + ") -> HIT (TexReg/TexMap synced)");
+                                        out.setTexRegTexMapSync(true, textureLookupKey);
+                                        out.setDrawSpriteInfo(modelIcon.getIconName(), modelIcon.getIconWidth(), modelIcon.getIconHeight());
+                                    }
+                                }
+                                long worldSeed = 0;
+                                if (blockAccess instanceof net.minecraft.world.World) {
+                                    worldSeed = ((net.minecraft.world.World) blockAccess).getSeed();
+                                }
+                                int randomIndex = com.github.wohaopa.MyCTMLib.FastRandom.getRandomIndex(
+                                    worldSeed, x, y, z, randomData.getCount());
+                                if (out != null) {
+                                    out.setTilePos(randomIndex % randomData.getColumns(), randomIndex / randomData.getColumns());
+                                }
+                                return PipelineInfo.modelRandom(textureLookupKey, modelId, textureKey, randomIndex);
+                            }
+                            // 处理 ConnectingTextureData
                             if (data instanceof ConnectingTextureData texData) {
                                 IIcon modelIcon = TextureRegistry.getInstance()
                                     .getIcon(textureLookupKey);
@@ -302,8 +404,29 @@ public final class CTMRenderEntry {
         TextureTypeData data = getConnectingData(iconName);
         List<String> texRegCandidates = TextureKeyNormalizer.getLookupCandidates(iconName);
         if (out != null) {
-            out.addStep("8. TexReg(iconName) candidates " + texRegCandidates + " -> " + (data instanceof ConnectingTextureData ? "HIT" : "miss"));
+            String dataTypeName = data != null ? data.getClass().getSimpleName() : "null";
+            out.addStep("8. TexReg(iconName) candidates " + texRegCandidates + " -> " + dataTypeName);
         }
+        // 处理 RandomTextureData
+        if (data instanceof RandomTextureData randomData) {
+            long worldSeed = 0;
+            if (blockAccess instanceof net.minecraft.world.World) {
+                worldSeed = ((net.minecraft.world.World) blockAccess).getSeed();
+            }
+            int randomIndex = com.github.wohaopa.MyCTMLib.FastRandom.getRandomIndex(
+                worldSeed, x, y, z, randomData.getCount());
+            if (out != null) {
+                out.setTilePos(randomIndex % randomData.getColumns(), randomIndex / randomData.getColumns());
+                IIcon regIcon = TextureRegistry.getInstance().getIcon(iconName);
+                if (regIcon != null) {
+                    out.setDrawSpriteInfo(regIcon.getIconName(), regIcon.getIconWidth(), regIcon.getIconHeight());
+                } else {
+                    out.setDrawSpriteInfo(icon.getIconName(), icon.getIconWidth(), icon.getIconHeight());
+                }
+            }
+            return PipelineInfo.textureRegistryRandom(iconName, randomIndex);
+        }
+        // 处理 ConnectingTextureData
         if (data instanceof ConnectingTextureData ctd) {
             ConnectionPredicate predicate = PredicateRegistry.defaultPredicate();
             int mask = ConnectionState.computeMask(blockAccess, x, y, z, face, block, meta, predicate);
@@ -321,7 +444,7 @@ public final class CTMRenderEntry {
             }
             return PipelineInfo.textureRegistry(iconName, ctd.getLayout(), mask);
         }
-        if (out != null && !(data instanceof ConnectingTextureData) && out.getDegradationReason() == null) {
+        if (out != null && out.getDegradationReason() == null) {
             out.setDegradationReason("TexReg(iconName) + candidates " + texRegCandidates + " -> miss");
         }
 

@@ -8,6 +8,7 @@ import net.minecraftforge.client.event.TextureStitchEvent;
 
 import com.github.wohaopa.MyCTMLib.resource.CTMLibResourceLoader;
 import com.github.wohaopa.MyCTMLib.texture.ConnectingTextureData;
+import com.github.wohaopa.MyCTMLib.texture.RandomTextureData;
 import com.github.wohaopa.MyCTMLib.texture.TextureKeyNormalizer;
 import com.github.wohaopa.MyCTMLib.texture.TextureRegistry;
 import com.github.wohaopa.MyCTMLib.texture.TextureTypeData;
@@ -36,7 +37,7 @@ public class TextureStitchEventHandler {
         Map<String, TextureTypeData> pathToData = TextureRegistry.getInstance()
             .getPathToDataForDump();
         for (Map.Entry<String, TextureTypeData> e : pathToData.entrySet()) {
-            if (!(e.getValue() instanceof ConnectingTextureData)) continue;
+            if (!(e.getValue() instanceof ConnectingTextureData) && !(e.getValue() instanceof RandomTextureData)) continue;
             String key = e.getKey();
             TextureKeyNormalizer.TextureCategory cat = TextureKeyNormalizer.getTextureCategory(key);
             if (isBlocks && cat != TextureKeyNormalizer.TextureCategory.BLOCKS) continue;

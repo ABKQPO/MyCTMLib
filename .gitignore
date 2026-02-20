@@ -39,3 +39,4 @@ layout.json
 .cursor/
 .qwen/
 /refs
+.qwenignore

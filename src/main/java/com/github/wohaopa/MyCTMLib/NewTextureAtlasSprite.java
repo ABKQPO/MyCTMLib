@@ -13,6 +13,7 @@ import net.minecraft.client.resources.IResourceManager;
 import net.minecraft.util.ResourceLocation;
 
 import com.github.wohaopa.MyCTMLib.texture.ConnectingTextureData;
+import com.github.wohaopa.MyCTMLib.texture.RandomTextureData;
 import com.github.wohaopa.MyCTMLib.texture.TextureRegistry;
 import com.github.wohaopa.MyCTMLib.texture.TextureTypeData;
 
@@ -31,13 +32,14 @@ public class NewTextureAtlasSprite extends TextureAtlasSprite {
     }
 
     /**
-     * 仅当该纹理在 TextureRegistry 中为 ConnectingTextureData 时使用自定义加载（与 CTMRenderEntry 查表规则一致）。
+     * 仅当该纹理在 TextureRegistry 中为 ConnectingTextureData 或 RandomTextureData 时使用自定义加载（与 CTMRenderEntry 查表规则一致）。
+     * RandomTexture 需要自定义加载以绕过原版 loadSprite 的 "broken aspect ratio" 检查（非方形 sprite sheet）。
      */
     @Override
     public boolean hasCustomLoader(IResourceManager manager, ResourceLocation location) {
         String key = toTextureKey(location);
         TextureTypeData data = getConnectingData(key);
-        return data instanceof ConnectingTextureData;
+        return data instanceof ConnectingTextureData || data instanceof RandomTextureData;
     }
 
     /**
