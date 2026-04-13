@@ -5,7 +5,6 @@ import static com.github.wohaopa.MyCTMLib.Textures.ctmIconMap;
 import static com.github.wohaopa.MyCTMLib.Textures.ctmRandomMap;
 import static com.github.wohaopa.MyCTMLib.Textures.ctmReplaceMap;
 import static com.github.wohaopa.MyCTMLib.Textures.gtBWBlocksGlassCTM;
-import static com.github.wohaopa.MyCTMLib.Textures.gtGregtechMetaCasingBlocks3CTM;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -207,13 +206,6 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
      * 修复代码所用的方法，移动到这里
      */
     private void updateGTNHFlags(String connectionTexture) {
-
-        if (connectionTexture.startsWith("miscutils:iconsets/MACHINE_CASING_FUSION_")
-            && connectionTexture.endsWith("_ctm")
-            && Loader.isModLoaded("gregtech")) {
-            gtGregtechMetaCasingBlocks3CTM = true;
-        }
-
         if (connectionTexture.contains("BoronSilicateGlass") && connectionTexture.endsWith("_ctm")
             && Loader.isModLoaded("gregtech")) {
             gtBWBlocksGlassCTM = true;

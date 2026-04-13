@@ -26,7 +26,6 @@ import gregtech.common.blocks.BlockCasings5;
 import gregtech.common.blocks.BlockMachines;
 import gregtech.common.render.GTCopiedBlockTextureRender;
 import gregtech.common.render.GTRenderedTexture;
-import gtPlusPlus.xmod.gregtech.common.blocks.GregtechMetaCasingBlocks3;
 
 public class GTNHIntegrationHelper {
 
@@ -89,10 +88,6 @@ public class GTNHIntegrationHelper {
         }
 
         return null;
-    }
-
-    public static void setGregtechMetaCasingBlocks3CTM(boolean ctm) {
-        GregtechMetaCasingBlocks3.mConnectedMachineTextures = ctm;
     }
 
     public static void setBWBlocksGlassCTM(boolean ctm) {
