@@ -44,7 +44,7 @@ public class EarlyCoreMod implements IFMLLoadingPlugin, IEarlyMixinLoader, IFMLC
     }
 
     @Override
-    public Void call() throws Exception {
+    public Void call() {
         return null;
     }
 

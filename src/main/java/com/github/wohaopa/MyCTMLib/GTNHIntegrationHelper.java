@@ -12,10 +12,10 @@ import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
 import com.github.wohaopa.MyCTMLib.mixins.AccessorGTRenderedTexture;
-import com.github.wohaopa.MyCTMLib.mixins.BWBlocksGlass2Accessor;
-import com.github.wohaopa.MyCTMLib.mixins.BWBlocksGlassAccessor;
 import com.gtnewhorizon.gtnhlib.client.renderer.TessellatorManager;
 
+import bartworks.common.blocks.BWBlocksGlass;
+import bartworks.common.blocks.BWBlocksGlass2;
 import bartworks.common.loaders.ItemRegistry;
 import gregtech.api.interfaces.IBlockWithClientMeta;
 import gregtech.api.interfaces.IBlockWithTextures;
@@ -92,7 +92,7 @@ public class GTNHIntegrationHelper {
 
     public static void setBWBlocksGlassCTM(boolean ctm) {
         if (!isInit) return;
-        ((BWBlocksGlassAccessor) ItemRegistry.bw_realglas).setConnectedTex(ctm);
-        ((BWBlocksGlass2Accessor) ItemRegistry.bw_realglas2).setConnectedTex(ctm);
+        ((BWBlocksGlass) ItemRegistry.bw_realglas).connectedTex = ctm;
+        ((BWBlocksGlass2) ItemRegistry.bw_realglas2).connectedTex = ctm;
     }
 }

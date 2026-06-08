@@ -25,6 +25,7 @@ import net.minecraft.util.ResourceLocation;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
@@ -60,9 +61,9 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
         cancellable = true)
     private void onRegisterIcon(String textureName, CallbackInfoReturnable<IIcon> cir) {
         try {
-            TextureAtlasSprite currentBase = null;
-            TextureAtlasSprite currentCTM = null;
-            TextureAtlasSprite currentAlt = null;
+            TextureAtlasSprite currentBase;
+            TextureAtlasSprite currentCTM;
+            TextureAtlasSprite currentAlt;
             IResource resource = getResourceFromTextureName(textureName);
 
             if (basePath.contains("textures\\items") || basePath.contains("textures/items")) {
@@ -205,6 +206,7 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
     /**
      * 修复代码所用的方法，移动到这里
      */
+    @Unique
     private void updateGTNHFlags(String connectionTexture) {
         if (connectionTexture.contains("BoronSilicateGlass") && connectionTexture.endsWith("_ctm")
             && Loader.isModLoaded("gregtech")) {
@@ -215,6 +217,7 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
     /**
      * 判断是否应该使用插值纹理
      */
+    @Unique
     private boolean useInterpolation(SimpleResource simple) {
         if (simple.getMetadata("animation") == null) {
             return false;
@@ -229,6 +232,7 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
     /**
      * 从JSON对象中获取资源
      */
+    @Unique
     private IResource getResourceFromJson(JsonObject ctmObj, String fieldName) throws IOException {
         ResourceLocation res = completeResourceLocation(
             new ResourceLocation(
@@ -243,6 +247,7 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
     /**
      * 从纹理名称获取资源
      */
+    @Unique
     private IResource getResourceFromTextureName(String textureName) throws IOException {
         ResourceLocation res = completeResourceLocation(new ResourceLocation(textureName), 0);
         return Minecraft.getMinecraft()

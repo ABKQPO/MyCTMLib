@@ -14,10 +14,9 @@ public class FastRandom {
         if (bound <= 1) return 0;
 
         // 将世界种子混合为int
-        int seed = (int) (worldSeed ^ (worldSeed >>> 32));
 
         // 哈希位置坐标
-        int hash = seed;
+        int hash = Long.hashCode(worldSeed);
         hash = 31 * hash + x;
         hash = 31 * hash + y;
         hash = 31 * hash + z;
