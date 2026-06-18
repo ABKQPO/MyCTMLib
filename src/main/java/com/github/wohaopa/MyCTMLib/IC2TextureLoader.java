@@ -20,8 +20,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 
-import cpw.mods.fml.common.Loader;
-
 public class IC2TextureLoader {
 
     public static void handleTexture(IIconRegister iconRegister, String originName) {
@@ -66,11 +64,6 @@ public class IC2TextureLoader {
                             String connectTextureName = connectTexture.replace("minecraft:", "")
                                 .replace("textures/blocks/", "")
                                 .replace(".png", "");
-
-                            if (connectTexture.contains("BoronSilicateGlass") && connectTextureName.endsWith("_ctm")
-                                && Loader.isModLoaded("gregtech")) {
-                                gtBWBlocksGlassCTM = true;
-                            }
 
                             currentCTM = new NewTextureAtlasSprite(connectTextureName);
                             ((TextureMap) iconRegister).setTextureEntry(connectTextureName, currentCTM);

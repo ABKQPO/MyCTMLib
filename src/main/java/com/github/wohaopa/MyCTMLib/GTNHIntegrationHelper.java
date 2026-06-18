@@ -14,9 +14,6 @@ import net.minecraftforge.common.util.ForgeDirection;
 import com.github.wohaopa.MyCTMLib.mixins.AccessorGTRenderedTexture;
 import com.gtnewhorizon.gtnhlib.client.renderer.TessellatorManager;
 
-import bartworks.common.blocks.BWBlocksGlass;
-import bartworks.common.blocks.BWBlocksGlass2;
-import bartworks.common.loaders.ItemRegistry;
 import gregtech.api.interfaces.IBlockWithClientMeta;
 import gregtech.api.interfaces.IBlockWithTextures;
 import gregtech.api.interfaces.IIconContainer;
@@ -88,11 +85,5 @@ public class GTNHIntegrationHelper {
         }
 
         return null;
-    }
-
-    public static void setBWBlocksGlassCTM(boolean ctm) {
-        if (!isInit) return;
-        ((BWBlocksGlass) ItemRegistry.bw_realglas).connectedTex = ctm;
-        ((BWBlocksGlass2) ItemRegistry.bw_realglas2).connectedTex = ctm;
     }
 }

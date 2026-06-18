@@ -4,7 +4,6 @@ import static com.github.wohaopa.MyCTMLib.Textures.ctmAltMap;
 import static com.github.wohaopa.MyCTMLib.Textures.ctmIconMap;
 import static com.github.wohaopa.MyCTMLib.Textures.ctmRandomMap;
 import static com.github.wohaopa.MyCTMLib.Textures.ctmReplaceMap;
-import static com.github.wohaopa.MyCTMLib.Textures.gtBWBlocksGlassCTM;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -36,8 +35,6 @@ import com.github.wohaopa.MyCTMLib.InterpolatedIcon;
 import com.github.wohaopa.MyCTMLib.MyCTMLibMetadataSectionSerializer.MyCTMLibMetadataSection;
 import com.github.wohaopa.MyCTMLib.NewTextureAtlasSprite;
 import com.google.gson.JsonObject;
-
-import cpw.mods.fml.common.Loader;
 
 @Mixin(TextureMap.class)
 public abstract class MixinTextureMap extends AbstractTexture implements ITickableTextureObject, IIconRegister {
@@ -103,9 +100,6 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
             mapRegisteredSprites.put(textureName, currentBase);
 
             if (config.connectionTexture != null) {
-
-                // 修复代码
-                updateGTNHFlags(config.connectionTexture);
 
                 try {
                     IResource resourceCTM = getResourceFromJson(ctmObj, "connection");
@@ -200,17 +194,6 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
             cir.setReturnValue(currentBase);
         } catch (Exception e) {
             // System.out.println("[CTMLib] Error: " + e.getMessage());
-        }
-    }
-
-    /**
-     * 修复代码所用的方法，移动到这里
-     */
-    @Unique
-    private void updateGTNHFlags(String connectionTexture) {
-        if (connectionTexture.contains("BoronSilicateGlass") && connectionTexture.endsWith("_ctm")
-            && Loader.isModLoaded("gregtech")) {
-            gtBWBlocksGlassCTM = true;
         }
     }
 

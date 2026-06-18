@@ -22,8 +22,6 @@ public class Textures {
     public static Map<String, String> ctmAltMap = new ConcurrentHashMap<>();
     public static Map<String, List<CTMIconManager>> ctmRandomMap = new ConcurrentHashMap<>();
 
-    public static boolean gtBWBlocksGlassCTM = false;
-
     public static final int[][] vertex = { { 0, 0 }, { 1, 0 }, { 1, 1 }, { 0, 1 } };
     public static final ForgeDirection[][] forgeDirections = new ForgeDirection[][] {
         { ForgeDirection.NORTH, ForgeDirection.EAST, ForgeDirection.SOUTH, ForgeDirection.WEST }, // DOWN -Y
@@ -49,11 +47,7 @@ public class Textures {
                     .replace(":", "&");
         }
 
-        boolean result = ctmIconMap.containsKey(icon);
-        if (Loader.isModLoaded("gregtech")) {
-            if (gtBWBlocksGlassCTM) GTNHIntegrationHelper.setBWBlocksGlassCTM(false);
-        }
-        return result;
+        return ctmIconMap.containsKey(icon);
     }
 
     public static boolean renderWorldBlock(RenderBlocks renderBlocks, IBlockAccess blockAccess, Block block, double x,
