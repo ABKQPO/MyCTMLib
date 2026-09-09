@@ -34,9 +34,10 @@
  * For more details, see https://docs.gradle.org/8.0.1/userguide/java_library_plugin.html#sec:java_library_configurations_graph
  */
 dependencies {
-    runtimeOnlyNonPublishable("com.github.GTNewHorizons:NotEnoughItems:2.8.101-GTNH:dev")
-    runtimeOnlyNonPublishable('com.github.GTNewHorizons:BlockRenderer6343:1.4.14:dev')
-    devOnlyNonPublishable('com.github.GTNewHorizons:GT5-Unofficial:5.09.52.594:dev')
+    runtimeOnlyNonPublishable("com.github.GTNewHorizons:NotEnoughItems:2.8.130-GTNH:dev")
+    runtimeOnlyNonPublishable('com.github.GTNewHorizons:BlockRenderer6343:1.4.21:dev')
+    runtimeOnlyNonPublishable('com.github.GTNewHorizons:Angelica:2.2.10:dev')
+    devOnlyNonPublishable('com.github.GTNewHorizons:GT5-Unofficial:5.09.54.133:dev')
 
     // jvmDowngrader
     compileOnly("javax.xml.bind:jaxb-api:2.3.1")
