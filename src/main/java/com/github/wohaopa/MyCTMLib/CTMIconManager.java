@@ -55,6 +55,12 @@ public class CTMIconManager {
     // Stores the per-variant sprites of the connection texture.
     private IIcon[] iconVariants;
 
+    // Maps every sub-icon index to the variant icon it belongs to, or null when the index is unused.
+    private IIcon[] variantIcons = new IIcon[25];
+
+    // Maps every sub-icon index to its quarter inside that variant, coded as left plus top times two.
+    private int[] variantQuarters = new int[25];
+
     // Stores the active CTM neighborhood diameter.
     public DetectionDiameter detectionDiameter = DetectionDiameter.DIAMETER_1;
 
@@ -89,23 +95,26 @@ public class CTMIconManager {
                     IIcon parent = iconVariants[row / 2 * 2 + column / 2];
                     if (parent != null) {
                         setIcon(i + j * 4, new CTMIcon(parent, 2, 2, column % 2, row % 2));
+                        setVariant(i + j * 4, parent, column % 2 + row % 2 * 2);
                     }
                 }
             }
         } else if (iconCTM != null) {
-            // Build the regular 4 by 4 connection sub-icons.
+            // Build the regular 4 by 4 connection sub-icons, one variant per two by two block of cells.
             for (int i = 1; i <= 4; i++) {
                 for (int j = 0; j < 4; j++) {
                     setIcon(i + j * 4, new CTMIcon(iconCTM, 4, 4, i - 1, j));
+                    setVariant(i + j * 4, new CTMIcon(iconCTM, 2, 2, (i - 1) / 2, j / 2), (i - 1) % 2 + j % 2 * 2);
                 }
             }
         }
 
         if (iconSmall != null) {
-            // Build the regular 2 by 2 fallback sub-icons.
+            // Build the regular 2 by 2 fallback sub-icons, whose variant is the whole base texture.
             for (int i = 1; i <= 2; i++) {
                 for (int j = 0; j < 2; j++) {
                     setIcon(i + j * 2 + 16, new CTMIcon(iconSmall, 2, 2, i - 1, j));
+                    setVariant(i + j * 2 + 16, iconSmall, i - 1 + j * 2);
                 }
             }
         }
@@ -115,11 +124,53 @@ public class CTMIconManager {
             for (int i = 1; i <= 2; i++) {
                 for (int j = 0; j < 2; j++) {
                     setIcon(i + j * 2 + 20, new CTMIcon(iconAlt, 2, 2, i - 1, j));
+                    setVariant(i + j * 2 + 20, iconAlt, i - 1 + j * 2);
                 }
             }
         }
 
         inited = true;
+    }
+
+    /**
+     * Returns the icon covering the whole face when the four quadrant indices are the four quarters of one variant.
+     * <p>
+     * Rendering such a face as a single quad keeps its geometry identical to a vanilla face, which is what lets
+     * coplanar overlay layers stay in front of it instead of fighting over depth.
+     *
+     * @param iconIndices the quadrant indices ordered top-left, top-right, bottom-left, bottom-right
+     * @return the whole face icon, or null when the quadrants come from different variants
+     */
+    public IIcon getWholeFaceIcon(int[] iconIndices) {
+        if (iconIndices == null || iconIndices.length < 4) {
+            return null;
+        }
+
+        IIcon variant = getVariantIcon(iconIndices[0]);
+        if (variant == null) {
+            return null;
+        }
+
+        for (int quarter = 0; quarter < 4; quarter++) {
+            int index = iconIndices[quarter];
+            if (getVariantIcon(index) != variant || variantQuarters[index] != quarter) {
+                return null;
+            }
+        }
+
+        return variant;
+    }
+
+    private IIcon getVariantIcon(int index) {
+        if (index <= 0 || index >= variantIcons.length) {
+            return null;
+        }
+        return variantIcons[index];
+    }
+
+    private void setVariant(int index, IIcon variant, int quarter) {
+        variantIcons[index] = variant;
+        variantQuarters[index] = quarter;
     }
 
     /**

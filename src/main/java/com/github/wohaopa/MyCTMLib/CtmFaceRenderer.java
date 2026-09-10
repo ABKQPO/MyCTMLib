@@ -31,6 +31,14 @@ public class CtmFaceRenderer {
         }
 
         try {
+            IIcon wholeFace = manager.getWholeFaceIcon(iconIndices);
+            if (wholeFace != null) {
+                // Draw the face as one quad so coplanar overlay layers keep the same geometry and stop fighting.
+                renderBlocks.overrideBlockTexture = wholeFace;
+                renderFace(renderBlocks, block, x, y, z, wholeFace, direction);
+                return true;
+            }
+
             for (int quadrant = 0; quadrant < 4; quadrant++) {
                 IIcon sourceIcon = manager.getIcon(iconIndices[QUADRANT_ORDER[quadrant]]);
                 if (sourceIcon == null) {
