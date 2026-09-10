@@ -154,61 +154,116 @@ public class PaneCtmRenderer {
         double edgeSouthZ = z + 0.5D + HALF_THICKNESS;
 
         if (isolated) {
-            drawFaceX(
+            drawPanelEnd(
                 blockAccess,
                 x,
                 y,
                 z,
                 icon,
                 manager,
-                ForgeDirection.WEST,
+                ForgeDirection.SOUTH,
+                0,
+                minY,
+                maxY,
+                edgeNorthZ,
+                edgeSouthZ,
                 westX,
-                edgeNorthZ,
-                edgeSouthZ,
-                minY,
-                maxY,
                 true);
-            drawFaceX(
+            drawPanelEnd(
                 blockAccess,
                 x,
                 y,
                 z,
                 icon,
                 manager,
-                ForgeDirection.EAST,
-                eastX,
-                edgeNorthZ,
-                edgeSouthZ,
+                ForgeDirection.SOUTH,
+                1,
                 minY,
                 maxY,
+                edgeNorthZ,
+                edgeSouthZ,
+                eastX,
                 true);
         }
 
         if (west && east) {
-            drawFaceZ(blockAccess, x, y, z, icon, manager, ForgeDirection.SOUTH, westX, eastX, minY, maxY, wallSouthZ, false);
-            drawFaceZ(blockAccess, x, y, z, icon, manager, ForgeDirection.NORTH, westX, eastX, minY, maxY, wallNorthZ, false);
+            drawFaceZ(
+                blockAccess,
+                x,
+                y,
+                z,
+                icon,
+                manager,
+                ForgeDirection.SOUTH,
+                westX,
+                eastX,
+                minY,
+                maxY,
+                wallSouthZ,
+                false);
+            drawFaceZ(
+                blockAccess,
+                x,
+                y,
+                z,
+                icon,
+                manager,
+                ForgeDirection.NORTH,
+                westX,
+                eastX,
+                minY,
+                maxY,
+                wallNorthZ,
+                false);
             return;
         }
 
         if (west) {
             double southEnd = south ? westThin : eastThin;
             double northEnd = north ? westThin : eastThin;
-            drawFaceZ(blockAccess, x, y, z, icon, manager, ForgeDirection.SOUTH, westX, southEnd, minY, maxY, wallSouthZ, false);
-            drawFaceZ(blockAccess, x, y, z, icon, manager, ForgeDirection.NORTH, westX, northEnd, minY, maxY, wallNorthZ, false);
+            drawFaceZ(
+                blockAccess,
+                x,
+                y,
+                z,
+                icon,
+                manager,
+                ForgeDirection.SOUTH,
+                westX,
+                southEnd,
+                minY,
+                maxY,
+                wallSouthZ,
+                false);
+            drawFaceZ(
+                blockAccess,
+                x,
+                y,
+                z,
+                icon,
+                manager,
+                ForgeDirection.NORTH,
+                westX,
+                northEnd,
+                minY,
+                maxY,
+                wallNorthZ,
+                false);
             if (!north && !south) {
-                drawFaceX(
+                drawPanelEnd(
                     blockAccess,
                     x,
                     y,
                     z,
                     icon,
                     manager,
-                    ForgeDirection.EAST,
-                    eastThin,
-                    edgeNorthZ,
-                    edgeSouthZ,
+                    ForgeDirection.SOUTH,
+                    0,
                     minY,
                     maxY,
+                    edgeNorthZ,
+                    edgeSouthZ,
+                    eastThin,
                     true);
             }
             return;
@@ -217,22 +272,49 @@ public class PaneCtmRenderer {
         if (east) {
             double southStart = south ? eastThin : westThin;
             double northStart = north ? eastThin : westThin;
-            drawFaceZ(blockAccess, x, y, z, icon, manager, ForgeDirection.SOUTH, southStart, eastX, minY, maxY, wallSouthZ, false);
-            drawFaceZ(blockAccess, x, y, z, icon, manager, ForgeDirection.NORTH, northStart, eastX, minY, maxY, wallNorthZ, false);
+            drawFaceZ(
+                blockAccess,
+                x,
+                y,
+                z,
+                icon,
+                manager,
+                ForgeDirection.SOUTH,
+                southStart,
+                eastX,
+                minY,
+                maxY,
+                wallSouthZ,
+                false);
+            drawFaceZ(
+                blockAccess,
+                x,
+                y,
+                z,
+                icon,
+                manager,
+                ForgeDirection.NORTH,
+                northStart,
+                eastX,
+                minY,
+                maxY,
+                wallNorthZ,
+                false);
             if (!north && !south) {
-                drawFaceX(
+                drawPanelEnd(
                     blockAccess,
                     x,
                     y,
                     z,
                     icon,
                     manager,
-                    ForgeDirection.WEST,
-                    westThin,
-                    edgeNorthZ,
-                    edgeSouthZ,
+                    ForgeDirection.SOUTH,
+                    1,
                     minY,
                     maxY,
+                    edgeNorthZ,
+                    edgeSouthZ,
+                    westThin,
                     true);
             }
         }
@@ -251,62 +333,117 @@ public class PaneCtmRenderer {
         double southZ = z + 1.0D;
 
         if (isolated) {
-            drawFaceZ(
+            drawPanelEnd(
                 blockAccess,
                 x,
                 y,
                 z,
                 icon,
                 manager,
-                ForgeDirection.NORTH,
-                edgeWestX,
-                edgeEastX,
+                ForgeDirection.WEST,
+                0,
                 minY,
                 maxY,
+                edgeWestX,
+                edgeEastX,
                 northZ,
-                true);
-            drawFaceZ(
+                false);
+            drawPanelEnd(
                 blockAccess,
                 x,
                 y,
                 z,
                 icon,
                 manager,
-                ForgeDirection.SOUTH,
-                edgeWestX,
-                edgeEastX,
+                ForgeDirection.WEST,
+                1,
                 minY,
                 maxY,
+                edgeWestX,
+                edgeEastX,
                 southZ,
-                true);
+                false);
         }
 
         if (north && south) {
-            drawFaceX(blockAccess, x, y, z, icon, manager, ForgeDirection.WEST, wallWestX, northZ, southZ, minY, maxY, false);
-            drawFaceX(blockAccess, x, y, z, icon, manager, ForgeDirection.EAST, wallEastX, northZ, southZ, minY, maxY, false);
+            drawFaceX(
+                blockAccess,
+                x,
+                y,
+                z,
+                icon,
+                manager,
+                ForgeDirection.WEST,
+                wallWestX,
+                northZ,
+                southZ,
+                minY,
+                maxY,
+                false);
+            drawFaceX(
+                blockAccess,
+                x,
+                y,
+                z,
+                icon,
+                manager,
+                ForgeDirection.EAST,
+                wallEastX,
+                northZ,
+                southZ,
+                minY,
+                maxY,
+                false);
             return;
         }
 
         if (north) {
             double westEnd = west ? northThin : southThin;
             double eastEnd = east ? northThin : southThin;
-            drawFaceX(blockAccess, x, y, z, icon, manager, ForgeDirection.WEST, wallWestX, northZ, westEnd, minY, maxY, false);
-            drawFaceX(blockAccess, x, y, z, icon, manager, ForgeDirection.EAST, wallEastX, northZ, eastEnd, minY, maxY, false);
+            drawFaceX(
+                blockAccess,
+                x,
+                y,
+                z,
+                icon,
+                manager,
+                ForgeDirection.WEST,
+                wallWestX,
+                northZ,
+                westEnd,
+                minY,
+                maxY,
+                false);
+            drawFaceX(
+                blockAccess,
+                x,
+                y,
+                z,
+                icon,
+                manager,
+                ForgeDirection.EAST,
+                wallEastX,
+                northZ,
+                eastEnd,
+                minY,
+                maxY,
+                false);
             if (!west && !east) {
-                drawFaceZ(
+                drawPanelEnd(
                     blockAccess,
                     x,
                     y,
                     z,
                     icon,
                     manager,
-                    ForgeDirection.SOUTH,
-                    edgeWestX,
-                    edgeEastX,
+                    ForgeDirection.WEST,
+                    0,
                     minY,
                     maxY,
+                    edgeWestX,
+                    edgeEastX,
                     southThin,
-                    true);
+                    false);
             }
             return;
         }
@@ -314,23 +451,50 @@ public class PaneCtmRenderer {
         if (south) {
             double westStart = west ? southThin : northThin;
             double eastStart = east ? southThin : northThin;
-            drawFaceX(blockAccess, x, y, z, icon, manager, ForgeDirection.WEST, wallWestX, westStart, southZ, minY, maxY, false);
-            drawFaceX(blockAccess, x, y, z, icon, manager, ForgeDirection.EAST, wallEastX, eastStart, southZ, minY, maxY, false);
+            drawFaceX(
+                blockAccess,
+                x,
+                y,
+                z,
+                icon,
+                manager,
+                ForgeDirection.WEST,
+                wallWestX,
+                westStart,
+                southZ,
+                minY,
+                maxY,
+                false);
+            drawFaceX(
+                blockAccess,
+                x,
+                y,
+                z,
+                icon,
+                manager,
+                ForgeDirection.EAST,
+                wallEastX,
+                eastStart,
+                southZ,
+                minY,
+                maxY,
+                false);
             if (!west && !east) {
-                drawFaceZ(
+                drawPanelEnd(
                     blockAccess,
                     x,
                     y,
                     z,
                     icon,
                     manager,
-                    ForgeDirection.NORTH,
-                    edgeWestX,
-                    edgeEastX,
+                    ForgeDirection.WEST,
+                    1,
                     minY,
                     maxY,
+                    edgeWestX,
+                    edgeEastX,
                     northThin,
-                    true);
+                    false);
             }
         }
     }
@@ -456,6 +620,71 @@ public class PaneCtmRenderer {
         return blockAccess.getBlock(x, y, z) == pane && blockAccess.getBlockMetadata(x, y, z) == metadata;
     }
 
+    /**
+     * Draws a pane end strip from the texture frame of the panel it terminates, so the strip continues that panel.
+     */
+    private static void drawPanelEnd(IBlockAccess blockAccess, int x, int y, int z, IIcon icon, CTMIconManager manager,
+        ForgeDirection panelFace, int adjacentHorizontal, double minY, double maxY, double depthMin, double depthMax,
+        double faceCoordinate, boolean perpendicularToX) {
+        int[] indices = Textures.threadLocalIconIdx.get();
+        Textures.buildConnect(blockAccess, x, y, z, icon, panelFace, indices);
+        double regionStart = (perpendicularToX ? x : z) + adjacentHorizontal * 0.5D;
+        boolean outerAtHighU = faceCoordinate - regionStart >= 0.25D;
+        double bandStart = outerAtHighU ? 0.75D : 0.0D;
+        double bandEnd = outerAtHighU ? 1.0D : 0.25D;
+        Tessellator tessellator = Tessellator.instance;
+        for (int vertical = 0; vertical < 2; vertical++) {
+            double halfTop = y + (vertical == 0 ? 1.0D : 0.5D);
+            double bottom = Math.max(minY, y + (vertical == 0 ? 0.5D : 0.0D));
+            double top = Math.min(maxY, halfTop);
+            if (bottom >= top) {
+                continue;
+            }
+            IIcon piece = manager.getIcon(getQuadrantIndex(panelFace, adjacentHorizontal, vertical, indices));
+            double minV = getV(piece, getHalfFraction(top, halfTop));
+            double maxV = getV(piece, getHalfFraction(bottom, halfTop));
+            double minU = getU(piece, bandStart);
+            double maxU = getU(piece, bandEnd);
+            if (perpendicularToX) {
+                drawQuad(
+                    tessellator,
+                    faceCoordinate,
+                    top,
+                    depthMin,
+                    maxU,
+                    minV,
+                    faceCoordinate,
+                    bottom,
+                    depthMax,
+                    minU,
+                    maxV,
+                    true);
+            } else {
+                drawQuad(
+                    tessellator,
+                    depthMin,
+                    top,
+                    faceCoordinate,
+                    minU,
+                    minV,
+                    depthMax,
+                    bottom,
+                    faceCoordinate,
+                    maxU,
+                    maxV,
+                    true);
+            }
+        }
+    }
+
+    private static double getHalfFraction(double coordinate, double halfTop) {
+        double fraction = (halfTop - coordinate) * 2.0D;
+        if (fraction < 0.0D) {
+            return 0.0D;
+        }
+        return Math.min(fraction, 1.0D);
+    }
+
     private static void drawFaceZ(IBlockAccess blockAccess, int x, int y, int z, IIcon icon, CTMIconManager manager,
         ForgeDirection direction, double minX, double maxX, double minY, double maxY, double faceZ, boolean twoSided) {
         int[] indices = Textures.threadLocalIconIdx.get();
@@ -537,28 +766,15 @@ public class PaneCtmRenderer {
                     continue;
                 }
                 IIcon quadrant = manager.getIcon(getQuadrantIndex(direction, horizontal, vertical, indices));
-                drawFaceY(
-                    tessellator,
-                    direction,
-                    left,
-                    right,
-                    near,
-                    far,
-                    faceY,
-                    quadrant,
-                    horizontal,
-                    vertical,
-                    x,
-                    z);
+                drawFaceY(tessellator, direction, left, right, near, far, faceY, quadrant, horizontal, vertical, x, z);
             }
         }
     }
 
     private static int getQuadrantIndex(ForgeDirection direction, int horizontal, int vertical, int[] indices) {
         return switch (direction) {
-            case NORTH -> indices[1 - horizontal + vertical * 2];
-            case WEST -> indices[vertical * 2 + 1 - horizontal];
-            case DOWN, UP, SOUTH, EAST -> indices[horizontal + vertical * 2];
+            case NORTH, EAST -> indices[1 - horizontal + vertical * 2];
+            case DOWN, UP, SOUTH, WEST -> indices[horizontal + vertical * 2];
             default -> throw new IllegalArgumentException("Unsupported pane face: " + direction);
         };
     }

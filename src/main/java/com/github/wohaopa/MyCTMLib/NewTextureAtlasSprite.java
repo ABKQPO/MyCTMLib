@@ -20,8 +20,12 @@ public class NewTextureAtlasSprite extends TextureAtlasSprite {
         if (gridWidth < 1 || gridHeight < 1) {
             throw new IllegalArgumentException("Mipmap grid dimensions must be positive");
         }
-        this.mipmapGridWidth = gridWidth;
-        this.mipmapGridHeight = gridHeight;
+        // A connection sheet stores one complete variant per two by two block of grid cells, so mipmaps are generated
+        // per
+        // variant. Generating them per cell would give every cell its own average at coarse levels, which turns into a
+        // visible seam along every block border once distant terrain samples those levels.
+        this.mipmapGridWidth = Math.max(1, gridWidth / 2);
+        this.mipmapGridHeight = Math.max(1, gridHeight / 2);
     }
 
     @Override
@@ -54,8 +58,7 @@ public class NewTextureAtlasSprite extends TextureAtlasSprite {
         }
 
         int gridMipmapLevels = Math.min(mipmapLevels, getMaximumMipmapLevels(tileWidth, tileHeight));
-        int[][] result = gridMipmapLevels == mipmapLevels ? new int[mipmapLevels + 1][]
-            : superGenerate(frame, mipmapLevels);
+        int[][] result = new int[mipmapLevels + 1][];
         int[][][] tileMipmaps = new int[mipmapGridWidth * mipmapGridHeight][][];
         for (int tileY = 0; tileY < mipmapGridHeight; tileY++) {
             for (int tileX = 0; tileX < mipmapGridWidth; tileX++) {
@@ -96,7 +99,41 @@ public class NewTextureAtlasSprite extends TextureAtlasSprite {
             }
             result[level] = combined;
         }
+
+        for (int level = gridMipmapLevels + 1; level <= mipmapLevels; level++) {
+            result[level] = downsample(result[level - 1], width >> (level - 1), height >> (level - 1));
+        }
         return result;
+    }
+
+    private int[] downsample(int[] source, int sourceWidth, int sourceHeight) {
+        int targetWidth = Math.max(1, sourceWidth >> 1);
+        int targetHeight = Math.max(1, sourceHeight >> 1);
+        int[] target = new int[targetWidth * targetHeight];
+        for (int y = 0; y < targetHeight; y++) {
+            for (int x = 0; x < targetWidth; x++) {
+                int x0 = Math.min(sourceWidth - 1, x * 2);
+                int x1 = Math.min(sourceWidth - 1, x * 2 + 1);
+                int y0 = Math.min(sourceHeight - 1, y * 2);
+                int y1 = Math.min(sourceHeight - 1, y * 2 + 1);
+                target[y * targetWidth + x] = average(
+                    source[y0 * sourceWidth + x0],
+                    source[y0 * sourceWidth + x1],
+                    source[y1 * sourceWidth + x0],
+                    source[y1 * sourceWidth + x1]);
+            }
+        }
+        return target;
+    }
+
+    private int average(int first, int second, int third, int fourth) {
+        int alpha = ((first >>> 24) + (second >>> 24) + (third >>> 24) + (fourth >>> 24)) / 4;
+        int red = (((first >> 16) & 0xFF) + ((second >> 16) & 0xFF) + ((third >> 16) & 0xFF) + ((fourth >> 16) & 0xFF))
+            / 4;
+        int green = (((first >> 8) & 0xFF) + ((second >> 8) & 0xFF) + ((third >> 8) & 0xFF) + ((fourth >> 8) & 0xFF))
+            / 4;
+        int blue = ((first & 0xFF) + (second & 0xFF) + (third & 0xFF) + (fourth & 0xFF)) / 4;
+        return alpha << 24 | red << 16 | green << 8 | blue;
     }
 
     private int getMaximumMipmapLevels(int tileWidth, int tileHeight) {

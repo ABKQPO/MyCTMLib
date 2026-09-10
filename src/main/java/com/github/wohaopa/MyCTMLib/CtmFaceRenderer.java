@@ -9,8 +9,7 @@ public class CtmFaceRenderer {
 
     private static final ThreadLocal<FaceLighting> faceLighting = ThreadLocal.withInitial(FaceLighting::new);
     private static final ThreadLocal<CtmQuadrantIcon> quadrantIcons = ThreadLocal.withInitial(CtmQuadrantIcon::new);
-    private static final int[][] CONNECTION_QUADRANTS = { { 0, 1, 3, 2 }, { 0, 1, 3, 2 }, { 0, 1, 3, 2 },
-        { 0, 1, 3, 2 }, { 0, 1, 3, 2 }, { 1, 0, 2, 3 } };
+    private static final int[] QUADRANT_ORDER = { 0, 1, 3, 2 };
 
     public static boolean render(RenderBlocks renderBlocks, Block block, double x, double y, double z,
         CTMIconManager manager, ForgeDirection direction, int[] iconIndices) {
@@ -33,7 +32,7 @@ public class CtmFaceRenderer {
 
         try {
             for (int quadrant = 0; quadrant < 4; quadrant++) {
-                IIcon sourceIcon = manager.getIcon(iconIndices[getConnectionQuadrant(direction, quadrant)]);
+                IIcon sourceIcon = manager.getIcon(iconIndices[QUADRANT_ORDER[quadrant]]);
                 if (sourceIcon == null) {
                     continue;
                 }
@@ -69,10 +68,6 @@ public class CtmFaceRenderer {
             case EAST -> renderBlocks.renderFaceXPos(block, x, y, z, icon);
             default -> throw new IllegalArgumentException("Unsupported CTM face: " + direction);
         }
-    }
-
-    private static int getConnectionQuadrant(ForgeDirection direction, int quadrant) {
-        return CONNECTION_QUADRANTS[direction.ordinal()][quadrant];
     }
 
     private static void setQuadrantBounds(RenderBlocks renderBlocks, int face, int quadrant, double minX, double minY,

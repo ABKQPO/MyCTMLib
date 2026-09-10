@@ -52,6 +52,9 @@ public class CTMIconManager {
     // Stores the ring texture sheet.
     public IIcon iconRing;
 
+    // Stores the per-variant sprites of the connection texture.
+    private IIcon[] iconVariants;
+
     // Stores the active CTM neighborhood diameter.
     public DetectionDiameter detectionDiameter = DetectionDiameter.DIAMETER_1;
 
@@ -77,7 +80,19 @@ public class CTMIconManager {
      */
     public void init() {
 
-        if (iconCTM != null) {
+        if (iconVariants != null && iconVariants.length == 4) {
+            // Build the connection sub-icons from the per-variant sprites of the sheet.
+            for (int i = 1; i <= 4; i++) {
+                for (int j = 0; j < 4; j++) {
+                    int column = i - 1;
+                    int row = j;
+                    IIcon parent = iconVariants[row / 2 * 2 + column / 2];
+                    if (parent != null) {
+                        setIcon(i + j * 4, new CTMIcon(parent, 2, 2, column % 2, row % 2));
+                    }
+                }
+            }
+        } else if (iconCTM != null) {
             // Build the regular 4 by 4 connection sub-icons.
             for (int i = 1; i <= 4; i++) {
                 for (int j = 0; j < 4; j++) {
@@ -137,7 +152,7 @@ public class CTMIconManager {
      * @return whether a regular connection texture is available
      */
     public boolean hasConnectionTexture() {
-        return iconCTM != null;
+        return iconCTM != null || iconVariants != null;
     }
 
     /**
@@ -156,6 +171,14 @@ public class CTMIconManager {
          */
         public Builder setIconCTM(IIcon iconCTM) {
             manager.iconCTM = iconCTM;
+            return this;
+        }
+
+        /**
+         * Sets the per-variant sprites of the connection texture.
+         */
+        public Builder setIconVariants(IIcon[] iconVariants) {
+            manager.iconVariants = iconVariants;
             return this;
         }
 
@@ -199,7 +222,7 @@ public class CTMIconManager {
                 throw new IllegalStateException("iconSmall is required");
             }
 
-            if (manager.iconCTM != null) {
+            if (manager.iconCTM != null || manager.iconVariants != null) {
                 manager.detectionDiameter = DetectionDiameter.DIAMETER_3;
             } else if (manager.iconRing != null) {
                 manager.detectionDiameter = DetectionDiameter.DIAMETER_5;

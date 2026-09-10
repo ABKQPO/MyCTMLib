@@ -5,10 +5,13 @@ import static com.github.wohaopa.MyCTMLib.Textures.ctmIconMap;
 import static com.github.wohaopa.MyCTMLib.Textures.ctmRandomMap;
 import static com.github.wohaopa.MyCTMLib.Textures.ctmReplaceMap;
 
+import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
+import javax.imageio.ImageIO;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.AbstractTexture;
@@ -33,6 +36,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import com.github.wohaopa.MyCTMLib.CTMConfig;
 import com.github.wohaopa.MyCTMLib.CTMIconManager;
+import com.github.wohaopa.MyCTMLib.CtmSheetSprite;
 import com.github.wohaopa.MyCTMLib.InterpolatedIcon;
 import com.github.wohaopa.MyCTMLib.MyCTMLibMetadataSectionSerializer.MyCTMLibMetadataSection;
 import com.github.wohaopa.MyCTMLib.NewTextureAtlasSprite;
@@ -102,10 +106,25 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
                     IResource resourceCTM = getResourceFromJson(ctmObj, "connection");
 
                     if (resourceCTM instanceof SimpleResource simpleCTM) {
-                        currentCTM = useInterpolation(simpleCTM) ? new InterpolatedIcon(config.connectionTexture, 4, 4)
-                            : new NewTextureAtlasSprite(config.connectionTexture, 4, 4);
-                        mapRegisteredSprites.put(config.connectionTexture, currentCTM);
-                        builder.setIconCTM(currentCTM);
+                        BufferedImage sheet = ImageIO.read(resourceCTM.getInputStream());
+                        if (sheet != null && sheet.getWidth() == sheet.getHeight()
+                            && sheet.getWidth() >= 4
+                            && (sheet.getWidth() & 1) == 0) {
+                            CtmSheetSprite sheetSprite = new CtmSheetSprite(
+                                config.connectionTexture,
+                                completeResourceLocation(new ResourceLocation(config.connectionTexture), 0),
+                                sheet,
+                                CtmSheetSprite.DEFAULT_PADDING,
+                                useInterpolation(simpleCTM));
+                            mapRegisteredSprites.put(config.connectionTexture, sheetSprite);
+                            builder.setIconVariants(sheetSprite.getVariantIcons());
+                        } else {
+                            currentCTM = useInterpolation(simpleCTM)
+                                ? new InterpolatedIcon(config.connectionTexture, 4, 4)
+                                : new NewTextureAtlasSprite(config.connectionTexture, 4, 4);
+                            mapRegisteredSprites.put(config.connectionTexture, currentCTM);
+                            builder.setIconCTM(currentCTM);
+                        }
                     }
 
                 } catch (IOException ignored) {}
