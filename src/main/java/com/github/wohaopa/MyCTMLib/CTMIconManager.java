@@ -317,6 +317,13 @@ public class CTMIconManager {
         // Stores the parent icon.
         private final IIcon parentIcon;
 
+        // Caches the resolved bounds once the parent icon has been stitched into the atlas.
+        private boolean boundsResolved;
+        private float minU;
+        private float maxU;
+        private float minV;
+        private float maxV;
+
         /**
          * Creates a sub-icon view of a parent icon.
          *
@@ -338,45 +345,68 @@ public class CTMIconManager {
         @Override
         @SideOnly(Side.CLIENT)
         public float getMinU() {
+            resolveBounds();
+            return minU;
+        }
+
+        /**
+         * Resolves and caches this sub-icon's atlas bounds.
+         */
+        private void resolveBounds() {
+            if (boundsResolved) {
+                return;
+            }
+
             float parentMinU = parentIcon.getMinU();
             float parentMaxU = parentIcon.getMaxU();
-            float rawMin = parentMinU + (parentMaxU - parentMinU) * subTextureX / gridWidth;
-            return rawMin + getPixelInset(parentMaxU - parentMinU, parentIcon.getIconWidth());
+            float parentMinV = parentIcon.getMinV();
+            float parentMaxV = parentIcon.getMaxV();
+            float spanU = parentMaxU - parentMinU;
+            float spanV = parentMaxV - parentMinV;
+            if (spanU <= 0.0F || spanV <= 0.0F) {
+                // The parent is not stitched into the atlas yet, so its coordinates cannot be cached.
+                minU = parentMinU;
+                maxU = parentMaxU;
+                minV = parentMinV;
+                maxV = parentMaxV;
+                return;
+            }
+
+            float insetU = getPixelInset(spanU, parentIcon.getIconWidth());
+            float insetV = getPixelInset(spanV, parentIcon.getIconHeight());
+            minU = parentMinU + spanU * subTextureX / gridWidth + insetU;
+            maxU = parentMinU + spanU * (subTextureX + 1) / gridWidth - insetU;
+            minV = parentMinV + spanV * subTextureY / gridHeight + insetV;
+            maxV = parentMinV + spanV * (subTextureY + 1) / gridHeight - insetV;
+            boundsResolved = true;
         }
 
         @Override
         @SideOnly(Side.CLIENT)
         public float getMaxU() {
-            float parentMinU = parentIcon.getMinU();
-            float parentMaxU = parentIcon.getMaxU();
-            float rawMax = parentMinU + (parentMaxU - parentMinU) * (subTextureX + 1) / gridWidth;
-            return rawMax - getPixelInset(parentMaxU - parentMinU, parentIcon.getIconWidth());
+            resolveBounds();
+            return maxU;
         }
 
         @Override
         @SideOnly(Side.CLIENT)
         public float getInterpolatedU(double d0) {
-            float subUmin = getMinU();
-            float subUmax = getMaxU();
-            return (float) (subUmin + (subUmax - subUmin) * d0 / 16.0);
+            resolveBounds();
+            return (float) (minU + (maxU - minU) * d0 / 16.0);
         }
 
         @Override
         @SideOnly(Side.CLIENT)
         public float getMinV() {
-            float parentMinV = parentIcon.getMinV();
-            float parentMaxV = parentIcon.getMaxV();
-            float rawMin = parentMinV + (parentMaxV - parentMinV) * subTextureY / gridHeight;
-            return rawMin + getPixelInset(parentMaxV - parentMinV, parentIcon.getIconHeight());
+            resolveBounds();
+            return minV;
         }
 
         @Override
         @SideOnly(Side.CLIENT)
         public float getMaxV() {
-            float parentMinV = parentIcon.getMinV();
-            float parentMaxV = parentIcon.getMaxV();
-            float rawMax = parentMinV + (parentMaxV - parentMinV) * (subTextureY + 1) / gridHeight;
-            return rawMax - getPixelInset(parentMaxV - parentMinV, parentIcon.getIconHeight());
+            resolveBounds();
+            return maxV;
         }
 
         private float getPixelInset(float span, int pixels) {

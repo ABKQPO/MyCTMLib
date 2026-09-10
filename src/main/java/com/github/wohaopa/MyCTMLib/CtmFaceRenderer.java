@@ -23,6 +23,19 @@ public class CtmFaceRenderer {
         double maxX = renderBlocks.renderMaxX;
         double maxY = renderBlocks.renderMaxY;
         double maxZ = renderBlocks.renderMaxZ;
+        IIcon wholeFace = manager.getWholeFaceIcon(iconIndices);
+        if (wholeFace != null) {
+            // Draw the face as one quad so coplanar overlay layers keep the same geometry and stop fighting.
+            IIcon previousWholeOverride = renderBlocks.overrideBlockTexture;
+            renderBlocks.overrideBlockTexture = wholeFace;
+            try {
+                renderFace(renderBlocks, block, x, y, z, wholeFace, direction);
+            } finally {
+                renderBlocks.overrideBlockTexture = previousWholeOverride;
+            }
+            return true;
+        }
+
         IIcon previousOverride = renderBlocks.overrideBlockTexture;
         boolean previousFaceFlip = renderBlocks.field_152631_f;
         FaceLighting lighting = renderBlocks.enableAO ? faceLighting.get() : null;
@@ -31,14 +44,6 @@ public class CtmFaceRenderer {
         }
 
         try {
-            IIcon wholeFace = manager.getWholeFaceIcon(iconIndices);
-            if (wholeFace != null) {
-                // Draw the face as one quad so coplanar overlay layers keep the same geometry and stop fighting.
-                renderBlocks.overrideBlockTexture = wholeFace;
-                renderFace(renderBlocks, block, x, y, z, wholeFace, direction);
-                return true;
-            }
-
             for (int quadrant = 0; quadrant < 4; quadrant++) {
                 IIcon sourceIcon = manager.getIcon(iconIndices[QUADRANT_ORDER[quadrant]]);
                 if (sourceIcon == null) {

@@ -16,6 +16,9 @@ import cpw.mods.fml.common.Loader;
 
 public class Textures {
 
+    // Resolved once because every neighbour lookup used to re-query the mod list.
+    private static final boolean gregTechLoaded = Loader.isModLoaded("gregtech");
+
     public static Map<String, CTMIconManager> ctmIconMap = new ConcurrentHashMap<>();
     public static Map<String, String[]> ctmReplaceMap = new ConcurrentHashMap<>();
     public static Map<String, String> ctmAltMap = new ConcurrentHashMap<>();
@@ -128,6 +131,7 @@ public class Textures {
 
         boolean[] connections = threadLocalConnections.get();
         ForgeDirection[] forgeDirections1 = forgeDirections[forgeDirection.ordinal()];
+        String targetName = normalizeIconName(iIcon.getIconName());
 
         for (int i = 0; i < 4; i++) {
             IIcon i2 = getIcon(
@@ -136,7 +140,7 @@ public class Textures {
                 y + forgeDirections1[i].offsetY,
                 z + forgeDirections1[i].offsetZ,
                 forgeDirection);
-            connections[i] = isIconMatch(i2, iIcon);
+            connections[i] = isIconMatch(targetName, i2);
         }
 
         for (int i = 4; i < 8; i++) {
@@ -150,13 +154,13 @@ public class Textures {
                     y + forgeDirections1[i1].offsetY + forgeDirections1[i2].offsetY,
                     z + forgeDirections1[i1].offsetZ + forgeDirections1[i2].offsetZ,
                     forgeDirection);
-                connections[i] = isIconMatch(ic, iIcon);
+                connections[i] = isIconMatch(targetName, ic);
             } else {
                 connections[i] = false;
             }
         }
 
-        boolean hasThird = ctmAltMap.containsKey(normalizeIconName(iIcon.getIconName()));
+        boolean hasThird = ctmAltMap.containsKey(targetName);
 
         if (connections[7]) {
             iconIdxOut[0] = 1;
@@ -229,7 +233,19 @@ public class Textures {
     public static boolean isIconMatch(IIcon target, IIcon candidate) {
         if (target == null || candidate == null) return false;
 
-        String targetName = normalizeIconName(target.getIconName());
+        return isIconMatch(normalizeIconName(target.getIconName()), candidate);
+    }
+
+    /**
+     * Compares an already normalized target name with a candidate icon.
+     *
+     * @param targetName the normalized name of the icon being rendered
+     * @param candidate  the neighbouring icon
+     * @return whether the two icons belong to the same connection group
+     */
+    public static boolean isIconMatch(String targetName, IIcon candidate) {
+        if (targetName == null || candidate == null) return false;
+
         String candidateName = normalizeIconName(candidate.getIconName());
 
         if (targetName.equals(candidateName)) return true;
@@ -255,7 +271,7 @@ public class Textures {
         Block block = blockAccess.getBlock(x, y, z);
         if (block == null || block instanceof BlockAir) return null;
 
-        if (Loader.isModLoaded("gregtech")) {
+        if (gregTechLoaded) {
             try {
                 return GTNHIntegrationHelper.getIcon(blockAccess, x, y, z, direction);
             } catch (Throwable t) {
