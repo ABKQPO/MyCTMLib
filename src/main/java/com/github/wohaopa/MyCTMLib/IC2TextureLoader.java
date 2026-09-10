@@ -37,7 +37,7 @@ public class IC2TextureLoader {
                 if (resource instanceof SimpleResource simple) {
 
                     if (simple.getMetadata("myctmlib") != null) {
-                        TextureAtlasSprite currentBase = new NewTextureAtlasSprite(textureName);
+                        TextureAtlasSprite currentBase = new NewTextureAtlasSprite(textureName, 2, 2);
                         ((TextureMap) iconRegister).setTextureEntry(textureName, currentBase);
 
                         if (simple.getMetadata("animation") != null) {
@@ -45,7 +45,7 @@ public class IC2TextureLoader {
                                 .getAsJsonObject("animation");
                             if (animationObj.has("interpolate") && animationObj.getAsJsonPrimitive("interpolate")
                                 .getAsBoolean()) {
-                                InterpolatedIcon interpolatedIcon = new InterpolatedIcon(textureName);
+                                InterpolatedIcon interpolatedIcon = new InterpolatedIcon(textureName, 2, 2);
                                 ((TextureMap) iconRegister).setTextureEntry(textureName, interpolatedIcon);
                                 currentBase = interpolatedIcon;
                             }
@@ -65,7 +65,7 @@ public class IC2TextureLoader {
                                 .replace("textures/blocks/", "")
                                 .replace(".png", "");
 
-                            currentCTM = new NewTextureAtlasSprite(connectTextureName);
+                            currentCTM = new NewTextureAtlasSprite(connectTextureName, 4, 4);
                             ((TextureMap) iconRegister).setTextureEntry(connectTextureName, currentCTM);
                             try {
                                 ResourceLocation resCTM = new ResourceLocation(connectTexture);
@@ -82,7 +82,9 @@ public class IC2TextureLoader {
                                             && animationObjCTM.getAsJsonPrimitive("interpolate")
                                                 .getAsBoolean()) {
                                             InterpolatedIcon interpolatedIconCTM = new InterpolatedIcon(
-                                                connectTextureName);
+                                                connectTextureName,
+                                                4,
+                                                4);
                                             ((TextureMap) iconRegister)
                                                 .setTextureEntry(connectTextureName, interpolatedIconCTM);
 
@@ -103,7 +105,7 @@ public class IC2TextureLoader {
                             String altTextureName = altTexture.replace("minecraft:", "")
                                 .replace("textures/blocks/", "")
                                 .replace(".png", "");
-                            currentAlt = new NewTextureAtlasSprite(altTextureName);
+                            currentAlt = new NewTextureAtlasSprite(altTextureName, 2, 2);
                             ((TextureMap) iconRegister).setTextureEntry(altTextureName, currentAlt);
                             try {
                                 ResourceLocation resAlt = new ResourceLocation(altTexture);
@@ -119,7 +121,10 @@ public class IC2TextureLoader {
                                         if (animationObjAlt.has("interpolate")
                                             && animationObjAlt.getAsJsonPrimitive("interpolate")
                                                 .getAsBoolean()) {
-                                            InterpolatedIcon interpolatedIconAlt = new InterpolatedIcon(altTextureName);
+                                            InterpolatedIcon interpolatedIconAlt = new InterpolatedIcon(
+                                                altTextureName,
+                                                2,
+                                                2);
                                             ((TextureMap) iconRegister)
                                                 .setTextureEntry(altTextureName, interpolatedIconAlt);
 

@@ -17,6 +17,7 @@ import net.minecraft.client.renderer.texture.ITickableTextureObject;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.client.resources.IResource;
+import net.minecraft.client.resources.IResourceManager;
 import net.minecraft.client.resources.SimpleResource;
 import net.minecraft.util.IIcon;
 import net.minecraft.util.ResourceLocation;
@@ -27,6 +28,7 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import com.github.wohaopa.MyCTMLib.CTMConfig;
@@ -34,6 +36,7 @@ import com.github.wohaopa.MyCTMLib.CTMIconManager;
 import com.github.wohaopa.MyCTMLib.InterpolatedIcon;
 import com.github.wohaopa.MyCTMLib.MyCTMLibMetadataSectionSerializer.MyCTMLibMetadataSection;
 import com.github.wohaopa.MyCTMLib.NewTextureAtlasSprite;
+import com.github.wohaopa.MyCTMLib.Textures;
 import com.google.gson.JsonObject;
 
 @Mixin(TextureMap.class)
@@ -50,6 +53,13 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
     @Final
     private String basePath;
 
+    @Inject(method = "loadTextureAtlas", at = @At("HEAD"))
+    private void clearMyCtmRegistrations(IResourceManager resourceManager, CallbackInfo ci) {
+        if (!isItemAtlas()) {
+            Textures.clearTextureRegistrations();
+        }
+    }
+
     @Inject(
         method = "registerIcon",
         at = @At(
@@ -60,30 +70,17 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
         try {
             TextureAtlasSprite currentBase;
             TextureAtlasSprite currentCTM;
-            TextureAtlasSprite currentAlt;
+            TextureAtlasSprite currentAlt = null;
+            List<CTMIconManager> randomManagers = new ArrayList<>();
             IResource resource = getResourceFromTextureName(textureName);
 
-            if (basePath.contains("textures\\items") || basePath.contains("textures/items")) {
+            if (isItemAtlas()) {
                 return;
             }
 
             if (!(resource instanceof SimpleResource simple)) {
                 return;
             }
-
-            // try{
-            // // 触发解析json
-            // simple.getMetadata("myctmlib");
-
-            // if (((AccessorSimpleResource) simple).getMcMetaJson() == null) {
-            // System.out.println("[CTMLib] registerIcon2: " + " No Metadata");
-            // }else{
-            // System.out.println(((AccessorSimpleResource) simple).getMcMetaJson());
-            // }
-
-            // }catch(Exception e){
-            // System.out.println("[CTMLib] registerIcon2: " + e.getMessage());
-            // }
 
             JsonObject ctmObj = ((MyCTMLibMetadataSection) resource.getMetadata("myctmlib")).getJson();
 
@@ -94,8 +91,8 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
             CTMIconManager.Builder builder = CTMIconManager.builder();
             CTMConfig config = new CTMConfig(ctmObj);
 
-            currentBase = useInterpolation(simple) ? new InterpolatedIcon(textureName)
-                : new NewTextureAtlasSprite(textureName);
+            currentBase = useInterpolation(simple) ? new InterpolatedIcon(textureName, 2, 2)
+                : new NewTextureAtlasSprite(textureName, 2, 2);
             builder.setIconSmall(currentBase);
             mapRegisteredSprites.put(textureName, currentBase);
 
@@ -105,8 +102,8 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
                     IResource resourceCTM = getResourceFromJson(ctmObj, "connection");
 
                     if (resourceCTM instanceof SimpleResource simpleCTM) {
-                        currentCTM = useInterpolation(simpleCTM) ? new InterpolatedIcon(config.connectionTexture)
-                            : new NewTextureAtlasSprite(config.connectionTexture);
+                        currentCTM = useInterpolation(simpleCTM) ? new InterpolatedIcon(config.connectionTexture, 4, 4)
+                            : new NewTextureAtlasSprite(config.connectionTexture, 4, 4);
                         mapRegisteredSprites.put(config.connectionTexture, currentCTM);
                         builder.setIconCTM(currentCTM);
                     }
@@ -117,9 +114,8 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
             if (!config.randomTextures.isEmpty()) {
 
                 List<String> processedTextures = config.randomTextures;
-                List<CTMIconManager> randomManagers = new ArrayList<>();
 
-                // 对random和connection同时存在的情况处理
+                // Pair random connection sheets with their fallback sheets.
                 if (config.connectionTexture != null) {
                     for (String processedTexture : processedTextures) {
                         if (!processedTexture.contains("_ctm")) {
@@ -128,13 +124,12 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
 
                         String baseTextureName = processedTexture.replace("_ctm", "");
 
-                        // 配对随机纹理（IconCTM和IconSmall）
                         if (!processedTextures.contains(baseTextureName)) {
                             continue;
                         }
 
-                        TextureAtlasSprite baseSprite = new NewTextureAtlasSprite(baseTextureName);
-                        TextureAtlasSprite randomSprite = new NewTextureAtlasSprite(processedTexture);
+                        TextureAtlasSprite baseSprite = new NewTextureAtlasSprite(baseTextureName, 2, 2);
+                        TextureAtlasSprite randomSprite = new NewTextureAtlasSprite(processedTexture, 4, 4);
                         mapRegisteredSprites.put(baseTextureName, baseSprite);
                         mapRegisteredSprites.put(processedTexture, randomSprite);
 
@@ -147,11 +142,11 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
 
                 }
 
-                // 单独的random字段处理
+                // Build fallback-only random variants when no connection sheet exists.
                 if (config.connectionTexture == null) {
 
                     for (String processedTexture : processedTextures) {
-                        TextureAtlasSprite randomSprite = new NewTextureAtlasSprite(processedTexture);
+                        TextureAtlasSprite randomSprite = new NewTextureAtlasSprite(processedTexture, 2, 2);
                         mapRegisteredSprites.put(processedTexture, randomSprite);
 
                         randomManagers.add(
@@ -161,10 +156,6 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
                     }
                 }
 
-                if (!randomManagers.isEmpty()) {
-                    ctmRandomMap.put(textureName, randomManagers);
-                }
-
             }
 
             if (config.altTexture != null) {
@@ -172,33 +163,43 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
                     IResource resourceAlt = getResourceFromJson(ctmObj, "alt");
 
                     if (resourceAlt instanceof SimpleResource simpleAlt) {
-                        currentAlt = useInterpolation(simpleAlt) ? new InterpolatedIcon(config.altTexture)
-                            : new NewTextureAtlasSprite(config.altTexture);
+                        currentAlt = useInterpolation(simpleAlt) ? new InterpolatedIcon(config.altTexture, 2, 2)
+                            : new NewTextureAtlasSprite(config.altTexture, 2, 2);
 
                         mapRegisteredSprites.put(config.altTexture, currentAlt);
                         builder.setIconAlt(currentAlt);
-                        ctmAltMap.put(textureName, currentAlt.getIconName());
                     }
 
                 } catch (IOException ignored) {}
 
             }
 
+            CTMIconManager ctmManager = builder.buildAndInit();
+            if (!ctmManager.hasConnectionTexture()) {
+                cir.setReturnValue(currentBase);
+                return;
+            }
+
+            if (!randomManagers.isEmpty()) {
+                ctmRandomMap.put(textureName, randomManagers);
+            }
+
+            if (currentAlt != null) {
+                ctmAltMap.put(textureName, currentAlt.getIconName());
+            }
+
             if (!config.equivalents.isEmpty()) {
                 ctmReplaceMap.put(textureName, config.equivalents.toArray(new String[0]));
             }
 
-            CTMIconManager ctmManager = builder.buildAndInit();
             ctmIconMap.put(textureName, ctmManager);
 
             cir.setReturnValue(currentBase);
-        } catch (Exception e) {
-            // System.out.println("[CTMLib] Error: " + e.getMessage());
-        }
+        } catch (Exception ignored) {}
     }
 
     /**
-     * 判断是否应该使用插值纹理
+     * Returns whether a resource requests interpolated animation frames.
      */
     @Unique
     private boolean useInterpolation(SimpleResource simple) {
@@ -212,8 +213,13 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
             .getAsBoolean();
     }
 
+    @Unique
+    private boolean isItemAtlas() {
+        return basePath.contains("textures\\items") || basePath.contains("textures/items");
+    }
+
     /**
-     * 从JSON对象中获取资源
+     * Resolves a texture resource declared by metadata.
      */
     @Unique
     private IResource getResourceFromJson(JsonObject ctmObj, String fieldName) throws IOException {
@@ -228,7 +234,7 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
     }
 
     /**
-     * 从纹理名称获取资源
+     * Resolves a texture resource by atlas name.
      */
     @Unique
     private IResource getResourceFromTextureName(String textureName) throws IOException {

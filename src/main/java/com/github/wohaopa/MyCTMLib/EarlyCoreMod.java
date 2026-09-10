@@ -32,7 +32,7 @@ public class EarlyCoreMod implements IFMLLoadingPlugin, IEarlyMixinLoader, IFMLC
 
     @Override
     public String getSetupClass() {
-        return "com.github.wohaopa.MyCTMLib.EarlyCoreMod";
+        return EarlyCoreMod.class.getName();
     }
 
     @Override

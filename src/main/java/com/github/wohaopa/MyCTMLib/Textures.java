@@ -7,14 +7,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockAir;
 import net.minecraft.client.renderer.RenderBlocks;
-import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.util.IIcon;
 import net.minecraft.world.IBlockAccess;
+import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
 import cpw.mods.fml.common.Loader;
 
-@SuppressWarnings("DuplicatedCode")
 public class Textures {
 
     public static Map<String, CTMIconManager> ctmIconMap = new ConcurrentHashMap<>();
@@ -22,57 +21,74 @@ public class Textures {
     public static Map<String, String> ctmAltMap = new ConcurrentHashMap<>();
     public static Map<String, List<CTMIconManager>> ctmRandomMap = new ConcurrentHashMap<>();
 
-    public static final int[][] vertex = { { 0, 0 }, { 1, 0 }, { 1, 1 }, { 0, 1 } };
     public static final ForgeDirection[][] forgeDirections = new ForgeDirection[][] {
-        { ForgeDirection.NORTH, ForgeDirection.EAST, ForgeDirection.SOUTH, ForgeDirection.WEST }, // DOWN -Y
-        { ForgeDirection.NORTH, ForgeDirection.EAST, ForgeDirection.SOUTH, ForgeDirection.WEST }, // UP +Y
-        { ForgeDirection.UP, ForgeDirection.WEST, ForgeDirection.DOWN, ForgeDirection.EAST }, // NORTH -Z
-        { ForgeDirection.UP, ForgeDirection.EAST, ForgeDirection.DOWN, ForgeDirection.WEST }, // SOUTH +Z
-        { ForgeDirection.UP, ForgeDirection.SOUTH, ForgeDirection.DOWN, ForgeDirection.NORTH }, // WEST -X
-        { ForgeDirection.UP, ForgeDirection.NORTH, ForgeDirection.DOWN, ForgeDirection.SOUTH } // EAST +X
-    };
-
+        { ForgeDirection.NORTH, ForgeDirection.EAST, ForgeDirection.SOUTH, ForgeDirection.WEST },
+        { ForgeDirection.NORTH, ForgeDirection.EAST, ForgeDirection.SOUTH, ForgeDirection.WEST },
+        { ForgeDirection.UP, ForgeDirection.WEST, ForgeDirection.DOWN, ForgeDirection.EAST },
+        { ForgeDirection.UP, ForgeDirection.EAST, ForgeDirection.DOWN, ForgeDirection.WEST },
+        { ForgeDirection.UP, ForgeDirection.SOUTH, ForgeDirection.DOWN, ForgeDirection.NORTH },
+        { ForgeDirection.UP, ForgeDirection.NORTH, ForgeDirection.DOWN, ForgeDirection.SOUTH } };
     public static final ThreadLocal<int[]> threadLocalIconIdx = ThreadLocal.withInitial(() -> new int[4]);
     public static final ThreadLocal<boolean[]> threadLocalConnections = ThreadLocal.withInitial(() -> new boolean[8]);
-    public static final ThreadLocal<float[][][]> threadInterpolationMatrix = ThreadLocal
-        .withInitial(() -> new float[4][3][3]);
 
-    public static boolean contain(String icon) {
-        int firstColon = icon.indexOf(':');
-        int secondColon = icon.indexOf(':', firstColon + 1);
+    public static void clearTextureRegistrations() {
+        ctmIconMap.clear();
+        ctmReplaceMap.clear();
+        ctmAltMap.clear();
+        ctmRandomMap.clear();
+    }
 
-        if (secondColon != -1) {
-            icon = icon.substring(0, secondColon) + "&"
-                + icon.substring(secondColon + 1)
-                    .replace(":", "&");
+    public static boolean contain(String iconName) {
+        return findConnectionManager(iconName) != null;
+    }
+
+    public static CTMIconManager findConnectionManager(IIcon icon) {
+        return icon == null ? null : findConnectionManager(icon.getIconName());
+    }
+
+    public static CTMIconManager findConnectionManager(String iconName) {
+        if (iconName == null) {
+            return null;
         }
+        CTMIconManager manager = ctmIconMap.get(normalizeIconName(iconName));
+        return manager != null && manager.hasConnectionTexture() ? manager : null;
+    }
 
-        return ctmIconMap.containsKey(icon);
+    public static String normalizeIconName(String iconName) {
+        int firstColon = iconName.indexOf(':');
+        int secondColon = iconName.indexOf(':', firstColon + 1);
+        if (secondColon == -1) {
+            return iconName;
+        }
+        return iconName.substring(0, secondColon) + "&"
+            + iconName.substring(secondColon + 1)
+                .replace(':', '&');
     }
 
     public static boolean renderWorldBlock(RenderBlocks renderBlocks, IBlockAccess blockAccess, Block block, double x,
         double y, double z, IIcon iIcon, ForgeDirection forgeDirection) {
+        CTMIconManager manager = findConnectionManager(iIcon);
+        if (manager == null) {
+            return false;
+        }
+        return renderWorldBlock(renderBlocks, blockAccess, block, x, y, z, iIcon, manager, forgeDirection);
+    }
 
-        String icon = iIcon.getIconName();
-        int firstColon = icon.indexOf(':');
-        int secondColon = icon.indexOf(':', firstColon + 1);
-
-        if (secondColon != -1) {
-            icon = icon.substring(0, secondColon) + "&"
-                + icon.substring(secondColon + 1)
-                    .replace(":", "&");
+    public static boolean renderWorldBlock(RenderBlocks renderBlocks, IBlockAccess blockAccess, Block block, double x,
+        double y, double z, IIcon iIcon, CTMIconManager manager, ForgeDirection forgeDirection) {
+        if (renderBlocks == null || blockAccess == null
+            || block == null
+            || iIcon == null
+            || manager == null
+            || forgeDirection == null
+            || !manager.hasConnectionTexture()) {
+            return false;
         }
 
+        String icon = normalizeIconName(iIcon.getIconName());
         int[] iconIdx = threadLocalIconIdx.get();
 
-        CTMIconManager manager = ctmIconMap.get(icon);
-        if (!manager.hasInited()) {
-            manager.init();
-        }
-
-        // 如果检测直径为1，直接使用17-20，不需要buildConnect
         if (manager.detectionDiameter == CTMIconManager.DetectionDiameter.DIAMETER_1) {
-            System.out.println("[CTMLib] DetectionDiameter.DIAMETER_1" + icon);
             iconIdx[0] = 17;
             iconIdx[1] = 18;
             iconIdx[2] = 19;
@@ -81,713 +97,31 @@ public class Textures {
             buildConnect(blockAccess, (int) x, (int) y, (int) z, iIcon, forgeDirection, iconIdx);
         }
 
-        if (ctmRandomMap.containsKey(icon)) {
-            List<CTMIconManager> randomManagers = ctmRandomMap.get(icon);
+        manager = selectTextureManager(blockAccess, (int) x, (int) y, (int) z, icon, manager);
 
-            long worldSeed = 0;
-            if (blockAccess instanceof net.minecraft.world.World) {
-                worldSeed = ((net.minecraft.world.World) blockAccess).getSeed();
-            }
+        return CtmFaceRenderer.render(renderBlocks, block, x, y, z, manager, forgeDirection, iconIdx);
+    }
 
-            int blockX = (int) x;
-            int blockY = (int) y;
-            int blockZ = (int) z;
-
-            int randomIndex = FastRandom.getRandomIndex(worldSeed, blockX, blockY, blockZ, randomManagers.size() + 1);
-            if (randomIndex < randomManagers.size()) {
-                manager = randomManagers.get(randomIndex);
-            }
-            // 如果randomIndex == randomManagers.size()，则不使用随机纹理
+    public static CTMIconManager selectTextureManager(IBlockAccess blockAccess, int x, int y, int z, String iconName,
+        CTMIconManager primaryManager) {
+        List<CTMIconManager> randomManagers = ctmRandomMap.get(normalizeIconName(iconName));
+        if (randomManagers == null || randomManagers.isEmpty()) {
+            return primaryManager;
         }
 
-        float offset = 1e-3f;
-        switch (forgeDirection) {
-            case DOWN -> renderFaceYNeg(renderBlocks, x, y + offset, z, manager, iconIdx);
-            case UP -> renderFaceYPos(renderBlocks, x, y - offset, z, manager, iconIdx);
-            case NORTH -> renderFaceZNeg(renderBlocks, x, y, z + offset, manager, iconIdx);
-            case SOUTH -> renderFaceZPos(renderBlocks, x, y, z - offset, manager, iconIdx);
-            case WEST -> renderFaceXNeg(renderBlocks, x + offset, y, z, manager, iconIdx);
-            case EAST -> renderFaceXPos(renderBlocks, x - offset, y, z, manager, iconIdx);
-            default -> {
-                return false;
-            }
+        long worldSeed = 0;
+        if (blockAccess instanceof World world) {
+            worldSeed = world.getSeed();
         }
 
-        return true;
-    }
-
-    public static void setAO(float[][][] matrix, Tessellator tessellator, int i, int j, int index) {
-        int x_offset = vertex[index][0];
-        int y_offset = vertex[index][1];
-        tessellator.setColorOpaque_F(
-            matrix[0][i + x_offset][j + y_offset],
-            matrix[1][i + x_offset][j + y_offset],
-            matrix[2][i + x_offset][j + y_offset]);
-        tessellator.setBrightness((int) matrix[3][i + x_offset][j + y_offset]);
-    }
-
-    public static void fillInterpolationMatrix(float[][] array, float valTopLeft, float valTopRight,
-        float valBottomLeft, float valBottomRight) {
-
-        array[0][0] = valTopLeft;
-        array[1][0] = (valTopLeft + valTopRight) / 2;
-        array[2][0] = valTopRight;
-
-        array[0][2] = valBottomLeft;
-        array[1][2] = (valBottomLeft + valBottomRight) / 2;
-        array[2][2] = valBottomRight;
-
-        array[0][1] = (array[0][0] + array[0][2]) / 2;
-        array[1][1] = (array[1][0] + array[1][2]) / 2;
-        array[2][1] = (array[2][0] + array[2][2]) / 2;
-    }
-
-    public static void fillInterpolationMatrix(float[][][] matrix, RenderBlocks renderBlocks) {
-        float[][] red = matrix[0];
-        fillInterpolationMatrix(
-            red,
-            renderBlocks.colorRedTopLeft,
-            renderBlocks.colorRedTopRight,
-            renderBlocks.colorRedBottomLeft,
-            renderBlocks.colorRedBottomRight);
-        float[][] green = matrix[1];
-        fillInterpolationMatrix(
-            green,
-            renderBlocks.colorGreenTopLeft,
-            renderBlocks.colorGreenTopRight,
-            renderBlocks.colorGreenBottomLeft,
-            renderBlocks.colorGreenBottomRight);
-        float[][] blue = matrix[2];
-        fillInterpolationMatrix(
-            blue,
-            renderBlocks.colorBlueTopLeft,
-            renderBlocks.colorBlueTopRight,
-            renderBlocks.colorBlueBottomLeft,
-            renderBlocks.colorBlueBottomRight);
-        float[][] bright = matrix[3];
-        fillInterpolationMatrix(
-            bright,
-            renderBlocks.brightnessTopLeft,
-            renderBlocks.brightnessTopRight,
-            renderBlocks.brightnessBottomLeft,
-            renderBlocks.brightnessBottomRight);
-    }
-
-    public static void renderFaceYNeg(RenderBlocks renderBlocks, double x, double y, double z, CTMIconManager manager,
-        int[] iconIdxOut) {
-        Tessellator tessellator = Loader.isModLoaded("gtnhlib") ? GTNHIntegrationHelper.getGTNHLibTessellator()
-            : Tessellator.instance;
-        float[][][] matrix = threadInterpolationMatrix.get();
-        if (renderBlocks.enableAO) fillInterpolationMatrix(matrix, renderBlocks);
-        for (int i = 0; i < 2; i++) for (int j = 0; j < 2; j++) {
-            IIcon iIcon = manager.getIcon(iconIdxOut[i + j * 2]);
-            double minU = iIcon.getInterpolatedU(renderBlocks.renderMinX * 16.0D);
-            double maxU = iIcon.getInterpolatedU(renderBlocks.renderMaxX * 16.0D);
-            double minV = iIcon.getInterpolatedV(renderBlocks.renderMinZ * 16.0D);
-            double maxV = iIcon.getInterpolatedV(renderBlocks.renderMaxZ * 16.0D);
-
-            if (renderBlocks.renderMinX < 0.0D || renderBlocks.renderMaxX > 1.0D) {
-                minU = iIcon.getMinU();
-                maxU = iIcon.getMaxU();
-            }
-
-            if (renderBlocks.renderMinZ < 0.0D || renderBlocks.renderMaxZ > 1.0D) {
-                minV = iIcon.getMinV();
-                maxV = iIcon.getMaxV();
-            }
-
-            double d7 = maxU;
-            double d8 = minU;
-            double d9 = minV;
-            double d10 = maxV;
-
-            if (renderBlocks.uvRotateBottom == 2) {
-                minU = iIcon.getInterpolatedU(renderBlocks.renderMinZ * 16.0D);
-                minV = iIcon.getInterpolatedV(16.0D - renderBlocks.renderMaxX * 16.0D);
-                maxU = iIcon.getInterpolatedU(renderBlocks.renderMaxZ * 16.0D);
-                maxV = iIcon.getInterpolatedV(16.0D - renderBlocks.renderMinX * 16.0D);
-                d9 = minV;
-                d10 = maxV;
-                d7 = minU;
-                d8 = maxU;
-                minV = maxV;
-                maxV = d9;
-            } else if (renderBlocks.uvRotateBottom == 1) {
-                minU = iIcon.getInterpolatedU(16.0D - renderBlocks.renderMaxZ * 16.0D);
-                minV = iIcon.getInterpolatedV(renderBlocks.renderMinX * 16.0D);
-                maxU = iIcon.getInterpolatedU(16.0D - renderBlocks.renderMinZ * 16.0D);
-                maxV = iIcon.getInterpolatedV(renderBlocks.renderMaxX * 16.0D);
-                d7 = maxU;
-                d8 = minU;
-                minU = maxU;
-                maxU = d8;
-                d9 = maxV;
-                d10 = minV;
-            } else if (renderBlocks.uvRotateBottom == 3) {
-                minU = iIcon.getInterpolatedU(16.0D - renderBlocks.renderMinX * 16.0D);
-                maxU = iIcon.getInterpolatedU(16.0D - renderBlocks.renderMaxX * 16.0D);
-                minV = iIcon.getInterpolatedV(16.0D - renderBlocks.renderMinZ * 16.0D);
-                maxV = iIcon.getInterpolatedV(16.0D - renderBlocks.renderMaxZ * 16.0D);
-                d7 = maxU;
-                d8 = minU;
-                d9 = minV;
-                d10 = maxV;
-            }
-
-            double minX = x + renderBlocks.renderMinX + 0.5 * i;
-            double maxX = x + renderBlocks.renderMaxX - (i == 0 ? 0.5 : 0);
-            double minY = y + renderBlocks.renderMinY;
-            double minZ = z + renderBlocks.renderMinZ + 0.5 * j;
-            double maxZ = z + renderBlocks.renderMaxZ - (j == 0 ? 0.5 : 0);
-
-            if (renderBlocks.renderFromInside) {
-                double d = minX;
-                minX = maxX;
-                maxX = d;
-            }
-
-            if (renderBlocks.enableAO) {
-
-                setAO(matrix, tessellator, i, 1 - j, 0);
-                tessellator.addVertexWithUV(minX, minY, maxZ, d8, d10);
-                setAO(matrix, tessellator, i, 1 - j, 3);
-                tessellator.addVertexWithUV(minX, minY, minZ, minU, minV);
-                setAO(matrix, tessellator, i, 1 - j, 2);
-                tessellator.addVertexWithUV(maxX, minY, minZ, d7, d9);
-                setAO(matrix, tessellator, i, 1 - j, 1);
-                tessellator.addVertexWithUV(maxX, minY, maxZ, maxU, maxV);
-            } else {
-                tessellator.addVertexWithUV(minX, minY, maxZ, d8, d10);
-                tessellator.addVertexWithUV(minX, minY, minZ, minU, minV);
-                tessellator.addVertexWithUV(maxX, minY, minZ, d7, d9);
-                tessellator.addVertexWithUV(maxX, minY, maxZ, maxU, maxV);
-            }
-        }
-    }
-
-    public static void renderFaceYPos(RenderBlocks renderBlocks, double x, double y, double z, CTMIconManager manager,
-        int[] iconIdxOut) {
-        Tessellator tessellator = Loader.isModLoaded("gtnhlib") ? GTNHIntegrationHelper.getGTNHLibTessellator()
-            : Tessellator.instance;
-        float[][][] matrix = threadInterpolationMatrix.get();
-        if (renderBlocks.enableAO) fillInterpolationMatrix(matrix, renderBlocks);
-        for (int i = 0; i < 2; i++) for (int j = 0; j < 2; j++) {
-
-            IIcon iIcon = manager.getIcon(iconIdxOut[i + j * 2]);
-            double minU = iIcon.getInterpolatedU(renderBlocks.renderMinX * 16.0D);
-            double maxU = iIcon.getInterpolatedU(renderBlocks.renderMaxX * 16.0D);
-            double minV = iIcon.getInterpolatedV(renderBlocks.renderMinZ * 16.0D);
-            double maxV = iIcon.getInterpolatedV(renderBlocks.renderMaxZ * 16.0D);
-
-            if (renderBlocks.renderMinX < 0.0D || renderBlocks.renderMaxX > 1.0D) {
-                minU = iIcon.getMinU();
-                maxU = iIcon.getMaxU();
-            }
-
-            if (renderBlocks.renderMinZ < 0.0D || renderBlocks.renderMaxZ > 1.0D) {
-                minV = iIcon.getMinV();
-                maxV = iIcon.getMaxV();
-            }
-
-            double d7 = maxU;
-            double d8 = minU;
-            double d9 = minV;
-            double d10 = maxV;
-
-            if (renderBlocks.uvRotateTop == 1) {
-                minU = iIcon.getInterpolatedU(renderBlocks.renderMinZ * 16.0D);
-                minV = iIcon.getInterpolatedV(16.0D - renderBlocks.renderMaxX * 16.0D);
-                maxU = iIcon.getInterpolatedU(renderBlocks.renderMaxZ * 16.0D);
-                maxV = iIcon.getInterpolatedV(16.0D - renderBlocks.renderMinX * 16.0D);
-                d9 = minV;
-                d10 = maxV;
-                d7 = minU;
-                d8 = maxU;
-                minV = maxV;
-                maxV = d9;
-            } else if (renderBlocks.uvRotateTop == 2) {
-                minU = iIcon.getInterpolatedU(16.0D - renderBlocks.renderMaxZ * 16.0D);
-                minV = iIcon.getInterpolatedV(renderBlocks.renderMinX * 16.0D);
-                maxU = iIcon.getInterpolatedU(16.0D - renderBlocks.renderMinZ * 16.0D);
-                maxV = iIcon.getInterpolatedV(renderBlocks.renderMaxX * 16.0D);
-                d7 = maxU;
-                d8 = minU;
-                minU = maxU;
-                maxU = d8;
-                d9 = maxV;
-                d10 = minV;
-            } else if (renderBlocks.uvRotateTop == 3) {
-                minU = iIcon.getInterpolatedU(16.0D - renderBlocks.renderMinX * 16.0D);
-                maxU = iIcon.getInterpolatedU(16.0D - renderBlocks.renderMaxX * 16.0D);
-                minV = iIcon.getInterpolatedV(16.0D - renderBlocks.renderMinZ * 16.0D);
-                maxV = iIcon.getInterpolatedV(16.0D - renderBlocks.renderMaxZ * 16.0D);
-                d7 = maxU;
-                d8 = minU;
-                d9 = minV;
-                d10 = maxV;
-            }
-
-            double minX = x + renderBlocks.renderMinX + 0.5 * i;
-            double maxX = x + renderBlocks.renderMaxX - (i == 0 ? 0.5 : 0);
-            double maxY = y + renderBlocks.renderMaxY;
-            double minZ = z + renderBlocks.renderMinZ + 0.5 * j;
-            double maxZ = z + renderBlocks.renderMaxZ - (j == 0 ? 0.5 : 0);
-
-            if (renderBlocks.renderFromInside) {
-                double d = minX;
-                minX = maxX;
-                maxX = d;
-            }
-
-            if (renderBlocks.enableAO) {
-
-                setAO(matrix, tessellator, 1 - i, 1 - j, 0);
-                tessellator.addVertexWithUV(maxX, maxY, maxZ, maxU, maxV);
-
-                setAO(matrix, tessellator, 1 - i, 1 - j, 3);
-                tessellator.addVertexWithUV(maxX, maxY, minZ, d7, d9);
-
-                setAO(matrix, tessellator, 1 - i, 1 - j, 2);
-                tessellator.addVertexWithUV(minX, maxY, minZ, minU, minV);
-
-                setAO(matrix, tessellator, 1 - i, 1 - j, 1);
-                tessellator.addVertexWithUV(minX, maxY, maxZ, d8, d10);
-            } else {
-                tessellator.addVertexWithUV(maxX, maxY, maxZ, maxU, maxV);
-                tessellator.addVertexWithUV(maxX, maxY, minZ, d7, d9);
-                tessellator.addVertexWithUV(minX, maxY, minZ, minU, minV);
-                tessellator.addVertexWithUV(minX, maxY, maxZ, d8, d10);
-            }
-        }
-
-    }
-
-    public static void renderFaceZNeg(RenderBlocks renderBlocks, double x, double y, double z, CTMIconManager manager,
-        int[] iconIdxOut) {
-        Tessellator tessellator = Loader.isModLoaded("gtnhlib") ? GTNHIntegrationHelper.getGTNHLibTessellator()
-            : Tessellator.instance;
-        float[][][] matrix = threadInterpolationMatrix.get();
-        if (renderBlocks.enableAO) fillInterpolationMatrix(matrix, renderBlocks);
-        for (int i = 0; i < 2; i++) for (int j = 0; j < 2; j++) {
-            IIcon iIcon = manager.getIcon(iconIdxOut[i + j * 2]);
-
-            double d3 = iIcon.getInterpolatedU(renderBlocks.renderMinX * 16.0D);
-            double d4 = iIcon.getInterpolatedU(renderBlocks.renderMaxX * 16.0D);
-
-            if (renderBlocks.field_152631_f) {
-                d4 = iIcon.getInterpolatedU((1.0D - renderBlocks.renderMinX) * 16.0D);
-                d3 = iIcon.getInterpolatedU((1.0D - renderBlocks.renderMaxX) * 16.0D);
-            }
-
-            double d5 = iIcon.getInterpolatedV(16.0D - renderBlocks.renderMaxY * 16.0D);
-            double d6 = iIcon.getInterpolatedV(16.0D - renderBlocks.renderMinY * 16.0D);
-            double d7;
-
-            if (renderBlocks.flipTexture) {
-                d7 = d3;
-                d3 = d4;
-                d4 = d7;
-            }
-
-            if (renderBlocks.renderMinX < 0.0D || renderBlocks.renderMaxX > 1.0D) {
-                d3 = iIcon.getMinU();
-                d4 = iIcon.getMaxU();
-            }
-
-            if (renderBlocks.renderMinY < 0.0D || renderBlocks.renderMaxY > 1.0D) {
-                d5 = iIcon.getMinV();
-                d6 = iIcon.getMaxV();
-            }
-
-            d7 = d4;
-            double d8 = d3;
-            double d9 = d5;
-            double d10 = d6;
-
-            if (renderBlocks.uvRotateEast == 2) {
-                d3 = iIcon.getInterpolatedU(renderBlocks.renderMinY * 16.0D);
-                d4 = iIcon.getInterpolatedU(renderBlocks.renderMaxY * 16.0D);
-                d5 = iIcon.getInterpolatedV(16.0D - renderBlocks.renderMinX * 16.0D);
-                d6 = iIcon.getInterpolatedV(16.0D - renderBlocks.renderMaxX * 16.0D);
-                d9 = d5;
-                d10 = d6;
-                d7 = d3;
-                d8 = d4;
-                d5 = d6;
-                d6 = d9;
-            } else if (renderBlocks.uvRotateEast == 1) {
-                d3 = iIcon.getInterpolatedU(16.0D - renderBlocks.renderMaxY * 16.0D);
-                d4 = iIcon.getInterpolatedU(16.0D - renderBlocks.renderMinY * 16.0D);
-                d5 = iIcon.getInterpolatedV(renderBlocks.renderMaxX * 16.0D);
-                d6 = iIcon.getInterpolatedV(renderBlocks.renderMinX * 16.0D);
-                d7 = d4;
-                d8 = d3;
-                d3 = d4;
-                d4 = d8;
-                d9 = d6;
-                d10 = d5;
-            } else if (renderBlocks.uvRotateEast == 3) {
-                d3 = iIcon.getInterpolatedU(16.0D - renderBlocks.renderMinX * 16.0D);
-                d4 = iIcon.getInterpolatedU(16.0D - renderBlocks.renderMaxX * 16.0D);
-                d5 = iIcon.getInterpolatedV(renderBlocks.renderMaxY * 16.0D);
-                d6 = iIcon.getInterpolatedV(renderBlocks.renderMinY * 16.0D);
-                d7 = d4;
-                d8 = d3;
-                d9 = d5;
-                d10 = d6;
-            }
-
-            double d11 = x + renderBlocks.renderMinX + (i == 0 ? 0.5 : 0);
-            double d12 = x + renderBlocks.renderMaxX - 0.5 * i;
-            double d13 = y + renderBlocks.renderMinY + (j == 0 ? 0.5 : 0);
-            double d14 = y + renderBlocks.renderMaxY - 0.5 * j;
-            double d15 = z + renderBlocks.renderMinZ;
-
-            if (renderBlocks.renderFromInside) {
-                double d = d11;
-                d11 = d12;
-                d12 = d;
-            }
-
-            if (renderBlocks.enableAO) {
-
-                setAO(matrix, tessellator, j, 1 - i, 0);
-                tessellator.addVertexWithUV(d11, d14, d15, d7, d9);
-                setAO(matrix, tessellator, j, 1 - i, 3);
-                tessellator.addVertexWithUV(d12, d14, d15, d3, d5);
-                setAO(matrix, tessellator, j, 1 - i, 2);
-                tessellator.addVertexWithUV(d12, d13, d15, d8, d10);
-                setAO(matrix, tessellator, j, 1 - i, 1);
-                tessellator.addVertexWithUV(d11, d13, d15, d4, d6);
-            } else {
-                tessellator.addVertexWithUV(d11, d14, d15, d7, d9);
-                tessellator.addVertexWithUV(d12, d14, d15, d3, d5);
-                tessellator.addVertexWithUV(d12, d13, d15, d8, d10);
-                tessellator.addVertexWithUV(d11, d13, d15, d4, d6);
-            }
-        }
-    }
-
-    public static void renderFaceZPos(RenderBlocks renderBlocks, double x, double y, double z, CTMIconManager manager,
-        int[] iconIdxOut) {
-        Tessellator tessellator = Loader.isModLoaded("gtnhlib") ? GTNHIntegrationHelper.getGTNHLibTessellator()
-            : Tessellator.instance;
-        float[][][] matrix = threadInterpolationMatrix.get();
-        if (renderBlocks.enableAO) fillInterpolationMatrix(matrix, renderBlocks);
-        for (int i = 0; i < 2; i++) for (int j = 0; j < 2; j++) {
-
-            IIcon iIcon = manager.getIcon(iconIdxOut[i + j * 2]);
-
-            if (renderBlocks.hasOverrideBlockTexture()) {
-                iIcon = renderBlocks.overrideBlockTexture;
-            }
-
-            double d3 = iIcon.getInterpolatedU(renderBlocks.renderMinX * 16.0D);
-            double d4 = iIcon.getInterpolatedU(renderBlocks.renderMaxX * 16.0D);
-            double d5 = iIcon.getInterpolatedV(16.0D - renderBlocks.renderMaxY * 16.0D);
-            double d6 = iIcon.getInterpolatedV(16.0D - renderBlocks.renderMinY * 16.0D);
-            double d7;
-
-            if (renderBlocks.flipTexture) {
-                d7 = d3;
-                d3 = d4;
-                d4 = d7;
-            }
-
-            if (renderBlocks.renderMinX < 0.0D || renderBlocks.renderMaxX > 1.0D) {
-                d3 = iIcon.getMinU();
-                d4 = iIcon.getMaxU();
-            }
-
-            if (renderBlocks.renderMinY < 0.0D || renderBlocks.renderMaxY > 1.0D) {
-                d5 = iIcon.getMinV();
-                d6 = iIcon.getMaxV();
-            }
-
-            d7 = d4;
-            double d8 = d3;
-            double d9 = d5;
-            double d10 = d6;
-
-            if (renderBlocks.uvRotateWest == 1) {
-                d3 = iIcon.getInterpolatedU(renderBlocks.renderMinY * 16.0D);
-                d6 = iIcon.getInterpolatedV(16.0D - renderBlocks.renderMinX * 16.0D);
-                d4 = iIcon.getInterpolatedU(renderBlocks.renderMaxY * 16.0D);
-                d5 = iIcon.getInterpolatedV(16.0D - renderBlocks.renderMaxX * 16.0D);
-                d9 = d5;
-                d10 = d6;
-                d7 = d3;
-                d8 = d4;
-                d5 = d6;
-                d6 = d9;
-            } else if (renderBlocks.uvRotateWest == 2) {
-                d3 = iIcon.getInterpolatedU(16.0D - renderBlocks.renderMaxY * 16.0D);
-                d5 = iIcon.getInterpolatedV(renderBlocks.renderMinX * 16.0D);
-                d4 = iIcon.getInterpolatedU(16.0D - renderBlocks.renderMinY * 16.0D);
-                d6 = iIcon.getInterpolatedV(renderBlocks.renderMaxX * 16.0D);
-                d7 = d4;
-                d8 = d3;
-                d3 = d4;
-                d4 = d8;
-                d9 = d6;
-                d10 = d5;
-            } else if (renderBlocks.uvRotateWest == 3) {
-                d3 = iIcon.getInterpolatedU(16.0D - renderBlocks.renderMinX * 16.0D);
-                d4 = iIcon.getInterpolatedU(16.0D - renderBlocks.renderMaxX * 16.0D);
-                d5 = iIcon.getInterpolatedV(renderBlocks.renderMaxY * 16.0D);
-                d6 = iIcon.getInterpolatedV(renderBlocks.renderMinY * 16.0D);
-                d7 = d4;
-                d8 = d3;
-                d9 = d5;
-                d10 = d6;
-            }
-
-            double d11 = x + renderBlocks.renderMinX + 0.5 * i;
-            double d12 = x + renderBlocks.renderMaxX - (i == 0 ? 0.5 : 0);
-            double d13 = y + renderBlocks.renderMinY + (j == 0 ? 0.5 : 0);
-            double d14 = y + renderBlocks.renderMaxY - 0.5 * j;
-            double d15 = z + renderBlocks.renderMaxZ;
-
-            if (renderBlocks.renderFromInside) {
-                d11 = x + renderBlocks.renderMaxX;
-                d12 = x + renderBlocks.renderMinX;
-            }
-
-            if (renderBlocks.enableAO) {
-
-                setAO(matrix, tessellator, i, j, 0);
-                tessellator.addVertexWithUV(d11, d14, d15, d3, d5);
-                setAO(matrix, tessellator, i, j, 3);
-                tessellator.addVertexWithUV(d11, d13, d15, d8, d10);
-                setAO(matrix, tessellator, i, j, 2);
-                tessellator.addVertexWithUV(d12, d13, d15, d4, d6);
-                setAO(matrix, tessellator, i, j, 1);
-                tessellator.addVertexWithUV(d12, d14, d15, d7, d9);
-            } else {
-                tessellator.addVertexWithUV(d11, d14, d15, d3, d5);
-                tessellator.addVertexWithUV(d11, d13, d15, d8, d10);
-                tessellator.addVertexWithUV(d12, d13, d15, d4, d6);
-                tessellator.addVertexWithUV(d12, d14, d15, d7, d9);
-            }
-        }
-    }
-
-    public static void renderFaceXNeg(RenderBlocks renderBlocks, double x, double y, double z, CTMIconManager manager,
-        int[] iconIdxOut) {
-        Tessellator tessellator = Loader.isModLoaded("gtnhlib") ? GTNHIntegrationHelper.getGTNHLibTessellator()
-            : Tessellator.instance;
-        float[][][] matrix = threadInterpolationMatrix.get();
-        if (renderBlocks.enableAO) fillInterpolationMatrix(matrix, renderBlocks);
-        for (int i = 0; i < 2; i++) for (int j = 0; j < 2; j++) {
-
-            IIcon iIcon = manager.getIcon(iconIdxOut[i * 2 + j]);
-
-            if (renderBlocks.hasOverrideBlockTexture()) {
-                iIcon = renderBlocks.overrideBlockTexture;
-            }
-
-            double d3 = iIcon.getInterpolatedU(renderBlocks.renderMinZ * 16.0D);
-            double d4 = iIcon.getInterpolatedU(renderBlocks.renderMaxZ * 16.0D);
-            double d5 = iIcon.getInterpolatedV(16.0D - renderBlocks.renderMaxY * 16.0D);
-            double d6 = iIcon.getInterpolatedV(16.0D - renderBlocks.renderMinY * 16.0D);
-            double d7;
-
-            if (renderBlocks.flipTexture) {
-                d7 = d3;
-                d3 = d4;
-                d4 = d7;
-            }
-
-            if (renderBlocks.renderMinZ < 0.0D || renderBlocks.renderMaxZ > 1.0D) {
-                d3 = iIcon.getMinU();
-                d4 = iIcon.getMaxU();
-            }
-
-            if (renderBlocks.renderMinY < 0.0D || renderBlocks.renderMaxY > 1.0D) {
-                d5 = iIcon.getMinV();
-                d6 = iIcon.getMaxV();
-            }
-
-            d7 = d4;
-            double d8 = d3;
-            double d9 = d5;
-            double d10 = d6;
-
-            if (renderBlocks.uvRotateNorth == 1) {
-                d3 = iIcon.getInterpolatedU(renderBlocks.renderMinY * 16.0D);
-                d5 = iIcon.getInterpolatedV(16.0D - renderBlocks.renderMaxZ * 16.0D);
-                d4 = iIcon.getInterpolatedU(renderBlocks.renderMaxY * 16.0D);
-                d6 = iIcon.getInterpolatedV(16.0D - renderBlocks.renderMinZ * 16.0D);
-                d9 = d5;
-                d10 = d6;
-                d7 = d3;
-                d8 = d4;
-                d5 = d6;
-                d6 = d9;
-            } else if (renderBlocks.uvRotateNorth == 2) {
-                d3 = iIcon.getInterpolatedU(16.0D - renderBlocks.renderMaxY * 16.0D);
-                d5 = iIcon.getInterpolatedV(renderBlocks.renderMinZ * 16.0D);
-                d4 = iIcon.getInterpolatedU(16.0D - renderBlocks.renderMinY * 16.0D);
-                d6 = iIcon.getInterpolatedV(renderBlocks.renderMaxZ * 16.0D);
-                d7 = d4;
-                d8 = d3;
-                d3 = d4;
-                d4 = d8;
-                d9 = d6;
-                d10 = d5;
-            } else if (renderBlocks.uvRotateNorth == 3) {
-                d3 = iIcon.getInterpolatedU(16.0D - renderBlocks.renderMinZ * 16.0D);
-                d4 = iIcon.getInterpolatedU(16.0D - renderBlocks.renderMaxZ * 16.0D);
-                d5 = iIcon.getInterpolatedV(renderBlocks.renderMaxY * 16.0D);
-                d6 = iIcon.getInterpolatedV(renderBlocks.renderMinY * 16.0D);
-                d7 = d4;
-                d8 = d3;
-                d9 = d5;
-                d10 = d6;
-            }
-
-            double d11 = x + renderBlocks.renderMinX;
-            double d12 = y + renderBlocks.renderMinY + (i == 0 ? 0.5 : 0);
-            double d13 = y + renderBlocks.renderMaxY - 0.5 * i;
-            double d14 = z + renderBlocks.renderMinZ + 0.5 * j;
-            double d15 = z + renderBlocks.renderMaxZ - (j == 0 ? 0.5 : 0);
-
-            if (renderBlocks.renderFromInside) {
-                d14 = z + renderBlocks.renderMaxZ;
-                d15 = z + renderBlocks.renderMinZ;
-            }
-
-            if (renderBlocks.enableAO) {
-                setAO(matrix, tessellator, i, 1 - j, 0);
-
-                tessellator.addVertexWithUV(d11, d13, d15, d7, d9);
-                setAO(matrix, tessellator, i, 1 - j, 3);
-                tessellator.addVertexWithUV(d11, d13, d14, d3, d5);
-                setAO(matrix, tessellator, i, 1 - j, 2);
-                tessellator.addVertexWithUV(d11, d12, d14, d8, d10);
-                setAO(matrix, tessellator, i, 1 - j, 1);
-                tessellator.addVertexWithUV(d11, d12, d15, d4, d6);
-            } else {
-                tessellator.addVertexWithUV(d11, d13, d15, d7, d9);
-                tessellator.addVertexWithUV(d11, d13, d14, d3, d5);
-                tessellator.addVertexWithUV(d11, d12, d14, d8, d10);
-                tessellator.addVertexWithUV(d11, d12, d15, d4, d6);
-            }
-        }
-    }
-
-    public static void renderFaceXPos(RenderBlocks renderBlocks, double x, double y, double z, CTMIconManager manager,
-        int[] iconIdxOut) {
-        Tessellator tessellator = Loader.isModLoaded("gtnhlib") ? GTNHIntegrationHelper.getGTNHLibTessellator()
-            : Tessellator.instance;
-        float[][][] matrix = threadInterpolationMatrix.get();
-        if (renderBlocks.enableAO) fillInterpolationMatrix(matrix, renderBlocks);
-        for (int i = 0; i < 2; i++) for (int j = 0; j < 2; j++) {
-
-            IIcon iIcon = manager.getIcon(iconIdxOut[i * 2 + j]);
-
-            double d3 = iIcon.getInterpolatedU(renderBlocks.renderMinZ * 16.0D);
-            double d4 = iIcon.getInterpolatedU(renderBlocks.renderMaxZ * 16.0D);
-
-            if (renderBlocks.field_152631_f) {
-                d4 = iIcon.getInterpolatedU((1.0D - renderBlocks.renderMinZ) * 16.0D);
-                d3 = iIcon.getInterpolatedU((1.0D - renderBlocks.renderMaxZ) * 16.0D);
-            }
-
-            double d5 = iIcon.getInterpolatedV(16.0D - renderBlocks.renderMaxY * 16.0D);
-            double d6 = iIcon.getInterpolatedV(16.0D - renderBlocks.renderMinY * 16.0D);
-            double d7;
-
-            if (renderBlocks.flipTexture) {
-                d7 = d3;
-                d3 = d4;
-                d4 = d7;
-            }
-
-            if (renderBlocks.renderMinZ < 0.0D || renderBlocks.renderMaxZ > 1.0D) {
-                d3 = iIcon.getMinU();
-                d4 = iIcon.getMaxU();
-            }
-
-            if (renderBlocks.renderMinY < 0.0D || renderBlocks.renderMaxY > 1.0D) {
-                d5 = iIcon.getMinV();
-                d6 = iIcon.getMaxV();
-            }
-
-            d7 = d4;
-            double d8 = d3;
-            double d9 = d5;
-            double d10 = d6;
-
-            if (renderBlocks.uvRotateSouth == 2) {
-                d3 = iIcon.getInterpolatedU(renderBlocks.renderMinY * 16.0D);
-                d5 = iIcon.getInterpolatedV(16.0D - renderBlocks.renderMinZ * 16.0D);
-                d4 = iIcon.getInterpolatedU(renderBlocks.renderMaxY * 16.0D);
-                d6 = iIcon.getInterpolatedV(16.0D - renderBlocks.renderMaxZ * 16.0D);
-                d9 = d5;
-                d10 = d6;
-                d7 = d3;
-                d8 = d4;
-                d5 = d6;
-                d6 = d9;
-            } else if (renderBlocks.uvRotateSouth == 1) {
-                d3 = iIcon.getInterpolatedU(16.0D - renderBlocks.renderMaxY * 16.0D);
-                d5 = iIcon.getInterpolatedV(renderBlocks.renderMaxZ * 16.0D);
-                d4 = iIcon.getInterpolatedU(16.0D - renderBlocks.renderMinY * 16.0D);
-                d6 = iIcon.getInterpolatedV(renderBlocks.renderMinZ * 16.0D);
-                d7 = d4;
-                d8 = d3;
-                d3 = d4;
-                d4 = d8;
-                d9 = d6;
-                d10 = d5;
-            } else if (renderBlocks.uvRotateSouth == 3) {
-                d3 = iIcon.getInterpolatedU(16.0D - renderBlocks.renderMinZ * 16.0D);
-                d4 = iIcon.getInterpolatedU(16.0D - renderBlocks.renderMaxZ * 16.0D);
-                d5 = iIcon.getInterpolatedV(renderBlocks.renderMaxY * 16.0D);
-                d6 = iIcon.getInterpolatedV(renderBlocks.renderMinY * 16.0D);
-                d7 = d4;
-                d8 = d3;
-                d9 = d5;
-                d10 = d6;
-            }
-
-            double d11 = x + renderBlocks.renderMaxX;
-            double d12 = y + renderBlocks.renderMinY + (i == 0 ? 0.5 : 0);
-            double d13 = y + renderBlocks.renderMaxY - 0.5 * i;
-            double d14 = z + renderBlocks.renderMinZ + (j == 0 ? 0.5 : 0);
-            double d15 = z + renderBlocks.renderMaxZ - 0.5 * j;
-
-            if (renderBlocks.renderFromInside) {
-                d14 = z + renderBlocks.renderMaxZ;
-                d15 = z + renderBlocks.renderMinZ;
-            }
-
-            if (renderBlocks.enableAO) {
-                setAO(matrix, tessellator, 1 - i, j, 0);
-                tessellator.addVertexWithUV(d11, d12, d15, d8, d10);
-                setAO(matrix, tessellator, 1 - i, j, 3);
-                tessellator.addVertexWithUV(d11, d12, d14, d4, d6);
-                setAO(matrix, tessellator, 1 - i, j, 2);
-                tessellator.addVertexWithUV(d11, d13, d14, d7, d9);
-                setAO(matrix, tessellator, 1 - i, j, 1);
-                tessellator.addVertexWithUV(d11, d13, d15, d3, d5);
-            } else {
-                tessellator.addVertexWithUV(d11, d12, d15, d8, d10);
-                tessellator.addVertexWithUV(d11, d12, d14, d4, d6);
-                tessellator.addVertexWithUV(d11, d13, d14, d7, d9);
-                tessellator.addVertexWithUV(d11, d13, d15, d3, d5);
-            }
-        }
+        int randomIndex = FastRandom.getRandomIndex(worldSeed, x, y, z, randomManagers.size() + 1);
+        return randomIndex < randomManagers.size() ? randomManagers.get(randomIndex) : primaryManager;
     }
 
     /**
-     * 根据某个方向上的四个相邻方块判断连接情况，并生成连接纹理的四个象限的 iconIdx。
-     * <p>
-     * connections[0-3]：表示主方向四周是否连接。
-     * connections[4-7]：表示对角线是否连接（需要两个邻居都连接才视为连接）。
-     * <p>
-     * iconIdx[0-3]：表示象限使用的纹理索引，按逆时针顺序：左上、右上、右下、左下。
+     * Builds four connection-texture quadrant indices for a block face.
+     * Connections 0 through 3 represent the cardinal neighbors and connections 4 through 7 represent diagonals.
+     * The output is ordered top-left, top-right, bottom-left, bottom-right.
      */
     public static void buildConnect(IBlockAccess blockAccess, int x, int y, int z, IIcon iIcon,
         ForgeDirection forgeDirection, int[] iconIdxOut) {
@@ -822,7 +156,7 @@ public class Textures {
             }
         }
 
-        boolean hasThird = ctmAltMap.containsKey(iIcon.getIconName());
+        boolean hasThird = ctmAltMap.containsKey(normalizeIconName(iIcon.getIconName()));
 
         if (connections[7]) {
             iconIdxOut[0] = 1;
@@ -895,8 +229,8 @@ public class Textures {
     public static boolean isIconMatch(IIcon target, IIcon candidate) {
         if (target == null || candidate == null) return false;
 
-        String targetName = target.getIconName();
-        String candidateName = candidate.getIconName();
+        String targetName = normalizeIconName(target.getIconName());
+        String candidateName = normalizeIconName(candidate.getIconName());
 
         if (targetName.equals(candidateName)) return true;
 

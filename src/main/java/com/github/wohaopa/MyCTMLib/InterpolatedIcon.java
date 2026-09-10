@@ -1,6 +1,5 @@
 package com.github.wohaopa.MyCTMLib;
 
-import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.renderer.texture.TextureUtil;
 import net.minecraft.client.resources.data.AnimationMetadataSection;
 
@@ -17,12 +16,16 @@ import cpw.mods.fml.relauncher.SideOnly;
  * @author Roadhog360
  */
 @SideOnly(Side.CLIENT)
-public class InterpolatedIcon extends TextureAtlasSprite {
+public class InterpolatedIcon extends NewTextureAtlasSprite {
 
     protected int[][] interpolatedFrameData;
 
     public InterpolatedIcon(String name) {
-        super(name);
+        this(name, 1, 1);
+    }
+
+    public InterpolatedIcon(String name, int gridWidth, int gridHeight) {
+        super(name, gridWidth, gridHeight);
     }
 
     @Override

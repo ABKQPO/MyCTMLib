@@ -9,12 +9,11 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 
 /**
- * CTM配置解析器
- * 负责解析myctmlib.json配置文件中的各种配置项
+ * Parses CTM metadata configuration.
  */
 public class CTMConfig {
 
-    // 解析结果
+    // Parsed configuration values.
     public final String connectionTexture;
     public final String altTexture;
     public final List<String> randomTextures;
@@ -27,7 +26,7 @@ public class CTMConfig {
         this.equivalents = parseStringArray(ctmObj, "equivalents");
     }
 
-    // 解析方法
+    // Configuration parsing helpers.
     private String parseStringField(JsonObject ctmObj, String fieldName) {
         JsonPrimitive primitive = ctmObj.getAsJsonPrimitive(fieldName);
         if (primitive == null) {
@@ -63,7 +62,7 @@ public class CTMConfig {
     }
 
     /**
-     * 处理纹理名称，移除前缀和后缀
+     * Normalizes a texture name by removing known prefixes and suffixes.
      */
     private static String processTextureName(String texture) {
         return texture.replace("minecraft:", "")
