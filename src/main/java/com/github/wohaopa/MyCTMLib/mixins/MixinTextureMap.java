@@ -7,6 +7,7 @@ import static com.github.wohaopa.MyCTMLib.Textures.ctmRandomMap;
 import static com.github.wohaopa.MyCTMLib.Textures.ctmReplaceMap;
 
 import java.awt.image.BufferedImage;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -328,7 +329,7 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
             ctmIconMap.put(textureName, ctmManager);
 
             cir.setReturnValue(currentBase);
-        } catch (java.io.FileNotFoundException e) {
+        } catch (FileNotFoundException e) {
             // The base texture is not shipped by any resource pack, which is common for icon names that only exist as
             // metadata, so there is nothing to report.
         } catch (Exception e) {
