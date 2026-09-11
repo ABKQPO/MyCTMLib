@@ -328,6 +328,9 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
             ctmIconMap.put(textureName, ctmManager);
 
             cir.setReturnValue(currentBase);
+        } catch (java.io.FileNotFoundException e) {
+            // The base texture is not shipped by any resource pack, which is common for icon names that only exist as
+            // metadata, so there is nothing to report.
         } catch (Exception e) {
             // A metadata section that cannot be read leaves the texture untouched, which is reported only in debug mode
             // because a broken resource pack would otherwise flood the log.
