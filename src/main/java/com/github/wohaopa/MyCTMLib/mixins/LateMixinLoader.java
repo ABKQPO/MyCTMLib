@@ -1,13 +1,12 @@
 package com.github.wohaopa.MyCTMLib.mixins;
 
+import static com.github.wohaopa.MyCTMLib.MyCTMLib.LOG;
+
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BooleanSupplier;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import cpw.mods.fml.common.Loader;
 import io.github.tox1cozz.mixinbooterlegacy.ILateMixinLoader;
@@ -16,8 +15,7 @@ import io.github.tox1cozz.mixinbooterlegacy.LateMixin;
 @LateMixin
 public class LateMixinLoader implements ILateMixinLoader {
 
-    public static final Logger LOG = LogManager.getLogger("GTNL");
-    public static final String LOG_PREFIX = "[GTNL]" + ' ';
+    public static final String LOG_PREFIX = "[MyCTMLib]" + ' ';
     private static final Map<String, BooleanSupplier> MIXIN_CONFIGS = new LinkedHashMap<>();
 
     static {
@@ -37,14 +35,6 @@ public class LateMixinLoader implements ILateMixinLoader {
             return false;
         }
         return supplier.getAsBoolean();
-    }
-
-    private static boolean modLoaded(final String modID) {
-        return Loader.isModLoaded(modID);
-    }
-
-    private static void addMixinCFG(final String mixinConfig) {
-        MIXIN_CONFIGS.put(mixinConfig, () -> true);
     }
 
     private static void addMixinCFG(final String mixinConfig, final BooleanSupplier conditions) {

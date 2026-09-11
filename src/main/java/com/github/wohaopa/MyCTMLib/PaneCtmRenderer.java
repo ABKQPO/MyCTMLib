@@ -627,7 +627,14 @@ public class PaneCtmRenderer {
         ForgeDirection panelFace, int adjacentHorizontal, double minY, double maxY, double depthMin, double depthMax,
         double faceCoordinate, boolean perpendicularToX) {
         int[] indices = Textures.threadLocalIconIdx.get();
-        Textures.buildConnect(blockAccess, x, y, z, icon, panelFace, indices);
+        int tile = -1;
+        if (manager.hasFaceTiles()) {
+            tile = Textures.selectFaceTile(blockAccess, x, y, z, icon, manager, panelFace);
+        } else if (manager.hasFaceTile()) {
+            tile = 0;
+        } else {
+            Textures.buildConnect(blockAccess, x, y, z, icon, panelFace, indices);
+        }
         double regionStart = (perpendicularToX ? x : z) + adjacentHorizontal * 0.5D;
         boolean outerAtHighU = faceCoordinate - regionStart >= 0.25D;
         double bandStart = outerAtHighU ? 0.75D : 0.0D;
@@ -640,7 +647,10 @@ public class PaneCtmRenderer {
             if (bottom >= top) {
                 continue;
             }
-            IIcon piece = manager.getIcon(getQuadrantIndex(panelFace, adjacentHorizontal, vertical, indices));
+            IIcon piece = getPaneQuadrant(manager, tile, panelFace, adjacentHorizontal, vertical, indices);
+            if (piece == null) {
+                continue;
+            }
             double minV = getV(piece, getHalfFraction(top, halfTop));
             double maxV = getV(piece, getHalfFraction(bottom, halfTop));
             double minU = getU(piece, bandStart);
@@ -688,7 +698,14 @@ public class PaneCtmRenderer {
     private static void drawFaceZ(IBlockAccess blockAccess, int x, int y, int z, IIcon icon, CTMIconManager manager,
         ForgeDirection direction, double minX, double maxX, double minY, double maxY, double faceZ, boolean twoSided) {
         int[] indices = Textures.threadLocalIconIdx.get();
-        Textures.buildConnect(blockAccess, x, y, z, icon, direction, indices);
+        int tile = -1;
+        if (manager.hasFaceTiles()) {
+            tile = Textures.selectFaceTile(blockAccess, x, y, z, icon, manager, direction);
+        } else if (manager.hasFaceTile()) {
+            tile = 0;
+        } else {
+            Textures.buildConnect(blockAccess, x, y, z, icon, direction, indices);
+        }
         Tessellator tessellator = Tessellator.instance;
         for (int horizontal = 0; horizontal < 2; horizontal++) {
             for (int vertical = 0; vertical < 2; vertical++) {
@@ -699,7 +716,10 @@ public class PaneCtmRenderer {
                 if (left >= right || bottom >= top) {
                     continue;
                 }
-                IIcon quadrant = manager.getIcon(getQuadrantIndex(direction, horizontal, vertical, indices));
+                IIcon quadrant = getPaneQuadrant(manager, tile, direction, horizontal, vertical, indices);
+                if (quadrant == null) {
+                    continue;
+                }
                 drawFaceZ(
                     tessellator,
                     direction,
@@ -721,7 +741,14 @@ public class PaneCtmRenderer {
     private static void drawFaceX(IBlockAccess blockAccess, int x, int y, int z, IIcon icon, CTMIconManager manager,
         ForgeDirection direction, double faceX, double minZ, double maxZ, double minY, double maxY, boolean twoSided) {
         int[] indices = Textures.threadLocalIconIdx.get();
-        Textures.buildConnect(blockAccess, x, y, z, icon, direction, indices);
+        int tile = -1;
+        if (manager.hasFaceTiles()) {
+            tile = Textures.selectFaceTile(blockAccess, x, y, z, icon, manager, direction);
+        } else if (manager.hasFaceTile()) {
+            tile = 0;
+        } else {
+            Textures.buildConnect(blockAccess, x, y, z, icon, direction, indices);
+        }
         Tessellator tessellator = Tessellator.instance;
         for (int horizontal = 0; horizontal < 2; horizontal++) {
             for (int vertical = 0; vertical < 2; vertical++) {
@@ -732,7 +759,10 @@ public class PaneCtmRenderer {
                 if (near >= far || bottom >= top) {
                     continue;
                 }
-                IIcon quadrant = manager.getIcon(getQuadrantIndex(direction, horizontal, vertical, indices));
+                IIcon quadrant = getPaneQuadrant(manager, tile, direction, horizontal, vertical, indices);
+                if (quadrant == null) {
+                    continue;
+                }
                 drawFaceX(
                     tessellator,
                     direction,
@@ -754,7 +784,14 @@ public class PaneCtmRenderer {
     private static void drawFaceY(IBlockAccess blockAccess, int x, int y, int z, IIcon icon, CTMIconManager manager,
         ForgeDirection direction, double minX, double maxX, double minZ, double maxZ, double faceY) {
         int[] indices = Textures.threadLocalIconIdx.get();
-        Textures.buildConnect(blockAccess, x, y, z, icon, direction, indices);
+        int tile = -1;
+        if (manager.hasFaceTiles()) {
+            tile = Textures.selectFaceTile(blockAccess, x, y, z, icon, manager, direction);
+        } else if (manager.hasFaceTile()) {
+            tile = 0;
+        } else {
+            Textures.buildConnect(blockAccess, x, y, z, icon, direction, indices);
+        }
         Tessellator tessellator = Tessellator.instance;
         for (int horizontal = 0; horizontal < 2; horizontal++) {
             for (int vertical = 0; vertical < 2; vertical++) {
@@ -765,10 +802,35 @@ public class PaneCtmRenderer {
                 if (left >= right || near >= far) {
                     continue;
                 }
-                IIcon quadrant = manager.getIcon(getQuadrantIndex(direction, horizontal, vertical, indices));
+                IIcon quadrant = getPaneQuadrant(manager, tile, direction, horizontal, vertical, indices);
+                if (quadrant == null) {
+                    continue;
+                }
                 drawFaceY(tessellator, direction, left, right, near, far, faceY, quadrant, horizontal, vertical, x, z);
             }
         }
+    }
+
+    // Quarter slots of a layout tile, and of the fallback sheet, both ordered left to right then top to bottom.
+    private static final int[] TILE_QUADRANTS = { 0, 1, 2, 3 };
+    private static final int[] FALLBACK_QUADRANTS = { 17, 18, 19, 20 };
+
+    /**
+     * Returns the icon one drawn quarter of a pane face uses.
+     * A layout driven method covers the whole face with one tile, so each drawn quarter samples that tile. Without a
+     * tile the face keeps the base texture, exactly like an unconnected quarter of the compact layout.
+     */
+    private static IIcon getPaneQuadrant(CTMIconManager manager, int tile, ForgeDirection direction, int horizontal,
+        int vertical, int[] indices) {
+        if (tile >= 0) {
+            return manager.getTileQuadrantIcon(tile, getQuadrantIndex(direction, horizontal, vertical, TILE_QUADRANTS));
+        }
+
+        if (manager.hasFaceTiles()) {
+            return manager.getIcon(getQuadrantIndex(direction, horizontal, vertical, FALLBACK_QUADRANTS));
+        }
+
+        return manager.getIcon(getQuadrantIndex(direction, horizontal, vertical, indices));
     }
 
     private static int getQuadrantIndex(ForgeDirection direction, int horizontal, int vertical, int[] indices) {

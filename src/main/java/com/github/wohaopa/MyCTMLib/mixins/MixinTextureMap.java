@@ -1,5 +1,6 @@
 package com.github.wohaopa.MyCTMLib.mixins;
 
+import static com.github.wohaopa.MyCTMLib.MyCTMLib.LOG;
 import static com.github.wohaopa.MyCTMLib.Textures.ctmAltMap;
 import static com.github.wohaopa.MyCTMLib.Textures.ctmIconMap;
 import static com.github.wohaopa.MyCTMLib.Textures.ctmRandomMap;
@@ -36,8 +37,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import com.github.wohaopa.MyCTMLib.CTMConfig;
 import com.github.wohaopa.MyCTMLib.CTMIconManager;
+import com.github.wohaopa.MyCTMLib.CtmMethod;
 import com.github.wohaopa.MyCTMLib.CtmSheetSprite;
 import com.github.wohaopa.MyCTMLib.InterpolatedIcon;
+import com.github.wohaopa.MyCTMLib.MyCTMLib;
 import com.github.wohaopa.MyCTMLib.MyCTMLibMetadataSectionSerializer.MyCTMLibMetadataSection;
 import com.github.wohaopa.MyCTMLib.NewTextureAtlasSprite;
 import com.github.wohaopa.MyCTMLib.Textures;
@@ -86,7 +89,12 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
                 return;
             }
 
-            JsonObject ctmObj = ((MyCTMLibMetadataSection) resource.getMetadata("myctmlib")).getJson();
+            MyCTMLibMetadataSection section = (MyCTMLibMetadataSection) resource.getMetadata("myctmlib");
+            if (section == null) {
+                return;
+            }
+
+            JsonObject ctmObj = section.getJson();
 
             if (ctmObj == null) {
                 return;
@@ -100,35 +108,141 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
             builder.setIconSmall(currentBase);
             mapRegisteredSprites.put(textureName, currentBase);
 
-            if (config.connectionTexture != null) {
+            CtmMethod method = CtmMethod.fromName(config.method);
+
+            if (method != null && !method.isImplemented()) {
+                // Recognized but not ported yet, so the original texture stays in place.
+            } else if (config.connectionTexture != null && method == CtmMethod.FIXED) {
 
                 try {
-                    IResource resourceCTM = getResourceFromJson(ctmObj, "connection");
+                    IResource resourceTile = getResourceFromJson(ctmObj, "connection");
 
-                    if (resourceCTM instanceof SimpleResource simpleCTM) {
-                        BufferedImage sheet = ImageIO.read(resourceCTM.getInputStream());
-                        if (sheet != null && sheet.getWidth() == sheet.getHeight()
-                            && sheet.getWidth() >= 4
-                            && (sheet.getWidth() & 1) == 0) {
-                            CtmSheetSprite sheetSprite = new CtmSheetSprite(
-                                config.connectionTexture,
-                                completeResourceLocation(new ResourceLocation(config.connectionTexture), 0),
-                                sheet,
-                                CtmSheetSprite.DEFAULT_PADDING,
-                                useInterpolation(simpleCTM));
-                            mapRegisteredSprites.put(config.connectionTexture, sheetSprite);
-                            builder.setIconVariants(sheetSprite.getVariantIcons());
-                        } else {
-                            currentCTM = useInterpolation(simpleCTM)
-                                ? new InterpolatedIcon(config.connectionTexture, 4, 4)
-                                : new NewTextureAtlasSprite(config.connectionTexture, 4, 4);
-                            mapRegisteredSprites.put(config.connectionTexture, currentCTM);
-                            builder.setIconCTM(currentCTM);
-                        }
+                    if (resourceTile instanceof SimpleResource simpleTile) {
+                        TextureAtlasSprite faceTile = useInterpolation(simpleTile)
+                            ? new InterpolatedIcon(config.connectionTexture, 1, 1)
+                            : new NewTextureAtlasSprite(config.connectionTexture, 1, 1);
+                        mapRegisteredSprites.put(config.connectionTexture, faceTile);
+                        builder.setFaceTile(faceTile);
                     }
-
                 } catch (IOException ignored) {}
-            }
+
+            } else if (config.connectionTexture != null && method == CtmMethod.REPEAT
+                && config.width > 0
+                && config.height > 0) {
+
+                    try {
+                        IResource resourceRepeat = getResourceFromJson(ctmObj, "connection");
+
+                        if (resourceRepeat instanceof SimpleResource simpleRepeat) {
+                            BufferedImage repeatImage = ImageIO.read(resourceRepeat.getInputStream());
+                            if (repeatImage != null && repeatImage.getWidth() % config.width == 0
+                                && repeatImage.getHeight() % config.height == 0
+                                && repeatImage.getWidth() / config.width == repeatImage.getHeight() / config.height) {
+                                CtmSheetSprite repeatSprite = new CtmSheetSprite(
+                                    config.connectionTexture,
+                                    completeResourceLocation(new ResourceLocation(config.connectionTexture), 0),
+                                    repeatImage,
+                                    config.width,
+                                    config.height,
+                                    CtmSheetSprite.DEFAULT_PADDING,
+                                    useInterpolation(simpleRepeat));
+                                mapRegisteredSprites.put(config.connectionTexture, repeatSprite);
+                                builder.setFaceTiles(CtmMethod.REPEAT, repeatSprite.getUnitIcons());
+                                builder.setRepeatOptions(config.width, config.height, config.symmetry);
+                            }
+                        }
+                    } catch (IOException ignored) {}
+
+                } else if (config.connectionTexture != null && method == CtmMethod.RANDOM) {
+
+                    try {
+                        IResource resourceRandom = getResourceFromJson(ctmObj, "connection");
+
+                        if (resourceRandom instanceof SimpleResource simpleRandom) {
+                            BufferedImage randomImage = ImageIO.read(resourceRandom.getInputStream());
+                            if (randomImage != null && randomImage.getHeight() > 0) {
+                                int columns = config.columns > 0 ? config.columns
+                                    : randomImage.getWidth() / randomImage.getHeight();
+                                int unitSize = columns > 0 ? randomImage.getWidth() / columns : 0;
+                                int rows = unitSize > 0 ? randomImage.getHeight() / unitSize : 0;
+                                if (columns > 0 && unitSize > 0
+                                    && rows > 0
+                                    && columns * unitSize == randomImage.getWidth()
+                                    && rows * unitSize == randomImage.getHeight()) {
+                                    CtmSheetSprite randomSprite = new CtmSheetSprite(
+                                        config.connectionTexture,
+                                        completeResourceLocation(new ResourceLocation(config.connectionTexture), 0),
+                                        randomImage,
+                                        columns,
+                                        rows,
+                                        CtmSheetSprite.DEFAULT_PADDING,
+                                        useInterpolation(simpleRandom));
+                                    mapRegisteredSprites.put(config.connectionTexture, randomSprite);
+                                    builder.setFaceTiles(CtmMethod.RANDOM, randomSprite.getUnitIcons());
+                                    builder.setRandomOptions(config.symmetry, config.weights);
+                                }
+                            }
+                        }
+                    } catch (IOException ignored) {}
+
+                } else if (config.connectionTexture != null && method != null) {
+
+                    try {
+                        IResource resourceLayout = getResourceFromJson(ctmObj, "connection");
+
+                        if (resourceLayout instanceof SimpleResource simpleLayout) {
+                            BufferedImage layoutImage = ImageIO.read(resourceLayout.getInputStream());
+                            // A sheet that cannot hold one pixel per cell would slice to nothing, so it is ignored.
+                            if (layoutImage != null && layoutImage.getWidth() >= method.getColumns()
+                                && layoutImage.getHeight() >= method.getRows()) {
+                                CtmSheetSprite layoutSprite = new CtmSheetSprite(
+                                    config.connectionTexture,
+                                    completeResourceLocation(new ResourceLocation(config.connectionTexture), 0),
+                                    layoutImage,
+                                    method.getColumns(),
+                                    method.getRows(),
+                                    CtmSheetSprite.DEFAULT_PADDING,
+                                    useInterpolation(simpleLayout));
+                                mapRegisteredSprites.put(config.connectionTexture, layoutSprite);
+                                IIcon[] units = layoutSprite.getUnitIcons();
+                                IIcon[] tiles = new IIcon[units.length];
+                                for (int tile = 0; tile < tiles.length; tile++) {
+                                    tiles[tile] = units[method.getCellIndex(tile)];
+                                }
+                                builder.setFaceTiles(method, tiles);
+                            }
+                        }
+                    } catch (IOException ignored) {}
+
+                } else if (config.connectionTexture != null) {
+
+                    try {
+                        IResource resourceCTM = getResourceFromJson(ctmObj, "connection");
+
+                        if (resourceCTM instanceof SimpleResource simpleCTM) {
+                            BufferedImage sheet = ImageIO.read(resourceCTM.getInputStream());
+                            if (sheet != null && sheet.getWidth() == sheet.getHeight()
+                                && sheet.getWidth() >= 4
+                                && (sheet.getWidth() & 1) == 0) {
+                                CtmSheetSprite sheetSprite = new CtmSheetSprite(
+                                    config.connectionTexture,
+                                    completeResourceLocation(new ResourceLocation(config.connectionTexture), 0),
+                                    sheet,
+                                    CtmSheetSprite.DEFAULT_PADDING,
+                                    useInterpolation(simpleCTM));
+                                mapRegisteredSprites.put(config.connectionTexture, sheetSprite);
+                                builder.setIconVariants(sheetSprite.getUnitIcons());
+                            } else {
+                                currentCTM = useInterpolation(simpleCTM)
+                                    ? new InterpolatedIcon(config.connectionTexture, 4, 4)
+                                    : new NewTextureAtlasSprite(config.connectionTexture, 4, 4);
+                                mapRegisteredSprites.put(config.connectionTexture, currentCTM);
+                                builder.setIconCTM(currentCTM);
+                            }
+                        }
+
+                    } catch (IOException ignored) {}
+                }
 
             if (!config.randomTextures.isEmpty()) {
 
@@ -214,7 +328,13 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
             ctmIconMap.put(textureName, ctmManager);
 
             cir.setReturnValue(currentBase);
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            // A metadata section that cannot be read leaves the texture untouched, which is reported only in debug mode
+            // because a broken resource pack would otherwise flood the log.
+            if (MyCTMLib.debugMode) {
+                LOG.warn(EarlyMixinLoader.LOG_PREFIX + "Ignoring the myctmlib metadata of {}.", textureName, e);
+            }
+        }
     }
 
     /**

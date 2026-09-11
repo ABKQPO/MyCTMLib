@@ -25,13 +25,18 @@ public class CtmFaceRenderer {
         double maxZ = renderBlocks.renderMaxZ;
         IIcon wholeFace = manager.getWholeFaceIcon(iconIndices);
         if (wholeFace != null) {
-            // Draw the face as one quad so coplanar overlay layers keep the same geometry and stop fighting.
+            // Draw the face as one quad so coplanar overlay layers keep the same geometry and stop fighting. The face
+            // flip of the split path is applied here as well, otherwise the same texture would be mirrored on the
+            // north and east faces depending on which path drew it.
             IIcon previousWholeOverride = renderBlocks.overrideBlockTexture;
+            boolean previousWholeFlip = renderBlocks.field_152631_f;
             renderBlocks.overrideBlockTexture = wholeFace;
+            renderBlocks.field_152631_f = direction == ForgeDirection.NORTH || direction == ForgeDirection.EAST;
             try {
                 renderFace(renderBlocks, block, x, y, z, wholeFace, direction);
             } finally {
                 renderBlocks.overrideBlockTexture = previousWholeOverride;
+                renderBlocks.field_152631_f = previousWholeFlip;
             }
             return true;
         }

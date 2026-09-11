@@ -90,6 +90,24 @@ public class Textures {
         String icon = normalizeIconName(iIcon.getIconName());
         int[] iconIdx = threadLocalIconIdx.get();
 
+        // Resolve the random variant sheet first, because the layout branches below render immediately.
+        manager = selectTextureManager(blockAccess, (int) x, (int) y, (int) z, icon, manager);
+
+        if (manager.hasFaceTiles()) {
+            int tile = selectFaceTile(blockAccess, (int) x, (int) y, (int) z, iIcon, manager, forgeDirection);
+            if (tile < 0) {
+                // This face keeps its original texture.
+                return false;
+            }
+            iconIdx[0] = tile;
+            return CtmFaceRenderer.render(renderBlocks, block, x, y, z, manager, forgeDirection, iconIdx);
+        }
+
+        if (manager.hasFaceTile()) {
+            // A per face method covers the whole face with one tile, so no connection bits are needed.
+            return CtmFaceRenderer.render(renderBlocks, block, x, y, z, manager, forgeDirection, iconIdx);
+        }
+
         if (manager.detectionDiameter == CTMIconManager.DetectionDiameter.DIAMETER_1) {
             iconIdx[0] = 17;
             iconIdx[1] = 18;
@@ -98,8 +116,6 @@ public class Textures {
         } else {
             buildConnect(blockAccess, (int) x, (int) y, (int) z, iIcon, forgeDirection, iconIdx);
         }
-
-        manager = selectTextureManager(blockAccess, (int) x, (int) y, (int) z, icon, manager);
 
         return CtmFaceRenderer.render(renderBlocks, block, x, y, z, manager, forgeDirection, iconIdx);
     }
@@ -125,14 +141,89 @@ public class Textures {
      * Connections 0 through 3 represent the cardinal neighbors and connections 4 through 7 represent diagonals.
      * The output is ordered top-left, top-right, bottom-left, bottom-right.
      */
+    /**
+     * Selects the tile covering one face for a layout driven method.
+     * Only the neighbour lookups the layout reads are gathered, so a layout driven by a single axis, or by the block
+     * above, stays cheap. The remaining quadrant indices in {@code threadLocalIconIdx} stay unused by this path.
+     *
+     * @param blockAccess    the block access being rendered
+     * @param x              the block x coordinate
+     * @param y              the block y coordinate
+     * @param z              the block z coordinate
+     * @param iIcon          the icon being rendered
+     * @param manager        the connection texture manager of that icon
+     * @param forgeDirection the face being rendered
+     * @return the tile number, or -1 when the face keeps its original texture
+     */
+    public static int selectFaceTile(IBlockAccess blockAccess, int x, int y, int z, IIcon iIcon, CTMIconManager manager,
+        ForgeDirection forgeDirection) {
+        if (manager == null || iIcon == null || forgeDirection == null || !manager.hasFaceTiles()) {
+            return -1;
+        }
+
+        if (manager.usesRepeatTiles()) {
+            return manager.selectRepeatTile(x, y, z, forgeDirection);
+        }
+
+        if (manager.usesRandomTiles()) {
+            return manager.selectRandomTile(x, y, z, forgeDirection);
+        }
+
+        if (manager.usesTopTiles()) {
+            // Only the block above decides this layout, so the remaining seven lookups are skipped.
+            boolean connectedAbove = forgeDirection != ForgeDirection.UP && forgeDirection != ForgeDirection.DOWN
+                && isIconMatch(
+                    normalizeIconName(iIcon.getIconName()),
+                    getIcon(blockAccess, x, y + 1, z, forgeDirection));
+            return manager.selectTopTile(connectedAbove);
+        }
+
+        int slotMask = manager.getRequiredConnections(forgeDirection);
+        if (slotMask == 0) {
+            return -1;
+        }
+
+        int[] iconIdx = threadLocalIconIdx.get();
+        buildConnect(blockAccess, x, y, z, iIcon, forgeDirection, iconIdx, slotMask);
+        int tile = manager.selectFaceTile(threadLocalConnections.get(), forgeDirection, slotMask);
+        if (tile == CTMIconManager.NEED_MORE_CONNECTIONS) {
+            buildConnect(blockAccess, x, y, z, iIcon, forgeDirection, iconIdx);
+            tile = manager
+                .selectFaceTile(threadLocalConnections.get(), forgeDirection, CTMIconManager.ALL_CONNECT_SLOTS);
+        }
+        return tile;
+    }
+
+    /**
+     * Builds four connection-texture quadrant indices for a block face.
+     * Connections 0 through 3 represent the cardinal neighbors and connections 4 through 7 represent diagonals.
+     * The output is ordered top-left, top-right, bottom-left, bottom-right.
+     */
     public static void buildConnect(IBlockAccess blockAccess, int x, int y, int z, IIcon iIcon,
         ForgeDirection forgeDirection, int[] iconIdxOut) {
+        buildConnect(blockAccess, x, y, z, iIcon, forgeDirection, iconIdxOut, CTMIconManager.ALL_CONNECT_SLOTS);
+    }
+
+    /**
+     * Builds four connection-texture quadrant indices for a block face.
+     * Connections 0 through 3 represent the cardinal neighbors and connections 4 through 7 represent diagonals.
+     * The output is ordered top-left, top-right, bottom-left, bottom-right.
+     * Slots outside the mask are cleared instead of being gathered, their quadrant indices stay unused because a
+     * masked call only feeds the layouts that pick a single tile.
+     */
+    public static void buildConnect(IBlockAccess blockAccess, int x, int y, int z, IIcon iIcon,
+        ForgeDirection forgeDirection, int[] iconIdxOut, int slotMask) {
 
         boolean[] connections = threadLocalConnections.get();
         ForgeDirection[] forgeDirections1 = forgeDirections[forgeDirection.ordinal()];
         String targetName = normalizeIconName(iIcon.getIconName());
 
         for (int i = 0; i < 4; i++) {
+            if ((slotMask & (1 << i)) == 0) {
+                connections[i] = false;
+                continue;
+            }
+
             IIcon i2 = getIcon(
                 blockAccess,
                 x + forgeDirections1[i].offsetX,
@@ -146,7 +237,7 @@ public class Textures {
             int i1 = i - 4;
             int i2 = (i - 3 == 4) ? 0 : i - 3;
 
-            if (connections[i1] && connections[i2]) {
+            if ((slotMask & (1 << i)) != 0 && connections[i1] && connections[i2]) {
                 IIcon ic = getIcon(
                     blockAccess,
                     x + forgeDirections1[i1].offsetX + forgeDirections1[i2].offsetX,

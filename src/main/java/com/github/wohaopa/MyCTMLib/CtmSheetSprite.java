@@ -16,12 +16,16 @@ import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
 /**
- * Connection sheet sprite that lays its variants out with padding before the atlas stitches it.
+ * Connection sheet sprite that lays its units out with padding before the atlas stitches it.
  * <p>
  * A resource pack keeps shipping one sheet texture, and the sprite stays registered under that real resource name, so
  * atlas resource resolution and missing texture tracking keep working. The image handed to the atlas is built here
- * instead: every variant is surrounded by copies of its own edge texels, so filtered or mipmapped sampling next to a
- * block border reads that variant again rather than whichever variant happens to sit next to it inside the sheet.
+ * instead: every unit is surrounded by copies of its own edge texels, so filtered or mipmapped sampling next to a block
+ * border reads that unit again rather than whichever unit happens to sit next to it inside the sheet.
+ * <p>
+ * A unit is the piece a face is drawn from: one cell for the full, horizontal, vertical, top, repeat and random
+ * layouts, and a two by two block of cells for the compact layout, where one unit holds a whole connection variant.
+ * Cells are always addressed top to bottom, left to right.
  * <p>
  * Animation frames are padded the same way. Sheets that request {@code interpolate} blend between frames, sheets that
  * do not keep the original frame stepping.
@@ -29,18 +33,33 @@ import cpw.mods.fml.relauncher.SideOnly;
 @SideOnly(Side.CLIENT)
 public class CtmSheetSprite extends InterpolatedIcon {
 
-    // Edge pixels replicated around every variant so filtered sampling stays inside the variant.
+    // Edge pixels replicated around every unit so filtered sampling stays inside the unit.
     public static final int DEFAULT_PADDING = 8;
 
-    private static final int VARIANT_GRID = 2;
-    private static final int VARIANT_COUNT = VARIANT_GRID * VARIANT_GRID;
+    private static final int COMPACT_GRID = 2;
 
     private final ResourceLocation sheetLocation;
     private final BufferedImage sheet;
-    private final int variantSize;
+    private final int columns;
+    private final int rows;
+    private final int unitSize;
     private final int cellSize;
     private final boolean interpolate;
-    private final IIcon[] variants = new IIcon[VARIANT_COUNT];
+    private final IIcon[] units;
+
+    /**
+     * Creates a connection sheet sprite laid out as two by two compact variants.
+     *
+     * @param name          the atlas name this sprite is registered under, which is the sheet resource name
+     * @param sheetLocation the sheet resource, used to read the animation metadata
+     * @param sheet         the already loaded sheet image
+     * @param padding       the number of replicated edge pixels added around each unit
+     * @param interpolate   whether animation frames should be blended
+     */
+    public CtmSheetSprite(String name, ResourceLocation sheetLocation, BufferedImage sheet, int padding,
+        boolean interpolate) {
+        this(name, sheetLocation, sheet, COMPACT_GRID, COMPACT_GRID, padding, interpolate);
+    }
 
     /**
      * Creates a connection sheet sprite.
@@ -48,29 +67,35 @@ public class CtmSheetSprite extends InterpolatedIcon {
      * @param name          the atlas name this sprite is registered under, which is the sheet resource name
      * @param sheetLocation the sheet resource, used to read the animation metadata
      * @param sheet         the already loaded sheet image
-     * @param padding       the number of replicated edge pixels added around each variant
+     * @param columns       the number of unit columns in the sheet
+     * @param rows          the number of unit rows in the sheet
+     * @param padding       the number of replicated edge pixels added around each unit
      * @param interpolate   whether animation frames should be blended
      */
-    public CtmSheetSprite(String name, ResourceLocation sheetLocation, BufferedImage sheet, int padding,
-        boolean interpolate) {
-        super(name, VARIANT_GRID * VARIANT_GRID, VARIANT_GRID * VARIANT_GRID);
+    public CtmSheetSprite(String name, ResourceLocation sheetLocation, BufferedImage sheet, int columns, int rows,
+        int padding, boolean interpolate) {
+        // The parent halves the grid to get one mipmap region per unit, so ask for twice the unit grid.
+        super(name, columns * COMPACT_GRID, rows * COMPACT_GRID);
         this.sheetLocation = sheetLocation;
         this.sheet = sheet;
-        this.variantSize = sheet.getWidth() / VARIANT_GRID;
-        this.cellSize = variantSize + padding * 2;
+        this.columns = columns;
+        this.rows = rows;
+        this.unitSize = Math.max(1, sheet.getWidth() / columns);
+        this.cellSize = unitSize + padding * 2;
         this.interpolate = interpolate;
-        for (int variant = 0; variant < VARIANT_COUNT; variant++) {
-            variants[variant] = new VariantIcon(variant);
+        this.units = new IIcon[columns * rows];
+        for (int unit = 0; unit < units.length; unit++) {
+            units[unit] = new UnitIcon(unit);
         }
     }
 
     /**
-     * Returns one icon per variant, each covering only that variant's content.
+     * Returns one icon per unit, each covering only that unit's content.
      *
-     * @return the variant icons
+     * @return the unit icons in sheet order
      */
-    public IIcon[] getVariantIcons() {
-        return variants;
+    public IIcon[] getUnitIcons() {
+        return units;
     }
 
     @Override
@@ -82,11 +107,13 @@ public class CtmSheetSprite extends InterpolatedIcon {
     public boolean load(IResourceManager manager, ResourceLocation location) {
         try {
             IResource resource = manager.getResource(sheetLocation);
-            int frameHeight = sheet.getWidth();
+            // One animation frame is one whole unit grid, which is not square for the sheet layouts that hold several
+            // cells per unit.
+            int frameHeight = unitSize * rows;
             int frameCount = Math.max(1, sheet.getHeight() / frameHeight);
             BufferedImage[] frames = new BufferedImage[frameCount];
             for (int frame = 0; frame < frameCount; frame++) {
-                frames[frame] = layout(sheet, frame * frameHeight);
+                frames[frame] = layout(frame * frameHeight);
             }
 
             AnimationMetadataSection animation = (AnimationMetadataSection) resource.getMetadata("animation");
@@ -106,6 +133,10 @@ public class CtmSheetSprite extends InterpolatedIcon {
 
         // Reproduces the plain frame stepping, because the interpolation of the parent cannot be switched off.
         AnimationMetadataSection animation = ((AccessorTextureAtlasSprite) this).getAnimationMetadata();
+        if (animation == null) {
+            return;
+        }
+
         tickCounter++;
 
         if (tickCounter >= animation.getFrameTimeSingle(frameCounter)) {
@@ -122,22 +153,24 @@ public class CtmSheetSprite extends InterpolatedIcon {
         }
     }
 
-    private BufferedImage layout(BufferedImage sheet, int frameOffset) {
-        int targetSize = cellSize * VARIANT_GRID;
-        BufferedImage target = new BufferedImage(targetSize, targetSize, BufferedImage.TYPE_INT_ARGB);
-        int padding = (cellSize - variantSize) / 2;
-        for (int variant = 0; variant < VARIANT_COUNT; variant++) {
-            int column = variant % VARIANT_GRID;
-            int row = variant / VARIANT_GRID;
-            int sourceX = column * variantSize;
-            int sourceY = frameOffset + row * variantSize;
+    private BufferedImage layout(int frameOffset) {
+        int padding = (cellSize - unitSize) / 2;
+        BufferedImage target = new BufferedImage(cellSize * columns, cellSize * rows, BufferedImage.TYPE_INT_ARGB);
+        int sheetWidth = sheet.getWidth();
+        int sheetHeight = sheet.getHeight();
+        for (int unit = 0; unit < units.length; unit++) {
+            int column = unit % columns;
+            int row = unit / columns;
+            int sourceX = column * unitSize;
+            int sourceY = frameOffset + row * unitSize;
             int targetX = column * cellSize;
             int targetY = row * cellSize;
             for (int y = 0; y < cellSize; y++) {
-                int variantY = sourceY + clamp(y - padding);
+                // A sheet that is shorter than a whole frame keeps its last row instead of reading past the image.
+                int unitY = Math.min(sheetHeight - 1, sourceY + clamp(y - padding));
                 for (int x = 0; x < cellSize; x++) {
-                    int variantX = sourceX + clamp(x - padding);
-                    target.setRGB(targetX + x, targetY + y, sheet.getRGB(variantX, variantY));
+                    int unitX = Math.min(sheetWidth - 1, sourceX + clamp(x - padding));
+                    target.setRGB(targetX + x, targetY + y, sheet.getRGB(unitX, unitY));
                 }
             }
         }
@@ -148,39 +181,39 @@ public class CtmSheetSprite extends InterpolatedIcon {
         if (offset < 0) {
             return 0;
         }
-        return Math.min(offset, variantSize - 1);
+        return Math.min(offset, unitSize - 1);
     }
 
-    private float contentOffset(int index, boolean atVariantStart) {
-        int padding = (cellSize - variantSize) / 2;
-        int total = cellSize * VARIANT_GRID;
-        int offset = index * cellSize + (atVariantStart ? padding : padding + variantSize);
+    private float contentOffset(int index, boolean atUnitStart, int unitCount) {
+        int padding = (cellSize - unitSize) / 2;
+        int total = cellSize * unitCount;
+        int offset = index * cellSize + (atUnitStart ? padding : padding + unitSize);
         return (float) offset / total;
     }
 
     /**
-     * Exposes one variant of the sheet as an icon covering only that variant's content.
+     * Exposes one unit of the sheet as an icon covering only that unit's content.
      */
-    private class VariantIcon implements IIcon {
+    private class UnitIcon implements IIcon {
 
-        private final int variant;
+        private final int unit;
 
-        VariantIcon(int variant) {
-            this.variant = variant;
+        UnitIcon(int unit) {
+            this.unit = unit;
         }
 
         @Override
         @SideOnly(Side.CLIENT)
         public float getMinU() {
             return CtmSheetSprite.this.getMinU() + (CtmSheetSprite.this.getMaxU() - CtmSheetSprite.this.getMinU())
-                * contentOffset(variant % VARIANT_GRID, true);
+                * contentOffset(unit % columns, true, columns);
         }
 
         @Override
         @SideOnly(Side.CLIENT)
         public float getMaxU() {
             return CtmSheetSprite.this.getMinU() + (CtmSheetSprite.this.getMaxU() - CtmSheetSprite.this.getMinU())
-                * contentOffset(variant % VARIANT_GRID, false);
+                * contentOffset(unit % columns, false, columns);
         }
 
         @Override
@@ -194,14 +227,14 @@ public class CtmSheetSprite extends InterpolatedIcon {
         @SideOnly(Side.CLIENT)
         public float getMinV() {
             return CtmSheetSprite.this.getMinV() + (CtmSheetSprite.this.getMaxV() - CtmSheetSprite.this.getMinV())
-                * contentOffset(variant / VARIANT_GRID, true);
+                * contentOffset(unit / columns, true, rows);
         }
 
         @Override
         @SideOnly(Side.CLIENT)
         public float getMaxV() {
             return CtmSheetSprite.this.getMinV() + (CtmSheetSprite.this.getMaxV() - CtmSheetSprite.this.getMinV())
-                * contentOffset(variant / VARIANT_GRID, false);
+                * contentOffset(unit / columns, false, rows);
         }
 
         @Override
@@ -220,13 +253,13 @@ public class CtmSheetSprite extends InterpolatedIcon {
         @Override
         @SideOnly(Side.CLIENT)
         public int getIconWidth() {
-            return variantSize;
+            return unitSize;
         }
 
         @Override
         @SideOnly(Side.CLIENT)
         public int getIconHeight() {
-            return variantSize;
+            return unitSize;
         }
     }
 }
