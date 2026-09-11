@@ -43,17 +43,17 @@ import com.github.wohaopa.MyCTMLib.NewTextureAtlasSprite;
 import com.github.wohaopa.MyCTMLib.Textures;
 import com.google.gson.JsonObject;
 
-@Mixin(TextureMap.class)
+@Mixin(value = TextureMap.class, remap = true)
 public abstract class MixinTextureMap extends AbstractTexture implements ITickableTextureObject, IIconRegister {
 
-    @Shadow
+    @Shadow(remap = true)
     @Final
     private Map<String, TextureAtlasSprite> mapRegisteredSprites;
 
-    @Shadow
+    @Shadow(remap = true)
     protected abstract ResourceLocation completeResourceLocation(ResourceLocation location, int type);
 
-    @Shadow
+    @Shadow(remap = true)
     @Final
     private String basePath;
 

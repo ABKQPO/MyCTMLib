@@ -12,7 +12,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(value = SimpleReloadableResourceManager.class)
+@Mixin(value = SimpleReloadableResourceManager.class, remap = true)
 public class MixinSimpleReloadableResourceManager {
 
     @Inject(method = "clearResources", at = @At("HEAD"))

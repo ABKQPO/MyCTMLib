@@ -16,8 +16,7 @@ import cpw.mods.fml.common.Loader;
 
 public class Textures {
 
-    // Resolved once because every neighbour lookup used to re-query the mod list.
-    private static final boolean gregTechLoaded = Loader.isModLoaded("gregtech");
+    private static Boolean gregTechLoaded;
 
     public static Map<String, CTMIconManager> ctmIconMap = new ConcurrentHashMap<>();
     public static Map<String, String[]> ctmReplaceMap = new ConcurrentHashMap<>();
@@ -271,7 +270,7 @@ public class Textures {
         Block block = blockAccess.getBlock(x, y, z);
         if (block == null || block instanceof BlockAir) return null;
 
-        if (gregTechLoaded) {
+        if (isGregTechLoaded()) {
             try {
                 return GTNHIntegrationHelper.getIcon(blockAccess, x, y, z, direction);
             } catch (Throwable t) {
@@ -280,5 +279,22 @@ public class Textures {
         }
 
         return block.getIcon(blockAccess, x, y, z, direction.ordinal());
+    }
+
+    public static boolean isGregTechLoaded() {
+        Boolean cached = gregTechLoaded;
+        if (cached != null) {
+            return cached;
+        }
+
+        boolean loaded;
+        try {
+            loaded = Loader.isModLoaded("gregtech");
+        } catch (Throwable t) {
+            return false;
+        }
+
+        gregTechLoaded = loaded;
+        return loaded;
     }
 }

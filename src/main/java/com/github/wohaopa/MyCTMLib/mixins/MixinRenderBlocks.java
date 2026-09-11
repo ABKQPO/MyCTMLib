@@ -19,13 +19,13 @@ import com.github.wohaopa.MyCTMLib.CTMIconManager;
 import com.github.wohaopa.MyCTMLib.PaneCtmRenderer;
 import com.github.wohaopa.MyCTMLib.Textures;
 
-@Mixin(value = RenderBlocks.class, priority = 900)
+@Mixin(value = RenderBlocks.class, priority = 900, remap = true)
 public abstract class MixinRenderBlocks {
 
-    @Shadow
+    @Shadow(remap = true)
     public IBlockAccess blockAccess;
 
-    @Shadow
+    @Shadow(remap = true)
     public abstract boolean hasOverrideBlockTexture();
 
     @Inject(method = "renderFaceYNeg", at = @At("HEAD"), cancellable = true)
