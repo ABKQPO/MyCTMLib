@@ -17,61 +17,79 @@ public class CtmFaceRenderer {
             return false;
         }
 
-        double minX = renderBlocks.renderMinX;
-        double minY = renderBlocks.renderMinY;
-        double minZ = renderBlocks.renderMinZ;
-        double maxX = renderBlocks.renderMaxX;
-        double maxY = renderBlocks.renderMaxY;
-        double maxZ = renderBlocks.renderMaxZ;
-        IIcon wholeFace = manager.getWholeFaceIcon(iconIndices);
-        if (wholeFace != null) {
-            // Draw the face as one quad so coplanar overlay layers keep the same geometry and stop fighting. The face
-            // flip of the split path is applied here as well, otherwise the same texture would be mirrored on the
-            // north and east faces depending on which path drew it.
-            IIcon previousWholeOverride = renderBlocks.overrideBlockTexture;
-            boolean previousWholeFlip = renderBlocks.field_152631_f;
-            renderBlocks.overrideBlockTexture = wholeFace;
-            renderBlocks.field_152631_f = direction == ForgeDirection.NORTH || direction == ForgeDirection.EAST;
-            try {
-                renderFace(renderBlocks, block, x, y, z, wholeFace, direction);
-            } finally {
-                renderBlocks.overrideBlockTexture = previousWholeOverride;
-                renderBlocks.field_152631_f = previousWholeFlip;
-            }
-            return true;
-        }
+        // Save original bounds for cleanup
+        double origMinX = renderBlocks.renderMinX, origMaxX = renderBlocks.renderMaxX;
+        double origMinY = renderBlocks.renderMinY, origMaxY = renderBlocks.renderMaxY;
+        double origMinZ = renderBlocks.renderMinZ, origMaxZ = renderBlocks.renderMaxZ;
 
-        IIcon previousOverride = renderBlocks.overrideBlockTexture;
-        boolean previousFaceFlip = renderBlocks.field_152631_f;
-        FaceLighting lighting = renderBlocks.enableAO ? faceLighting.get() : null;
-        if (lighting != null) {
-            lighting.capture(renderBlocks);
-        }
+        // Apply offset directly to local variables so setQuadrantBounds inherits it
+        double eps = 0.0001D;
+        double minX = origMinX + (direction.offsetX < 0 ? eps : 0);
+        double maxX = origMaxX - (direction.offsetX > 0 ? eps : 0);
+        double minY = origMinY + (direction.offsetY < 0 ? eps : 0);
+        double maxY = origMaxY - (direction.offsetY > 0 ? eps : 0);
+        double minZ = origMinZ + (direction.offsetZ < 0 ? eps : 0);
+        double maxZ = origMaxZ - (direction.offsetZ > 0 ? eps : 0);
 
+        // Wrap the "master-logic" in a try-finally statement to ensure we restore render bounds to original values
         try {
-            for (int quadrant = 0; quadrant < 4; quadrant++) {
-                IIcon sourceIcon = manager.getIcon(iconIndices[QUADRANT_ORDER[quadrant]]);
-                if (sourceIcon == null) {
-                    continue;
-                }
-                IIcon icon = quadrantIcons.get()
-                    .setSource(sourceIcon, quadrant == 1 || quadrant == 2 ? 8.0D : 0.0D, quadrant >= 2 ? 8.0D : 0.0D);
-                if (lighting != null) {
-                    lighting.apply(renderBlocks, direction.ordinal(), quadrant);
-                }
-                setQuadrantBounds(renderBlocks, direction.ordinal(), quadrant, minX, minY, minZ, maxX, maxY, maxZ);
-                renderBlocks.overrideBlockTexture = icon;
+            IIcon wholeFace = manager.getWholeFaceIcon(iconIndices);
+            if (wholeFace != null) {
+                // Draw the face as one quad so coplanar overlay layers keep the same geometry and stop fighting. The
+                // face
+                // flip of the split path is applied here as well, otherwise the same texture would be mirrored on the
+                // north and east faces depending on which path drew it.
+                IIcon previousWholeOverride = renderBlocks.overrideBlockTexture;
+                boolean previousWholeFlip = renderBlocks.field_152631_f;
+                renderBlocks.overrideBlockTexture = wholeFace;
                 renderBlocks.field_152631_f = direction == ForgeDirection.NORTH || direction == ForgeDirection.EAST;
-                renderFace(renderBlocks, block, x, y, z, icon, direction);
+                // Adjust bounds to offset ones
+                renderBlocks.setRenderBounds(minX, minY, minZ, maxX, maxY, maxZ);
+                try {
+                    renderFace(renderBlocks, block, x, y, z, wholeFace, direction);
+                } finally {
+                    renderBlocks.overrideBlockTexture = previousWholeOverride;
+                    renderBlocks.field_152631_f = previousWholeFlip;
+                }
+                return true;
             }
-            return true;
-        } finally {
+
+            IIcon previousOverride = renderBlocks.overrideBlockTexture;
+            boolean previousFaceFlip = renderBlocks.field_152631_f;
+            FaceLighting lighting = renderBlocks.enableAO ? faceLighting.get() : null;
             if (lighting != null) {
-                lighting.restore(renderBlocks);
+                lighting.capture(renderBlocks);
             }
-            renderBlocks.overrideBlockTexture = previousOverride;
-            renderBlocks.field_152631_f = previousFaceFlip;
-            renderBlocks.setRenderBounds(minX, minY, minZ, maxX, maxY, maxZ);
+
+            try {
+                for (int quadrant = 0; quadrant < 4; quadrant++) {
+                    IIcon sourceIcon = manager.getIcon(iconIndices[QUADRANT_ORDER[quadrant]]);
+                    if (sourceIcon == null) {
+                        continue;
+                    }
+                    IIcon icon = quadrantIcons.get()
+                        .setSource(
+                            sourceIcon,
+                            quadrant == 1 || quadrant == 2 ? 8.0D : 0.0D,
+                            quadrant >= 2 ? 8.0D : 0.0D);
+                    if (lighting != null) {
+                        lighting.apply(renderBlocks, direction.ordinal(), quadrant);
+                    }
+                    setQuadrantBounds(renderBlocks, direction.ordinal(), quadrant, minX, minY, minZ, maxX, maxY, maxZ);
+                    renderBlocks.overrideBlockTexture = icon;
+                    renderBlocks.field_152631_f = direction == ForgeDirection.NORTH || direction == ForgeDirection.EAST;
+                    renderFace(renderBlocks, block, x, y, z, icon, direction);
+                }
+                return true;
+            } finally {
+                if (lighting != null) {
+                    lighting.restore(renderBlocks);
+                }
+                renderBlocks.overrideBlockTexture = previousOverride;
+                renderBlocks.field_152631_f = previousFaceFlip;
+            }
+        } finally {
+            renderBlocks.setRenderBounds(origMinX, origMinY, origMinZ, origMaxX, origMaxY, origMaxZ);
         }
     }
 
