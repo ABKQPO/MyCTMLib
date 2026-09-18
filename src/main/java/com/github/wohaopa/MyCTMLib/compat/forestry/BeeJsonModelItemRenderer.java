@@ -33,10 +33,12 @@ public class BeeJsonModelItemRenderer implements SinglePassItemRenderer, IResour
     private static final ModelLoc DRONE_MODEL_LOCATION = new ModelLoc(RESOURCE_DOMAIN, "item/bees/drone");
     private static final ModelLoc PRINCESS_MODEL_LOCATION = new ModelLoc(RESOURCE_DOMAIN, "item/bees/princess");
     private static final ModelLoc QUEEN_MODEL_LOCATION = new ModelLoc(RESOURCE_DOMAIN, "item/bees/queen");
+    private static final ModelLoc LARVAE_MODEL_LOCATION = new ModelLoc(RESOURCE_DOMAIN, "item/bees/larvae");
 
     private BakedItem droneModel;
     private BakedItem princessModel;
     private BakedItem queenModel;
+    private BakedItem larvaeModel;
     private final Map<Item, IItemRenderer> fallbackRenderers = new IdentityHashMap<>();
     private final JsonItemModelRenderer modelRenderer = new JsonItemModelRenderer();
 
@@ -122,6 +124,7 @@ public class BeeJsonModelItemRenderer implements SinglePassItemRenderer, IResour
         droneModel = null;
         princessModel = null;
         queenModel = null;
+        larvaeModel = null;
     }
 
     private BakedItem getModel(EnumBeeType beeType) {
@@ -129,6 +132,7 @@ public class BeeJsonModelItemRenderer implements SinglePassItemRenderer, IResour
             case DRONE -> getDroneModel();
             case PRINCESS -> getPrincessModel();
             case QUEEN -> getQueenModel();
+            case LARVAE -> getLarvaeModel();
             default -> null;
         };
     }
@@ -152,6 +156,13 @@ public class BeeJsonModelItemRenderer implements SinglePassItemRenderer, IResour
             queenModel = bake(QUEEN_MODEL_LOCATION);
         }
         return queenModel;
+    }
+
+    private BakedItem getLarvaeModel() {
+        if (larvaeModel == null) {
+            larvaeModel = bake(LARVAE_MODEL_LOCATION);
+        }
+        return larvaeModel;
     }
 
     private BakedItem bake(ModelLoc location) {

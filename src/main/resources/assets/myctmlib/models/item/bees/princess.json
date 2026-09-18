@@ -66,6 +66,62 @@
 			}
 		},
 		{
+			"name": "crown",
+			"from": [6.5, 10, 7],
+			"to": [10.5, 13, 7.01],
+			"rotation": {"angle": 0, "axis": "y", "origin": [9, 10, 7]},
+			"faces": {
+				"north": {"uv": [2, 10, 3, 10.75], "texture": "#3"},
+				"east": {"uv": [0, 10, 1, 10.75], "texture": "#3"},
+				"south": {"uv": [1, 10, 2, 10.75], "texture": "#3"},
+				"west": {"uv": [3, 10, 4, 10.75], "texture": "#3"},
+				"up": {"uv": [0, 0, 0, 2], "texture": "#3"},
+				"down": {"uv": [0, 0, 0, 0], "texture": "#3"}
+			}
+		},
+		{
+			"name": "crown2",
+			"from": [6.5, 10, 3],
+			"to": [10.5, 13, 3.01],
+			"rotation": {"angle": 0, "axis": "y", "origin": [9, 10, 3]},
+			"faces": {
+				"north": {"uv": [2, 10, 3, 10.75], "texture": "#3"},
+				"east": {"uv": [0, 10, 1, 10.75], "texture": "#3"},
+				"south": {"uv": [1, 10, 2, 10.75], "texture": "#3"},
+				"west": {"uv": [3, 10, 4, 10.75], "texture": "#3"},
+				"up": {"uv": [0, 0, 0, 2], "texture": "#3"},
+				"down": {"uv": [0, 0, 0, 0], "texture": "#3"}
+			}
+		},
+		{
+			"name": "crown3",
+			"from": [6.5, 10, 3],
+			"to": [6.51, 13, 7],
+			"rotation": {"angle": 0, "axis": "y", "origin": [9, 10, 3]},
+			"faces": {
+				"north": {"uv": [2, 10, 3, 10.75], "texture": "#3"},
+				"east": {"uv": [0, 10, 1, 10.75], "texture": "#3"},
+				"south": {"uv": [1, 10, 2, 10.75], "texture": "#3"},
+				"west": {"uv": [3, 10, 4, 10.75], "texture": "#3"},
+				"up": {"uv": [0, 0, 0, 2], "texture": "#3"},
+				"down": {"uv": [0, 0, 0, 0], "texture": "#3"}
+			}
+		},
+		{
+			"name": "crown4",
+			"from": [10.5, 10, 3],
+			"to": [10.51, 13, 7],
+			"rotation": {"angle": 0, "axis": "y", "origin": [13, 10, 3]},
+			"faces": {
+				"north": {"uv": [2, 10, 3, 10.75], "texture": "#3"},
+				"east": {"uv": [0, 10, 1, 10.75], "texture": "#3"},
+				"south": {"uv": [1, 10, 2, 10.75], "texture": "#3"},
+				"west": {"uv": [3, 10, 4, 10.75], "texture": "#3"},
+				"up": {"uv": [0, 0, 0, 2], "texture": "#3"},
+				"down": {"uv": [0, 0, 0, 0], "texture": "#3"}
+			}
+		},
+		{
 			"name": "feet",
 			"from": [7, 3.7, 3.3],
 			"to": [8, 5.7, 3.31],
@@ -280,7 +336,7 @@
 			"translation": [0, 12, 0]
 		},
 		"on_shelf": {
-			"rotation": [0, 180, 0],
+			"rotation": [0, -180, 0],
 			"translation": [0, 0, -3]
 		}
 	},
@@ -294,10 +350,13 @@
 			"color": 0,
 			"children": [2, 3]
 		},
-		4,
-		5,
-		6,
-		7,
+		{
+			"name": "crown",
+			"origin": [9, 10, 7],
+			"scope": 0,
+			"color": 0,
+			"children": [4, 5, 6, 7]
+		},
 		8,
 		9,
 		10,
@@ -306,6 +365,10 @@
 		13,
 		14,
 		15,
-		16
+		16,
+		17,
+		18,
+		19,
+		20
 	]
 }

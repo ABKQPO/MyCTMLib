@@ -26,6 +26,7 @@ public class ForestryIntegration {
         renderer.register(new ItemStack(PluginApiculture.items.beeDroneGE));
         renderer.register(new ItemStack(PluginApiculture.items.beePrincessGE));
         renderer.register(new ItemStack(PluginApiculture.items.beeQueenGE));
+        renderer.register(new ItemStack(PluginApiculture.items.beeLarvaeGE));
         MyCTMLib.LOG.info("Registered JSON bee item renderer.");
     }
 }
