@@ -19,7 +19,8 @@ public class LateMixinLoader implements ILateMixinLoader {
     private static final Map<String, BooleanSupplier> MIXIN_CONFIGS = new LinkedHashMap<>();
 
     static {
-        addMixinCFG("mixins.MyCTMLib.late.json", () -> Loader.isModLoaded("gregtech"));
+        addMixinCFG("mixins.MyCTMLib.gregtech.json", () -> Loader.isModLoaded("gregtech"));
+        addMixinCFG("mixins.MyCTMLib.forestry.json", () -> Loader.isModLoaded("Forestry"));
     }
 
     @Override

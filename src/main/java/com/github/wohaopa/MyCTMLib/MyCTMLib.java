@@ -1,12 +1,14 @@
 package com.github.wohaopa.MyCTMLib;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.resources.IReloadableResourceManager;
 import net.minecraftforge.common.config.Configuration;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.github.wohaopa.MyCTMLib.mixins.AccessorMinecraft;
+import com.gtnewhorizon.gtnhlib.client.model.loading.ModelRegistry;
 
 import cpw.mods.fml.client.event.ConfigChangedEvent;
 import cpw.mods.fml.common.FMLCommonHandler;
@@ -24,6 +26,8 @@ public class MyCTMLib {
     public static final String MODID = "MyCTMLib";
     public static final Logger LOG = LogManager.getLogger(MODID);
     public static boolean debugMode = false;
+    @SideOnly(Side.CLIENT)
+    public static final BeeJsonModelPackState BEE_JSON_MODEL_PACK_STATE = new BeeJsonModelPackState();
     public Configuration configuration;
 
     @Mod.EventHandler
@@ -33,6 +37,7 @@ public class MyCTMLib {
             .getSide()
             .isClient()) {
             registerMetadataSerializer();
+            registerClientResources();
         }
 
         FMLCommonHandler.instance()
@@ -48,6 +53,15 @@ public class MyCTMLib {
             .registerMetadataSectionType(
                 new MyCTMLibMetadataSectionSerializer(),
                 MyCTMLibMetadataSectionSerializer.MyCTMLibMetadataSection.class);
+    }
+
+    @SideOnly(Side.CLIENT)
+    private void registerClientResources() {
+        ModelRegistry.registerModid(MODID);
+        if (Minecraft.getMinecraft()
+            .getResourceManager() instanceof IReloadableResourceManager manager) {
+            manager.registerReloadListener(BEE_JSON_MODEL_PACK_STATE);
+        }
     }
 
     @Mod.EventHandler
