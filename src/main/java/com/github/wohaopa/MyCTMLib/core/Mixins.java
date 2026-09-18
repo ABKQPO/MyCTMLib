@@ -19,24 +19,25 @@ public enum Mixins implements IMixins {
 
     INDUSTRIAL_CRAFT_2(new MixinBuilder("IndustrialCraft 2 compatibility mixin").addCommonMixins("MixinBlockMetaData")
         .setPhase(Phase.EARLY)
-        .addRequiredMod(Mods.INDUSTRIAL_CRAFT_2)),
+        .addRequiredMod(Mods.IndustrialCraft2)),
 
-    FORESTRY(new MixinBuilder("Forestry bee GUI item layer mixins").addClientMixins("MixinForestryTextureManager")
+    FORESTRY(new MixinBuilder("Forestry bee GUI item layer mixin").addClientMixins("MixinForestryLedger")
         .setPhase(Phase.LATE)
-        .addRequiredMod(Mods.FORESTRY)),
+        .addRequiredMod(Mods.Forestry)),
 
-    LOGISTICS_PIPES(
-        new MixinBuilder("LogisticsPipes bee GUI item layer mixin").addClientMixins("MixinGuiApiaristSinkTypeSlot")
+    LOGISTICS_PIPES(new MixinBuilder("LogisticsPipes bee GUI item layer mixins")
+        .addClientMixins("MixinGuiApiaristSinkTypeSlot", "MixinGuiApiaristSink")
+        .setPhase(Phase.LATE)
+        .addRequiredMod(Mods.LogisticsPipes)),
+
+    GENDUSTRY(
+        new MixinBuilder("gendustry bee GUI item layer mixin").addClientMixins("MixinGendustryWidgetContainerWindow")
             .setPhase(Phase.LATE)
-            .addRequiredMod(Mods.LOGISTICS_PIPES)),
-
-    GENDUSTRY(new MixinBuilder("gendustry bee GUI item layer mixin").addClientMixins("MixinForestryErrorTrigger")
-        .setPhase(Phase.LATE)
-        .addRequiredMod(Mods.GENDUSTRY)),
+            .addRequiredMod(Mods.Gendustry)),
 
     GREGTECH(new MixinBuilder("GregTech compatibility mixins").addCommonMixins("AccessorGTRenderedTexture")
         .setPhase(Phase.LATE)
-        .addRequiredMod(Mods.GREGTECH));
+        .addRequiredMod(Mods.Gregtech));
 
     private final MixinBuilder builder;
 

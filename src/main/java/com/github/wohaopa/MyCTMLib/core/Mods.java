@@ -10,11 +10,11 @@ import cpw.mods.fml.common.Loader;
 
 public enum Mods implements IMod, ITargetMod {
 
-    FORESTRY("Forestry"),
-    LOGISTICS_PIPES("LogisticsPipes"),
-    GENDUSTRY("gendustry"),
-    INDUSTRIAL_CRAFT_2("IC2", "ic2.core.coremod.IC2core"),
-    GREGTECH("gregtech");
+    Forestry("Forestry"),
+    LogisticsPipes("LogisticsPipes"),
+    Gendustry("gendustry"),
+    IndustrialCraft2("IC2", "ic2.core.coremod.IC2core"),
+    Gregtech("gregtech");
 
     private final String id;
     private final String resourceDomain;

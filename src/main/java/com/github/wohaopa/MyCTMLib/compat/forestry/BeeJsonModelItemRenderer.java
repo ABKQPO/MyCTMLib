@@ -3,12 +3,12 @@ package com.github.wohaopa.MyCTMLib.compat.forestry;
 import java.util.IdentityHashMap;
 import java.util.Map;
 
+import cpw.mods.fml.common.Optional;
 import net.minecraft.client.resources.IResourceManager;
 import net.minecraft.client.resources.IResourceManagerReloadListener;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraftforge.client.IItemRenderer;
-import net.minecraftforge.client.IItemRenderer.ItemRenderType;
 import net.minecraftforge.client.MinecraftForgeClient;
 
 import com.github.wohaopa.MyCTMLib.client.model.JsonItemModel;
@@ -127,6 +127,7 @@ public class BeeJsonModelItemRenderer implements SinglePassItemRenderer, IResour
         modelRenderer.render(type, stack, model);
     }
 
+    @Optional.Method(modid = "Forestry")
     private EnumBeeType getBeeType(ItemStack stack) {
         return stack == null || BeeManager.beeRoot == null ? null : BeeManager.beeRoot.getType(stack);
     }
@@ -143,6 +144,7 @@ public class BeeJsonModelItemRenderer implements SinglePassItemRenderer, IResour
         larvaeModel = null;
     }
 
+    @Optional.Method(modid = "Forestry")
     private BakedItem getModel(EnumBeeType beeType) {
         return switch (beeType) {
             case DRONE -> getDroneModel();

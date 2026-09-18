@@ -22,14 +22,14 @@ public class ClientLifecycle {
             .registerMetadataSectionType(new MyCTMLibMetadataSectionSerializer(), MyCTMLibMetadataSection.class);
         if (minecraft.getResourceManager() instanceof IReloadableResourceManager manager) {
             manager.registerReloadListener(BeeJsonModelPackState.INSTANCE);
-            if (Mods.FORESTRY.isModLoaded()) {
+            if (Mods.Forestry.isModLoaded()) {
                 ForestryIntegration.registerResources(manager);
             }
         }
     }
 
     public static void loadComplete() {
-        if (Mods.FORESTRY.isModLoaded()) {
+        if (Mods.Forestry.isModLoaded()) {
             ForestryIntegration.registerItemRenderers();
         }
     }
