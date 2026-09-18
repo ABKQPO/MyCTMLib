@@ -1,4 +1,4 @@
-package com.github.wohaopa.MyCTMLib;
+package com.github.wohaopa.MyCTMLib.client.ctm;
 
 import net.minecraft.launchwrapper.Launch;
 import net.minecraft.util.IIcon;

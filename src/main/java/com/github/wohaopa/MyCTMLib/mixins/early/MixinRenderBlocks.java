@@ -15,9 +15,9 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import com.github.wohaopa.MyCTMLib.CTMIconManager;
-import com.github.wohaopa.MyCTMLib.PaneCtmRenderer;
-import com.github.wohaopa.MyCTMLib.Textures;
+import com.github.wohaopa.MyCTMLib.client.ctm.CTMIconManager;
+import com.github.wohaopa.MyCTMLib.client.ctm.PaneCtmRenderer;
+import com.github.wohaopa.MyCTMLib.client.ctm.Textures;
 
 @Mixin(value = RenderBlocks.class, priority = 900, remap = true)
 public abstract class MixinRenderBlocks {

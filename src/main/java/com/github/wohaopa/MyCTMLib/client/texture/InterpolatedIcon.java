@@ -1,4 +1,4 @@
-package com.github.wohaopa.MyCTMLib;
+package com.github.wohaopa.MyCTMLib.client.texture;
 
 import net.minecraft.client.renderer.texture.TextureUtil;
 import net.minecraft.client.resources.data.AnimationMetadataSection;

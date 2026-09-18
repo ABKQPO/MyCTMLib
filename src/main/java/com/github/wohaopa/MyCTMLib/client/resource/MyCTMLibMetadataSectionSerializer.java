@@ -1,4 +1,4 @@
-package com.github.wohaopa.MyCTMLib;
+package com.github.wohaopa.MyCTMLib.client.resource;
 
 import java.lang.reflect.Type;
 

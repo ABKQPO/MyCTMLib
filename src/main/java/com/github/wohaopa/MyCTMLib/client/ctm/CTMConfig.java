@@ -1,4 +1,4 @@
-package com.github.wohaopa.MyCTMLib;
+package com.github.wohaopa.MyCTMLib.client.ctm;
 
 import java.util.ArrayList;
 import java.util.List;

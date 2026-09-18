@@ -1,4 +1,4 @@
-package com.github.wohaopa.MyCTMLib;
+package com.github.wohaopa.MyCTMLib.client.ctm;
 
 import net.minecraft.block.Block;
 import net.minecraft.client.renderer.RenderBlocks;

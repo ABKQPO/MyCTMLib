@@ -1,4 +1,4 @@
-package com.github.wohaopa.MyCTMLib;
+package com.github.wohaopa.MyCTMLib.client.ctm;
 
 import java.util.List;
 import java.util.Map;
@@ -11,6 +11,9 @@ import net.minecraft.util.IIcon;
 import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
+
+import com.github.wohaopa.MyCTMLib.compat.gregtech.GTNHIntegrationHelper;
+import com.github.wohaopa.MyCTMLib.util.FastRandom;
 
 import cpw.mods.fml.common.Loader;
 

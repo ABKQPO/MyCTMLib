@@ -1,4 +1,4 @@
-package com.github.wohaopa.MyCTMLib.mixins;
+package com.github.wohaopa.MyCTMLib.core;
 
 import java.util.Locale;
 

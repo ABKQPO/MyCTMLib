@@ -1,10 +1,9 @@
-package com.github.wohaopa.MyCTMLib;
+package com.github.wohaopa.MyCTMLib.core;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.github.wohaopa.MyCTMLib.mixins.Mixins;
 import com.gtnewhorizon.gtnhmixins.IEarlyMixinLoader;
 import com.gtnewhorizon.gtnhmixins.builders.IMixins;
 
@@ -12,7 +11,7 @@ import cpw.mods.fml.relauncher.IFMLCallHook;
 import cpw.mods.fml.relauncher.IFMLLoadingPlugin;
 
 @IFMLLoadingPlugin.MCVersion("1.7.10")
-@IFMLLoadingPlugin.TransformerExclusions({ "com.github.wohaopa.MyCTMLib" })
+@IFMLLoadingPlugin.TransformerExclusions({ "com.github.wohaopa.MyCTMLib.core" })
 @IFMLLoadingPlugin.Name("MyCTMLib core plugin")
 public class EarlyCoreMod implements IFMLLoadingPlugin, IEarlyMixinLoader, IFMLCallHook {
 

@@ -1,4 +1,4 @@
-package com.github.wohaopa.MyCTMLib;
+package com.github.wohaopa.MyCTMLib.client.ctm;
 
 /**
  * Layout of the sheet that holds every connection state.

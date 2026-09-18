@@ -11,7 +11,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import com.github.wohaopa.MyCTMLib.IC2TextureLoader;
+import com.github.wohaopa.MyCTMLib.compat.ic2.IC2TextureLoader;
 
 import ic2.core.IC2;
 import ic2.core.block.BlockBase;

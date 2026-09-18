@@ -1,6 +1,6 @@
-package com.github.wohaopa.MyCTMLib;
+package com.github.wohaopa.MyCTMLib.compat.ic2;
 
-import static com.github.wohaopa.MyCTMLib.Textures.*;
+import static com.github.wohaopa.MyCTMLib.client.ctm.Textures.*;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -14,6 +14,9 @@ import net.minecraft.client.resources.IResource;
 import net.minecraft.client.resources.SimpleResource;
 import net.minecraft.util.ResourceLocation;
 
+import com.github.wohaopa.MyCTMLib.client.ctm.CTMIconManager;
+import com.github.wohaopa.MyCTMLib.client.texture.InterpolatedIcon;
+import com.github.wohaopa.MyCTMLib.client.texture.NewTextureAtlasSprite;
 import com.github.wohaopa.MyCTMLib.mixins.early.AccessorSimpleResource;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;

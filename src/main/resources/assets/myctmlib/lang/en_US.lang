@@ -1,0 +1,3 @@
+myctmlib.config.general=General
+myctmlib.config.general.debug=Debug logging
+myctmlib.config.general.debug.tooltip=Log resource-pack metadata errors. Changes take effect immediately.

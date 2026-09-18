@@ -1,69 +1,38 @@
 package com.github.wohaopa.MyCTMLib;
 
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.resources.IReloadableResourceManager;
-import net.minecraft.item.ItemStack;
-import net.minecraftforge.common.config.Configuration;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import com.github.wohaopa.MyCTMLib.mixins.Mods;
-import com.github.wohaopa.MyCTMLib.mixins.early.AccessorMinecraft;
-import com.gtnewhorizon.gtnhlib.client.model.loading.ModelRegistry;
+import com.github.wohaopa.MyCTMLib.client.ClientLifecycle;
+import com.github.wohaopa.MyCTMLib.config.ModConfig;
+import com.gtnewhorizon.gtnhlib.config.ConfigException;
 
-import cpw.mods.fml.client.event.ConfigChangedEvent;
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.Mod;
 import cpw.mods.fml.common.event.FMLLoadCompleteEvent;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
-import cpw.mods.fml.common.eventhandler.SubscribeEvent;
-import cpw.mods.fml.relauncher.Side;
-import cpw.mods.fml.relauncher.SideOnly;
-import forestry.plugins.PluginApiculture;
 
-@Mod(modid = MyCTMLib.MODID, version = "v1.2.5_28x", name = "MyCTMLib", acceptedMinecraftVersions = "[1.7.10]")
+@Mod(
+    modid = MyCTMLib.MODID,
+    version = "v1.2.5_28x",
+    name = "MyCTMLib",
+    dependencies = "required-after:gtnhlib;",
+    guiFactory = "com.github.wohaopa.MyCTMLib.client.config.MyCTMLibGuiFactory",
+    acceptedMinecraftVersions = "[1.7.10]")
 public class MyCTMLib {
 
     public static boolean isInit = false;
     public static final String MODID = "MyCTMLib";
     public static final Logger LOG = LogManager.getLogger(MODID);
-    public static boolean debugMode = false;
-    @SideOnly(Side.CLIENT)
-    public static final BeeJsonModelPackState BEE_JSON_MODEL_PACK_STATE = new BeeJsonModelPackState();
-    public Configuration configuration;
 
     @Mod.EventHandler
-    public void preInit(FMLPreInitializationEvent event) {
+    public void preInit(FMLPreInitializationEvent event) throws ConfigException {
+        ModConfig.registerConfig();
         // Register the metadata serializer only on the client.
         if (FMLCommonHandler.instance()
             .getSide()
             .isClient()) {
-            registerMetadataSerializer();
-            registerClientResources();
-        }
-
-        FMLCommonHandler.instance()
-            .bus()
-            .register(this);
-        configuration = new Configuration(event.getSuggestedConfigurationFile());
-        loadConfig();
-    }
-
-    @SideOnly(Side.CLIENT)
-    private void registerMetadataSerializer() {
-        ((AccessorMinecraft) Minecraft.getMinecraft()).getMetadataSerializer()
-            .registerMetadataSectionType(
-                new MyCTMLibMetadataSectionSerializer(),
-                MyCTMLibMetadataSectionSerializer.MyCTMLibMetadataSection.class);
-    }
-
-    @SideOnly(Side.CLIENT)
-    private void registerClientResources() {
-        ModelRegistry.registerModid(MODID);
-        if (Minecraft.getMinecraft()
-            .getResourceManager() instanceof IReloadableResourceManager manager) {
-            manager.registerReloadListener(BEE_JSON_MODEL_PACK_STATE);
+            ClientLifecycle.preInit();
         }
     }
 
@@ -72,32 +41,9 @@ public class MyCTMLib {
         isInit = true;
         if (FMLCommonHandler.instance()
             .getSide()
-            .isClient() && Mods.FORESTRY.isModLoaded()) {
-            registerBeeJsonModelItemRenderer();
+            .isClient()) {
+            ClientLifecycle.loadComplete();
         }
     }
 
-    @SideOnly(Side.CLIENT)
-    private void registerBeeJsonModelItemRenderer() {
-        BeeJsonModelItemRenderer renderer = BeeJsonModelItemRenderer.INSTANCE;
-        renderer.register(new ItemStack(PluginApiculture.items.beeDroneGE));
-        renderer.register(new ItemStack(PluginApiculture.items.beePrincessGE));
-        renderer.register(new ItemStack(PluginApiculture.items.beeQueenGE));
-        LOG.info("Registered JSON bee item renderer.");
-    }
-
-    @SubscribeEvent
-    public void onConfigChangedEvent(ConfigChangedEvent.OnConfigChangedEvent event) {
-        if (event.modID.equalsIgnoreCase(MyCTMLib.MODID)) {
-            loadConfig();
-        }
-    }
-
-    private void loadConfig() {
-        debugMode = configuration.getBoolean("debug", Configuration.CATEGORY_GENERAL, false, "Enable debug mode");
-        if (configuration.hasChanged()) {
-            configuration.save();
-        }
-
-    }
 }

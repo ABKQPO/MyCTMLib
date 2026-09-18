@@ -1,0 +1,3 @@
+myctmlib.config.general=常规
+myctmlib.config.general.debug=调试日志
+myctmlib.config.general.debug.tooltip=记录资源包元数据错误。更改立即生效。

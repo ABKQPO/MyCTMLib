@@ -1,4 +1,4 @@
-package com.github.wohaopa.MyCTMLib;
+package com.github.wohaopa.MyCTMLib.compat.gregtech;
 
 import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;

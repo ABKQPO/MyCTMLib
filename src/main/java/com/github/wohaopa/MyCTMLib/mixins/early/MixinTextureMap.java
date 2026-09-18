@@ -1,10 +1,10 @@
 package com.github.wohaopa.MyCTMLib.mixins.early;
 
 import static com.github.wohaopa.MyCTMLib.MyCTMLib.LOG;
-import static com.github.wohaopa.MyCTMLib.Textures.ctmAltMap;
-import static com.github.wohaopa.MyCTMLib.Textures.ctmIconMap;
-import static com.github.wohaopa.MyCTMLib.Textures.ctmRandomMap;
-import static com.github.wohaopa.MyCTMLib.Textures.ctmReplaceMap;
+import static com.github.wohaopa.MyCTMLib.client.ctm.Textures.ctmAltMap;
+import static com.github.wohaopa.MyCTMLib.client.ctm.Textures.ctmIconMap;
+import static com.github.wohaopa.MyCTMLib.client.ctm.Textures.ctmRandomMap;
+import static com.github.wohaopa.MyCTMLib.client.ctm.Textures.ctmReplaceMap;
 
 import java.awt.image.BufferedImage;
 import java.io.FileNotFoundException;
@@ -36,15 +36,15 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import com.github.wohaopa.MyCTMLib.CTMConfig;
-import com.github.wohaopa.MyCTMLib.CTMIconManager;
-import com.github.wohaopa.MyCTMLib.CtmMethod;
-import com.github.wohaopa.MyCTMLib.CtmSheetSprite;
-import com.github.wohaopa.MyCTMLib.InterpolatedIcon;
-import com.github.wohaopa.MyCTMLib.MyCTMLib;
-import com.github.wohaopa.MyCTMLib.MyCTMLibMetadataSectionSerializer.MyCTMLibMetadataSection;
-import com.github.wohaopa.MyCTMLib.NewTextureAtlasSprite;
-import com.github.wohaopa.MyCTMLib.Textures;
+import com.github.wohaopa.MyCTMLib.client.ctm.CTMConfig;
+import com.github.wohaopa.MyCTMLib.client.ctm.CTMIconManager;
+import com.github.wohaopa.MyCTMLib.client.ctm.CtmMethod;
+import com.github.wohaopa.MyCTMLib.client.ctm.Textures;
+import com.github.wohaopa.MyCTMLib.client.resource.MyCTMLibMetadataSectionSerializer.MyCTMLibMetadataSection;
+import com.github.wohaopa.MyCTMLib.client.texture.CtmSheetSprite;
+import com.github.wohaopa.MyCTMLib.client.texture.InterpolatedIcon;
+import com.github.wohaopa.MyCTMLib.client.texture.NewTextureAtlasSprite;
+import com.github.wohaopa.MyCTMLib.config.ModConfig;
 import com.google.gson.JsonObject;
 
 @Mixin(value = TextureMap.class, remap = true)
@@ -335,7 +335,7 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
         } catch (Exception e) {
             // A metadata section that cannot be read leaves the texture untouched, which is reported only in debug mode
             // because a broken resource pack would otherwise flood the log.
-            if (MyCTMLib.debugMode) {
+            if (ModConfig.debug) {
                 LOG.warn("[MyCTMLib] Ignoring the myctmlib metadata of {}.", textureName, e);
             }
         }

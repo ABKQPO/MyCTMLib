@@ -1,9 +1,9 @@
 package com.github.wohaopa.MyCTMLib.mixins.early;
 
-import static com.github.wohaopa.MyCTMLib.Textures.ctmAltMap;
-import static com.github.wohaopa.MyCTMLib.Textures.ctmIconMap;
-import static com.github.wohaopa.MyCTMLib.Textures.ctmRandomMap;
-import static com.github.wohaopa.MyCTMLib.Textures.ctmReplaceMap;
+import static com.github.wohaopa.MyCTMLib.client.ctm.Textures.ctmAltMap;
+import static com.github.wohaopa.MyCTMLib.client.ctm.Textures.ctmIconMap;
+import static com.github.wohaopa.MyCTMLib.client.ctm.Textures.ctmRandomMap;
+import static com.github.wohaopa.MyCTMLib.client.ctm.Textures.ctmReplaceMap;
 
 import net.minecraft.client.resources.SimpleReloadableResourceManager;
 

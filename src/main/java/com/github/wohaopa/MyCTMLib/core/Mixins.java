@@ -1,4 +1,4 @@
-package com.github.wohaopa.MyCTMLib.mixins;
+package com.github.wohaopa.MyCTMLib.core;
 
 import com.gtnewhorizon.gtnhmixins.builders.IMixins;
 import com.gtnewhorizon.gtnhmixins.builders.MixinBuilder;
@@ -11,6 +11,7 @@ public enum Mixins implements IMixins {
             "AccessorSimpleReloadableResourceManager",
             "AccessorMinecraft",
             "AccessorSimpleResource",
+            "MixinItemRenderer",
             "MixinRenderBlocks",
             "MixinTextureMap",
             "MixinSimpleReloadableResourceManager")
