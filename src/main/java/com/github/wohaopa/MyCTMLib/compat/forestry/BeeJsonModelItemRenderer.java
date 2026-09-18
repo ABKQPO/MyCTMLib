@@ -85,6 +85,22 @@ public class BeeJsonModelItemRenderer implements SinglePassItemRenderer, IResour
         }
     }
 
+    public boolean renderGui(ItemStack stack, int x, int y, float zLevel) {
+        if (!BeeJsonModelPackState.INSTANCE.isEnabled() || stack == null) {
+            return false;
+        }
+        EnumBeeType beeType = getBeeType(stack);
+        if (beeType == null) {
+            return false;
+        }
+        BakedItem model = getModel(beeType);
+        if (model == null) {
+            return false;
+        }
+        modelRenderer.renderGui(stack, model, x, y, zLevel);
+        return true;
+    }
+
     private boolean isJsonModelEnabled(ItemStack stack) {
         return BeeJsonModelPackState.INSTANCE.isEnabled() && stack != null
             && fallbackRenderers.containsKey(stack.getItem());

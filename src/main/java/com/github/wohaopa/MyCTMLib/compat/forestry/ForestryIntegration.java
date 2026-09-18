@@ -13,6 +13,35 @@ import forestry.plugins.PluginApiculture;
 @SideOnly(Side.CLIENT)
 public class ForestryIntegration {
 
+    private static ItemStack droneGuiStack;
+    private static ItemStack queenGuiStack;
+    private static ItemStack princessGuiStack;
+    private static ItemStack larvaeGuiStack;
+
+    public static ItemStack getGuiIconStack(String iconName) {
+        if (iconName == null || PluginApiculture.items == null) {
+            return null;
+        }
+        String normalized = iconName.startsWith("forestry:") ? iconName.substring("forestry:".length()) : iconName;
+        if (normalized.equals("errors/noDrone") || normalized.equals("errors/noSpecimen")
+            || normalized.equals("analyzer/bee")
+            || normalized.equals("analyzer/drone")
+            || normalized.equals("analyzer/item")
+            || normalized.equals("analyzer/pure_breed")) {
+            return droneGuiStack;
+        }
+        if (normalized.equals("errors/noQueen") || normalized.equals("analyzer/queen")) {
+            return queenGuiStack;
+        }
+        if (normalized.equals("analyzer/princess")) {
+            return princessGuiStack;
+        }
+        if (normalized.equals("analyzer/larvae")) {
+            return larvaeGuiStack;
+        }
+        return null;
+    }
+
     public static void registerResources(IReloadableResourceManager manager) {
         ModelRegistry.registerModid(MyCTMLib.MODID);
         manager.registerReloadListener(BeeJsonModelItemRenderer.INSTANCE);
@@ -23,10 +52,14 @@ public class ForestryIntegration {
             return;
         }
         BeeJsonModelItemRenderer renderer = BeeJsonModelItemRenderer.INSTANCE;
-        renderer.register(new ItemStack(PluginApiculture.items.beeDroneGE));
-        renderer.register(new ItemStack(PluginApiculture.items.beePrincessGE));
-        renderer.register(new ItemStack(PluginApiculture.items.beeQueenGE));
-        renderer.register(new ItemStack(PluginApiculture.items.beeLarvaeGE));
+        droneGuiStack = new ItemStack(PluginApiculture.items.beeDroneGE);
+        princessGuiStack = new ItemStack(PluginApiculture.items.beePrincessGE);
+        queenGuiStack = new ItemStack(PluginApiculture.items.beeQueenGE);
+        larvaeGuiStack = new ItemStack(PluginApiculture.items.beeLarvaeGE);
+        renderer.register(droneGuiStack);
+        renderer.register(princessGuiStack);
+        renderer.register(queenGuiStack);
+        renderer.register(larvaeGuiStack);
         MyCTMLib.LOG.info("Registered JSON bee item renderer.");
     }
 }

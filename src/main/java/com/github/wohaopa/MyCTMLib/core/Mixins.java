@@ -21,6 +21,19 @@ public enum Mixins implements IMixins {
         .setPhase(Phase.EARLY)
         .addRequiredMod(Mods.INDUSTRIAL_CRAFT_2)),
 
+    FORESTRY(new MixinBuilder("Forestry bee GUI item layer mixins").addClientMixins("MixinForestryTextureManager")
+        .setPhase(Phase.LATE)
+        .addRequiredMod(Mods.FORESTRY)),
+
+    LOGISTICS_PIPES(
+        new MixinBuilder("LogisticsPipes bee GUI item layer mixin").addClientMixins("MixinGuiApiaristSinkTypeSlot")
+            .setPhase(Phase.LATE)
+            .addRequiredMod(Mods.LOGISTICS_PIPES)),
+
+    GENDUSTRY(new MixinBuilder("gendustry bee GUI item layer mixin").addClientMixins("MixinForestryErrorTrigger")
+        .setPhase(Phase.LATE)
+        .addRequiredMod(Mods.GENDUSTRY)),
+
     GREGTECH(new MixinBuilder("GregTech compatibility mixins").addCommonMixins("AccessorGTRenderedTexture")
         .setPhase(Phase.LATE)
         .addRequiredMod(Mods.GREGTECH));

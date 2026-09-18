@@ -52,6 +52,14 @@ public class JsonItemDisplayTransform {
         }
 
         ModelDisplay display = model.getDisplay(position, null);
+        applyDisplay(display);
+    }
+
+    public static void applyGui(BakedModel model) {
+        applyDisplay(model.getDisplay(Position.GUI, null));
+    }
+
+    private static void applyDisplay(ModelDisplay display) {
         Vector3f translation = display.translation();
         Vector3f rotation = display.rotation();
         Vector3f scale = display.scale();
