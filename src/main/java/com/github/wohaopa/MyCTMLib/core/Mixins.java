@@ -36,6 +36,7 @@ public enum Mixins implements IMixins {
             .addRequiredMod(Mods.Gendustry)),
 
     GREGTECH(new MixinBuilder("GregTech compatibility mixins").addCommonMixins("AccessorGTRenderedTexture")
+        .addClientMixins("MixinSBRWorldContext")
         .setPhase(Phase.LATE)
         .addRequiredMod(Mods.Gregtech));
 

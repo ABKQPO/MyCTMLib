@@ -1,12 +1,12 @@
 package com.github.wohaopa.MyCTMLib.compat.forestry;
 
-import cpw.mods.fml.common.Optional;
 import net.minecraft.client.resources.IReloadableResourceManager;
 import net.minecraft.item.ItemStack;
 
 import com.github.wohaopa.MyCTMLib.MyCTMLib;
 import com.gtnewhorizon.gtnhlib.client.model.loading.ModelRegistry;
 
+import cpw.mods.fml.common.Optional;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import forestry.api.apiculture.BeeManager;
@@ -33,8 +33,7 @@ public class ForestryIntegration {
         }
         String normalized = iconName.startsWith("forestry:") ? iconName.substring("forestry:".length()) : iconName;
         return switch (normalized) {
-            case "errors/noDrone", "errors/noSpecimen", "analyzer/bee", "analyzer/drone", "analyzer/item",
-                 "analyzer/pure_breed" -> droneGuiStack;
+            case "errors/noDrone", "errors/noSpecimen", "analyzer/bee", "analyzer/drone", "analyzer/item", "analyzer/pure_breed" -> droneGuiStack;
             case "errors/noQueen", "analyzer/queen" -> queenGuiStack;
             case "analyzer/princess" -> princessGuiStack;
             case "analyzer/larvae" -> larvaeGuiStack;

@@ -3,7 +3,6 @@ package com.github.wohaopa.MyCTMLib.compat.forestry;
 import java.util.IdentityHashMap;
 import java.util.Map;
 
-import cpw.mods.fml.common.Optional;
 import net.minecraft.client.resources.IResourceManager;
 import net.minecraft.client.resources.IResourceManagerReloadListener;
 import net.minecraft.item.Item;
@@ -19,6 +18,7 @@ import com.github.wohaopa.MyCTMLib.client.resource.BeeJsonModelPackState;
 import com.gtnewhorizon.gtnhlib.client.model.loading.ModelRegistry;
 import com.gtnewhorizon.gtnhlib.client.model.loading.ResourceLoc.ModelLoc;
 
+import cpw.mods.fml.common.Optional;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import forestry.api.apiculture.BeeManager;
