@@ -2,12 +2,14 @@ package com.github.wohaopa.MyCTMLib;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
-import com.github.wohaopa.MyCTMLib.mixins.EarlyMixinLoader;
+import com.github.wohaopa.MyCTMLib.mixins.Mixins;
+import com.gtnewhorizon.gtnhmixins.IEarlyMixinLoader;
+import com.gtnewhorizon.gtnhmixins.builders.IMixins;
 
 import cpw.mods.fml.relauncher.IFMLCallHook;
 import cpw.mods.fml.relauncher.IFMLLoadingPlugin;
-import io.github.tox1cozz.mixinbooterlegacy.IEarlyMixinLoader;
 
 @IFMLLoadingPlugin.MCVersion("1.7.10")
 @IFMLLoadingPlugin.TransformerExclusions({ "com.github.wohaopa.MyCTMLib" })
@@ -49,12 +51,12 @@ public class EarlyCoreMod implements IFMLLoadingPlugin, IEarlyMixinLoader, IFMLC
     }
 
     @Override
-    public List<String> getMixinConfigs() {
-        return EarlyMixinLoader.getMixinConfigs();
+    public String getMixinConfig() {
+        return "mixins.MyCTMLib.early.json";
     }
 
     @Override
-    public boolean shouldMixinConfigQueue(final String mixinConfig) {
-        return EarlyMixinLoader.shouldMixinConfigQueue(mixinConfig);
+    public List<String> getMixins(Set<String> loadedCoreMods) {
+        return IMixins.getEarlyMixins(Mixins.class, loadedCoreMods);
     }
 }

@@ -1,4 +1,4 @@
-package com.github.wohaopa.MyCTMLib.mixins;
+package com.github.wohaopa.MyCTMLib.mixins.late;
 
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;

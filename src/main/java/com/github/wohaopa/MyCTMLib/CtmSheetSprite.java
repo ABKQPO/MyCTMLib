@@ -10,7 +10,7 @@ import net.minecraft.client.resources.data.AnimationMetadataSection;
 import net.minecraft.util.IIcon;
 import net.minecraft.util.ResourceLocation;
 
-import com.github.wohaopa.MyCTMLib.mixins.AccessorTextureAtlasSprite;
+import com.github.wohaopa.MyCTMLib.mixins.early.AccessorTextureAtlasSprite;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;

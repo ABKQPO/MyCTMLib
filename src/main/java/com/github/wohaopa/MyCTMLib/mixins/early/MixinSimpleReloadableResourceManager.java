@@ -1,4 +1,4 @@
-package com.github.wohaopa.MyCTMLib.mixins;
+package com.github.wohaopa.MyCTMLib.mixins.early;
 
 import static com.github.wohaopa.MyCTMLib.Textures.ctmAltMap;
 import static com.github.wohaopa.MyCTMLib.Textures.ctmIconMap;

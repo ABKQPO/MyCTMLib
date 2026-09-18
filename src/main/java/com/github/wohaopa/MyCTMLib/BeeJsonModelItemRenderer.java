@@ -2,6 +2,8 @@ package com.github.wohaopa.MyCTMLib;
 
 import static com.gtnewhorizon.gtnhlib.client.renderer.cel.model.quad.properties.ModelQuadFacing.VALUES;
 
+import java.util.IdentityHashMap;
+import java.util.Map;
 import java.util.Random;
 import java.util.function.Supplier;
 
@@ -9,7 +11,9 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.item.ItemStack;
+import net.minecraftforge.client.IItemRenderer;
 import net.minecraftforge.client.IItemRenderer.ItemRenderType;
+import net.minecraftforge.client.MinecraftForgeClient;
 
 import org.joml.Vector3f;
 import org.lwjgl.opengl.GL11;
@@ -32,32 +36,83 @@ import forestry.api.apiculture.BeeManager;
 import forestry.api.apiculture.EnumBeeType;
 
 @SideOnly(Side.CLIENT)
-public class BeeJsonModelItemRenderer implements BakedModelQuadContext {
+public class BeeJsonModelItemRenderer implements BakedModelQuadContext, IItemRenderer {
 
     public static final BeeJsonModelItemRenderer INSTANCE = new BeeJsonModelItemRenderer();
 
-    private static final ModelLoc DRONE_MODEL_LOCATION = new ModelLoc(MyCTMLib.MODID, "item/bees/drone");
-    private static final ModelLoc PRINCESS_MODEL_LOCATION = new ModelLoc(MyCTMLib.MODID, "item/bees/princess");
-    private static final ModelLoc QUEEN_MODEL_LOCATION = new ModelLoc(MyCTMLib.MODID, "item/bees/queen");
+    private static final String RESOURCE_DOMAIN = "myctmlib";
+    private static final ModelLoc DRONE_MODEL_LOCATION = new ModelLoc(RESOURCE_DOMAIN, "item/bees/drone");
+    private static final ModelLoc PRINCESS_MODEL_LOCATION = new ModelLoc(RESOURCE_DOMAIN, "item/bees/princess");
+    private static final ModelLoc QUEEN_MODEL_LOCATION = new ModelLoc(RESOURCE_DOMAIN, "item/bees/queen");
 
     private BakedModel droneModel;
     private BakedModel princessModel;
     private BakedModel queenModel;
     private ModelQuadFacing quadFacing;
     private final Random random = new Random(0L);
+    private final Map<Object, IItemRenderer> fallbackRenderers = new IdentityHashMap<>();
 
-    public boolean render(ItemRenderType type, ItemStack stack) {
-        EnumBeeType beeType = BeeManager.beeRoot.getType(stack);
+    public void register(ItemStack stack) {
+        IItemRenderer fallback = MinecraftForgeClient.getItemRenderer(stack, ItemRenderType.INVENTORY);
+        if (fallback != null && fallback != this) {
+            fallbackRenderers.put(stack.getItem(), fallback);
+        }
+        MinecraftForgeClient.registerItemRenderer(stack.getItem(), this);
+    }
+
+    @Override
+    public boolean handleRenderType(ItemStack stack, ItemRenderType type) {
+        return isJsonModelEnabled(stack) || getFallbackRenderer(stack, type) != null;
+    }
+
+    @Override
+    public boolean shouldUseRenderHelper(ItemRenderType type, ItemStack stack, ItemRendererHelper helper) {
+        if (isJsonModelEnabled(stack)) {
+            return helper != ItemRendererHelper.ENTITY_BOBBING && helper != ItemRendererHelper.ENTITY_ROTATION;
+        }
+        IItemRenderer fallback = getFallbackRenderer(stack, type);
+        return fallback != null && fallback.shouldUseRenderHelper(type, stack, helper);
+    }
+
+    @Override
+    public void renderItem(ItemRenderType type, ItemStack stack, Object... data) {
+        if (isJsonModelEnabled(stack)) {
+            renderJsonModel(type, stack);
+            return;
+        }
+        IItemRenderer fallback = getFallbackRenderer(stack, type);
+        if (fallback != null) {
+            fallback.renderItem(type, stack, data);
+        }
+    }
+
+    private boolean isJsonModelEnabled(ItemStack stack) {
+        return MyCTMLib.BEE_JSON_MODEL_PACK_STATE.isEnabled() && getBeeType(stack) != null;
+    }
+
+    private IItemRenderer getFallbackRenderer(ItemStack stack, ItemRenderType type) {
+        if (stack == null) {
+            return null;
+        }
+        IItemRenderer fallback = fallbackRenderers.get(stack.getItem());
+        return fallback != null && fallback.handleRenderType(stack, type) ? fallback : null;
+    }
+
+    private void renderJsonModel(ItemRenderType type, ItemStack stack) {
+        EnumBeeType beeType = getBeeType(stack);
         if (beeType == null) {
-            return false;
+            return;
         }
         BakedModel model = getModel(beeType);
         if (model == null) {
-            return false;
+            return;
         }
 
         renderModel(type, stack, model);
-        return true;
+    }
+
+    private EnumBeeType getBeeType(ItemStack stack) {
+        return stack == null || BeeManager.beeRoot == null ? null : BeeManager.beeRoot.getType(stack);
     }
 
     public void clearModels() {

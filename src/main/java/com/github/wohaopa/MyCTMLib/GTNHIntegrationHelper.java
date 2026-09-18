@@ -1,7 +1,5 @@
 package com.github.wohaopa.MyCTMLib;
 
-import static com.github.wohaopa.MyCTMLib.MyCTMLib.*;
-
 import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.Tessellator;
@@ -11,7 +9,7 @@ import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
-import com.github.wohaopa.MyCTMLib.mixins.AccessorGTRenderedTexture;
+import com.github.wohaopa.MyCTMLib.mixins.late.AccessorGTRenderedTexture;
 import com.gtnewhorizon.gtnhlib.client.renderer.TessellatorManager;
 
 import gregtech.api.interfaces.IBlockWithClientMeta;

@@ -1,4 +1,4 @@
-package com.github.wohaopa.MyCTMLib.mixins;
+package com.github.wohaopa.MyCTMLib.mixins.early;
 
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.resources.data.AnimationMetadataSection;

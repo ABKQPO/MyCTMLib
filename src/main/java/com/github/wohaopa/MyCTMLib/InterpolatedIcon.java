@@ -3,7 +3,7 @@ package com.github.wohaopa.MyCTMLib;
 import net.minecraft.client.renderer.texture.TextureUtil;
 import net.minecraft.client.resources.data.AnimationMetadataSection;
 
-import com.github.wohaopa.MyCTMLib.mixins.AccessorTextureAtlasSprite;
+import com.github.wohaopa.MyCTMLib.mixins.early.AccessorTextureAtlasSprite;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;

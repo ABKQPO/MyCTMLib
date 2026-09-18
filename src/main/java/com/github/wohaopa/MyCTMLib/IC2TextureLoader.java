@@ -14,7 +14,7 @@ import net.minecraft.client.resources.IResource;
 import net.minecraft.client.resources.SimpleResource;
 import net.minecraft.util.ResourceLocation;
 
-import com.github.wohaopa.MyCTMLib.mixins.AccessorSimpleResource;
+import com.github.wohaopa.MyCTMLib.mixins.early.AccessorSimpleResource;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;

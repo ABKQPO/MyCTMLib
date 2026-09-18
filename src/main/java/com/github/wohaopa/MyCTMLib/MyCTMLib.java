@@ -2,12 +2,14 @@ package com.github.wohaopa.MyCTMLib;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.IReloadableResourceManager;
+import net.minecraft.item.ItemStack;
 import net.minecraftforge.common.config.Configuration;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import com.github.wohaopa.MyCTMLib.mixins.AccessorMinecraft;
+import com.github.wohaopa.MyCTMLib.mixins.Mods;
+import com.github.wohaopa.MyCTMLib.mixins.early.AccessorMinecraft;
 import com.gtnewhorizon.gtnhlib.client.model.loading.ModelRegistry;
 
 import cpw.mods.fml.client.event.ConfigChangedEvent;
@@ -18,6 +20,7 @@ import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
+import forestry.plugins.PluginApiculture;
 
 @Mod(modid = MyCTMLib.MODID, version = "v1.2.5_28x", name = "MyCTMLib", acceptedMinecraftVersions = "[1.7.10]")
 public class MyCTMLib {
@@ -67,6 +70,20 @@ public class MyCTMLib {
     @Mod.EventHandler
     public void completeInit(FMLLoadCompleteEvent event) {
         isInit = true;
+        if (FMLCommonHandler.instance()
+            .getSide()
+            .isClient() && Mods.FORESTRY.isModLoaded()) {
+            registerBeeJsonModelItemRenderer();
+        }
+    }
+
+    @SideOnly(Side.CLIENT)
+    private void registerBeeJsonModelItemRenderer() {
+        BeeJsonModelItemRenderer renderer = BeeJsonModelItemRenderer.INSTANCE;
+        renderer.register(new ItemStack(PluginApiculture.items.beeDroneGE));
+        renderer.register(new ItemStack(PluginApiculture.items.beePrincessGE));
+        renderer.register(new ItemStack(PluginApiculture.items.beeQueenGE));
+        LOG.info("Registered JSON bee item renderer.");
     }
 
     @SubscribeEvent

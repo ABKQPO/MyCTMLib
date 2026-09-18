@@ -1,4 +1,4 @@
-package com.github.wohaopa.MyCTMLib.mixins;
+package com.github.wohaopa.MyCTMLib.mixins.early;
 
 import static com.github.wohaopa.MyCTMLib.MyCTMLib.LOG;
 import static com.github.wohaopa.MyCTMLib.Textures.ctmAltMap;
@@ -336,7 +336,7 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
             // A metadata section that cannot be read leaves the texture untouched, which is reported only in debug mode
             // because a broken resource pack would otherwise flood the log.
             if (MyCTMLib.debugMode) {
-                LOG.warn(EarlyMixinLoader.LOG_PREFIX + "Ignoring the myctmlib metadata of {}.", textureName, e);
+                LOG.warn("[MyCTMLib] Ignoring the myctmlib metadata of {}.", textureName, e);
             }
         }
     }
