@@ -44,13 +44,21 @@ public class MyCTMLibMetadataSectionSerializer implements IMetadataSectionSerial
         }
 
         public boolean isBeeJsonModelsEnabled() {
-            return json.has("enableBeeJsonModels") && json.get("enableBeeJsonModels")
-                .isJsonPrimitive()
-                && json.get("enableBeeJsonModels")
-                    .getAsJsonPrimitive()
-                    .isBoolean()
-                && json.get("enableBeeJsonModels")
-                    .getAsBoolean();
+            return Boolean.TRUE.equals(getBeeJsonModelsEnabledSetting());
+        }
+
+        public Boolean getBeeJsonModelsEnabledSetting() {
+            if (!json.has("enableBeeJsonModels") || !json.get("enableBeeJsonModels")
+                .isJsonPrimitive()) {
+                return null;
+            }
+
+            if (!json.getAsJsonPrimitive("enableBeeJsonModels")
+                .isBoolean()) {
+                return null;
+            }
+            return json.getAsJsonPrimitive("enableBeeJsonModels")
+                .getAsBoolean();
         }
     }
 }

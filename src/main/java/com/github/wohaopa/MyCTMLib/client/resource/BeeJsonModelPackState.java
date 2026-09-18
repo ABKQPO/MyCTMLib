@@ -11,6 +11,7 @@ import net.minecraft.client.resources.ResourcePackRepository;
 
 import com.github.wohaopa.MyCTMLib.MyCTMLib;
 import com.github.wohaopa.MyCTMLib.client.resource.MyCTMLibMetadataSectionSerializer.MyCTMLibMetadataSection;
+import com.github.wohaopa.MyCTMLib.config.ModConfig;
 import com.github.wohaopa.MyCTMLib.mixins.early.AccessorMinecraft;
 
 import cpw.mods.fml.relauncher.Side;
@@ -27,11 +28,11 @@ public class BeeJsonModelPackState implements IResourceManagerReloadListener {
 
     @Override
     public void onResourceManagerReload(IResourceManager resourceManager) {
-        IResourcePack pack = findHighestPriorityPack();
-        enabled = pack != null && isEnabledForPack(pack);
+        IResourcePack pack = findHighestPriorityPackWithSetting();
+        if (!ModConfig.debug) return;
         if (pack != null) {
             MyCTMLib.LOG.info(
-                "JSON bee item models {} by highest-priority resource pack '{}'.",
+                "JSON bee item models {} by highest-priority resource pack declaring the setting '{}'.",
                 enabled ? "enabled" : "disabled",
                 pack.getPackName());
         } else {
@@ -39,28 +40,46 @@ public class BeeJsonModelPackState implements IResourceManagerReloadListener {
         }
     }
 
-    private IResourcePack findHighestPriorityPack() {
+    private IResourcePack findHighestPriorityPackWithSetting() {
         ResourcePackRepository repository = Minecraft.getMinecraft()
             .getResourcePackRepository();
         IResourcePack serverPack = repository.func_148530_e();
-        if (serverPack != null) {
+        if (serverPack != null && applySetting(serverPack)) {
             return serverPack;
         }
         // Minecraft loads selected packs in this order; the final pack overrides earlier ones.
         List<ResourcePackRepository.Entry> entries = repository.getRepositoryEntries();
-        return entries.isEmpty() ? null
-            : entries.get(entries.size() - 1)
+        for (int index = entries.size() - 1; index >= 0; index--) {
+            IResourcePack pack = entries.get(index)
                 .getResourcePack();
+            if (applySetting(pack)) {
+                return pack;
+            }
+        }
+        enabled = false;
+        return null;
     }
 
-    private boolean isEnabledForPack(IResourcePack pack) {
+    private boolean applySetting(IResourcePack pack) {
         try {
             MyCTMLibMetadataSection metadata = (MyCTMLibMetadataSection) pack
                 .getPackMetadata(((AccessorMinecraft) Minecraft.getMinecraft()).getMetadataSerializer(), "myctmlib");
-            return metadata != null && metadata.isBeeJsonModelsEnabled();
+            if (metadata == null) {
+                return false;
+            }
+            Boolean setting = metadata.getBeeJsonModelsEnabledSetting();
+            if (setting == null) {
+                return false;
+            }
+            enabled = setting;
+            return true;
         } catch (IOException | RuntimeException exception) {
-            MyCTMLib.LOG
-                .warn("Cannot read JSON bee model settings from resource pack '{}'.", pack.getPackName(), exception);
+            if (ModConfig.debug) {
+                MyCTMLib.LOG.warn(
+                    "Cannot read JSON bee model settings from resource pack '{}'.",
+                    pack.getPackName(),
+                    exception);
+            }
             return false;
         }
     }
