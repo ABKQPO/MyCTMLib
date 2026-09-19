@@ -8,6 +8,7 @@ public enum Mixins implements IMixins {
     MINECRAFT_CLIENT(new MixinBuilder("Client texture mixins")
         .addClientMixins(
             "AccessorTextureAtlasSprite",
+            "AccessorTextureMap",
             "AccessorSimpleReloadableResourceManager",
             "AccessorMinecraft",
             "AccessorSimpleResource",
@@ -24,6 +25,11 @@ public enum Mixins implements IMixins {
     FORESTRY(new MixinBuilder("Forestry bee GUI item layer mixin").addClientMixins("MixinForestryLedger")
         .setPhase(Phase.LATE)
         .addRequiredMod(Mods.Forestry)),
+
+    APPLIED_ENERGISTICS_2(new MixinBuilder("AE2 JSON device models")
+        .addClientMixins("MixinRenderDrive", "MixinRenderMEChest", "MixinRenderBlockWireless")
+        .setPhase(Phase.LATE)
+        .addRequiredMod(Mods.AppliedEnergistics2)),
 
     LOGISTICS_PIPES(new MixinBuilder("LogisticsPipes bee GUI item layer mixins")
         .addClientMixins("MixinGuiApiaristSinkTypeSlot", "MixinGuiApiaristSink")

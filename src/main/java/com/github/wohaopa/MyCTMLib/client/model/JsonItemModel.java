@@ -88,7 +88,7 @@ public class JsonItemModel extends JSONModel {
 
     public record BakedItem(BakedModel model, ModelQuadView[] quads, float[] shades, int[] tintIndices) {}
 
-    private void bakeItemSprite(ModelQuad quad, String texture) {
+    protected void bakeItemSprite(ModelQuad quad, String texture) {
         IIcon sprite = Minecraft.getMinecraft()
             .getTextureMapBlocks()
             .getAtlasSprite(texture);

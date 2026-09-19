@@ -6,7 +6,9 @@ import net.minecraft.client.resources.IReloadableResourceManager;
 import com.github.wohaopa.MyCTMLib.client.resource.BeeJsonModelPackState;
 import com.github.wohaopa.MyCTMLib.client.resource.MyCTMLibMetadataSectionSerializer;
 import com.github.wohaopa.MyCTMLib.client.resource.MyCTMLibMetadataSectionSerializer.MyCTMLibMetadataSection;
+import com.github.wohaopa.MyCTMLib.compat.ae2.Ae2Integration;
 import com.github.wohaopa.MyCTMLib.compat.forestry.ForestryIntegration;
+import com.github.wohaopa.MyCTMLib.compat.opencomputers.OpenComputersIntegration;
 import com.github.wohaopa.MyCTMLib.core.Mods;
 import com.github.wohaopa.MyCTMLib.mixins.early.AccessorMinecraft;
 
@@ -20,6 +22,9 @@ public class ClientLifecycle {
         Minecraft minecraft = Minecraft.getMinecraft();
         ((AccessorMinecraft) minecraft).getMetadataSerializer()
             .registerMetadataSectionType(new MyCTMLibMetadataSectionSerializer(), MyCTMLibMetadataSection.class);
+        if (Mods.AppliedEnergistics2.isModLoaded()) {
+            Ae2Integration.registerResources();
+        }
         if (minecraft.getResourceManager() instanceof IReloadableResourceManager manager) {
             manager.registerReloadListener(BeeJsonModelPackState.INSTANCE);
             if (Mods.Forestry.isModLoaded()) {
@@ -29,8 +34,14 @@ public class ClientLifecycle {
     }
 
     public static void loadComplete() {
+        if (Mods.AppliedEnergistics2.isModLoaded()) {
+            Ae2Integration.registerItemRenderers();
+        }
         if (Mods.Forestry.isModLoaded()) {
             ForestryIntegration.registerItemRenderers();
+            if (Mods.OpenComputers.isModLoaded()) {
+                OpenComputersIntegration.registerItemRenderer();
+            }
         }
     }
 }

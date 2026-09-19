@@ -13,6 +13,10 @@ public enum Mods implements IMod, ITargetMod {
     Forestry("Forestry"),
     LogisticsPipes("LogisticsPipes"),
     Gendustry("gendustry"),
+    OpenComputers("OpenComputers"),
+    AppliedEnergistics2("appliedenergistics2"),
+    Ae2FluidCraft("ae2fc"),
+    ThaumicEnergistics("thaumicenergistics"),
     IndustrialCraft2("IC2", "ic2.core.coremod.IC2core"),
     Gregtech("gregtech");
 

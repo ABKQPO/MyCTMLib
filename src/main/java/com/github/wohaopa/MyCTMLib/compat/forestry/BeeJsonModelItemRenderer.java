@@ -7,6 +7,7 @@ import net.minecraft.client.resources.IResourceManager;
 import net.minecraft.client.resources.IResourceManagerReloadListener;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.IIcon;
 import net.minecraftforge.client.IItemRenderer;
 import net.minecraftforge.client.MinecraftForgeClient;
 
@@ -99,6 +100,21 @@ public class BeeJsonModelItemRenderer implements SinglePassItemRenderer, IResour
         }
         modelRenderer.renderGui(stack, model, x, y, zLevel);
         return true;
+    }
+
+    @Optional.Method(modid = "Forestry")
+    public void renderWithOverlay(ItemRenderType type, ItemStack stack, IIcon overlay) {
+        if (!rendersAllPasses(stack, type)) {
+            return;
+        }
+        EnumBeeType beeType = getBeeType(stack);
+        if (beeType == null) {
+            return;
+        }
+        BakedItem model = getModel(beeType);
+        if (model != null) {
+            modelRenderer.renderWithOverlay(type, stack, model, overlay);
+        }
     }
 
     private boolean isJsonModelEnabled(ItemStack stack) {

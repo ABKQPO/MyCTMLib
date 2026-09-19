@@ -4,6 +4,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.IIcon;
 import net.minecraftforge.client.IItemRenderer.ItemRenderType;
 
 import org.lwjgl.opengl.GL11;
@@ -18,9 +19,15 @@ import cpw.mods.fml.relauncher.SideOnly;
 public class JsonItemModelRenderer {
 
     private int[] tintColors = new int[0];
+    private final ItemIconOverlayRenderer overlayRenderer = new ItemIconOverlayRenderer();
 
     public void render(ItemRenderType type, ItemStack stack, BakedItem model) {
         renderModel(stack, model, () -> JsonItemDisplayTransform.apply(type, model.model()));
+    }
+
+    public void renderWithOverlay(ItemRenderType type, ItemStack stack, BakedItem model, IIcon overlay) {
+        render(type, stack, model);
+        overlayRenderer.render(type, model, overlay);
     }
 
     public void renderGui(ItemStack stack, BakedItem model, int x, int y, float zLevel) {
