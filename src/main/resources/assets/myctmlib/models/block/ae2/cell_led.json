@@ -4,18 +4,30 @@
     {
       "shade": false,
       "from": [
-        3.98,
-        -0.02,
-        -0.125
+        4,
+        0,
+        0
       ],
       "to": [
-        5.02,
-        1.02,
-        0
+        5,
+        1,
+        1
       ],
       "faces": {
         "north": {
           "texture": "#led",
+          "cullface": "north",
+          "uv": [
+            0.1,
+            0.1,
+            0.2,
+            0.2
+          ],
+          "tintindex": 4
+        },
+        "down": {
+          "texture": "#led",
+          "cullface": "north",
           "uv": [
             0.1,
             0.1,

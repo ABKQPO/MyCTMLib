@@ -15,8 +15,6 @@ import com.github.wohaopa.MyCTMLib.client.render.block.JsonBlockModelRenderer;
 import com.github.wohaopa.MyCTMLib.compat.ae2.model.Ae2ModelLibrary;
 import com.github.wohaopa.MyCTMLib.compat.ae2.model.Ae2ModelLibrary.Snapshot;
 
-import appeng.api.implementations.tiles.IChestOrDrive;
-import appeng.api.implementations.tiles.IColorableTile;
 import appeng.api.util.AEColor;
 import appeng.tile.AEBaseTile;
 import appeng.tile.networking.TileWireless;
@@ -67,7 +65,7 @@ public class Ae2WorldRenderer {
                 int status = drive.getCellStatus(slot);
                 if (status == 0) continue;
                 float dx = (9 - (slot % 2) * 8) / 16F;
-                float dy = (13 - (slot / 2) * 3) / 16F;
+                float dy = (13 - (slot / 2f) * 3) / 16F;
                 ItemStack cell = drive.getStorageTypes()[slot];
                 part(
                     models.cells()
@@ -81,16 +79,15 @@ public class Ae2WorldRenderer {
             }
             return true;
         }
-        if (tile instanceof TileChest) {
-            IChestOrDrive storage = (IChestOrDrive) tile;
-            AEColor color = ((IColorableTile) tile).getColor();
+        if (tile instanceof TileChest storage) {
+            AEColor color = storage.getColor();
             boolean powered = storage.isPowered();
             setColors(color);
             part(devices.get("chest"), color.driveVariant, false);
             part(devices.get(powered ? "chest_lights_on" : "chest_lights_off"), 0xFFFFFF, powered);
             int status = storage.getCellStatus(0);
             if (status != 0) {
-                ItemStack cell = ((TileChest) tile).getStorageType();
+                ItemStack cell = storage.getStorageType();
                 part(
                     models.cells()
                         .get(cell, storage.getCellType(0)),

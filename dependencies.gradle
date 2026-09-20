@@ -38,6 +38,14 @@ dependencies {
 
     compileOnly("com.github.GTNewHorizons:ForestryMC:4.11.37:dev") { transitive = false }
     compileOnly("com.github.GTNewHorizons:bdlib:1.11.0-GTNH:dev") { transitive = false }
+    compileOnly("com.github.GTNewHorizons:OpenComputers:1.12.61-GTNH:api") { transitive = false }
+    devOnlyNonPublishable("com.github.GTNewHorizons:Applied-Energistics-2-Unofficial:rv3-beta-1069-GTNH:dev")
+    compileOnly("com.github.GTNewHorizons:ThaumicEnergistics:1.7.60-GTNH:dev") { transitive = false }
+    runtimeOnlyNonPublishable("com.github.GTNewHorizons:ThaumicEnergistics:1.7.60-GTNH:dev")
+    runtimeOnlyNonPublishable("thaumcraft:Thaumcraft:1.7.10-4.2.3.5:dev")
+
+    compileOnly(rfg.deobf("curse.maven:mekanism-268560:2475797")) { transitive = false }
+    compileOnly(rfg.deobf("curse.maven:rotarycraft-235596:4721191")) { transitive = false }
     runtimeOnlyNonPublishable("com.github.GTNewHorizons:ForestryMC:4.11.37:dev")
 
     runtimeOnlyNonPublishable("com.github.GTNewHorizons:NotEnoughItems:2.8.130-GTNH:dev")
