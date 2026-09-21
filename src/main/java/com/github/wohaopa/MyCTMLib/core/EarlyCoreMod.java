@@ -51,6 +51,10 @@ public class EarlyCoreMod implements IFMLLoadingPlugin, IEarlyMixinLoader, IFMLC
 
     @Override
     public String getMixinConfig() {
+        int v = Runtime.version()
+            .feature();
+        if (v >= 21) return "mixins.MyCTMLib.early.j21.json";
+        if (v >= 17) return "mixins.MyCTMLib.early.j17.json";
         return "mixins.MyCTMLib.early.json";
     }
 
