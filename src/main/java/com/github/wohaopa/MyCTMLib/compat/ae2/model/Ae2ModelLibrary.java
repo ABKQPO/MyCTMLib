@@ -13,7 +13,6 @@ import com.github.wohaopa.MyCTMLib.client.model.JsonBlockModel;
 import com.github.wohaopa.MyCTMLib.client.model.JsonBlockModel.BakedBlock;
 import com.github.wohaopa.MyCTMLib.client.resource.JsonModelResources;
 import com.github.wohaopa.MyCTMLib.client.resource.ResourcePackFeature;
-import com.github.wohaopa.MyCTMLib.mixins.early.AccessorTextureMap;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
@@ -45,7 +44,7 @@ public class Ae2ModelLibrary {
         snapshot = null;
         pending.clear();
         manifest = null;
-        if (((AccessorTextureMap) event.map).myctmlib$isSkippingFirstLoad()) return;
+        if (event.map.skipFirst) return;
         JsonModelResources resources = new JsonModelResources(
             Minecraft.getMinecraft()
                 .getResourceManager());

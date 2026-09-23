@@ -350,8 +350,7 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
             return false;
         }
 
-        JsonObject animationObj = ((AccessorSimpleResource) simple).getMcMetaJson()
-            .getAsJsonObject("animation");
+        JsonObject animationObj = simple.mcmetaJson.getAsJsonObject("animation");
         return animationObj.has("interpolate") && animationObj.getAsJsonPrimitive("interpolate")
             .getAsBoolean();
     }

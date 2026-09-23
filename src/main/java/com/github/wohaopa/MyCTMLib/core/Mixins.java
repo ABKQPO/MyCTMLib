@@ -7,9 +7,6 @@ public enum Mixins implements IMixins {
 
     MINECRAFT_CLIENT(new MixinBuilder("Client texture mixins")
         .addClientMixins(
-            "AccessorTextureAtlasSprite",
-            "AccessorTextureMap",
-            "AccessorSimpleResource",
             "MixinItemRenderer",
             "MixinRenderBlocks",
             "MixinTextureMap",

@@ -17,7 +17,6 @@ import net.minecraft.util.ResourceLocation;
 import com.github.wohaopa.MyCTMLib.client.ctm.CTMIconManager;
 import com.github.wohaopa.MyCTMLib.client.texture.InterpolatedIcon;
 import com.github.wohaopa.MyCTMLib.client.texture.NewTextureAtlasSprite;
-import com.github.wohaopa.MyCTMLib.mixins.early.AccessorSimpleResource;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -44,8 +43,7 @@ public class IC2TextureLoader {
                         ((TextureMap) iconRegister).setTextureEntry(textureName, currentBase);
 
                         if (simple.getMetadata("animation") != null) {
-                            JsonObject animationObj = ((AccessorSimpleResource) simple).getMcMetaJson()
-                                .getAsJsonObject("animation");
+                            JsonObject animationObj = simple.mcmetaJson.getAsJsonObject("animation");
                             if (animationObj.has("interpolate") && animationObj.getAsJsonPrimitive("interpolate")
                                 .getAsBoolean()) {
                                 InterpolatedIcon interpolatedIcon = new InterpolatedIcon(textureName, 2, 2);
@@ -54,8 +52,7 @@ public class IC2TextureLoader {
                             }
                         }
 
-                        JsonObject ctmObj = ((AccessorSimpleResource) simple).getMcMetaJson()
-                            .getAsJsonObject("myctmlib");
+                        JsonObject ctmObj = simple.mcmetaJson.getAsJsonObject("myctmlib");
 
                         JsonPrimitive connectionPrimitive = ctmObj.getAsJsonPrimitive("connection");
                         String connectTexture = null;
@@ -78,9 +75,7 @@ public class IC2TextureLoader {
 
                                 if (resourceCTM instanceof SimpleResource simpleCTM) {
                                     if (simpleCTM.getMetadata("animation") != null) {
-                                        JsonObject animationObjCTM = ((AccessorSimpleResource) simpleCTM)
-                                            .getMcMetaJson()
-                                            .getAsJsonObject("animation");
+                                        JsonObject animationObjCTM = simple.mcmetaJson.getAsJsonObject("animation");
                                         if (animationObjCTM.has("interpolate")
                                             && animationObjCTM.getAsJsonPrimitive("interpolate")
                                                 .getAsBoolean()) {
@@ -118,9 +113,7 @@ public class IC2TextureLoader {
 
                                 if (resourceAlt instanceof SimpleResource simpleAlt) {
                                     if (simpleAlt.getMetadata("animation") != null) {
-                                        JsonObject animationObjAlt = ((AccessorSimpleResource) simpleAlt)
-                                            .getMcMetaJson()
-                                            .getAsJsonObject("animation");
+                                        JsonObject animationObjAlt = simple.mcmetaJson.getAsJsonObject("animation");
                                         if (animationObjAlt.has("interpolate")
                                             && animationObjAlt.getAsJsonPrimitive("interpolate")
                                                 .getAsBoolean()) {
