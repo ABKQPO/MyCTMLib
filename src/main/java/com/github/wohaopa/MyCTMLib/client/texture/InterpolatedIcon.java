@@ -3,6 +3,8 @@ package com.github.wohaopa.MyCTMLib.client.texture;
 import net.minecraft.client.renderer.texture.TextureUtil;
 import net.minecraft.client.resources.data.AnimationMetadataSection;
 
+import com.github.wohaopa.MyCTMLib.mixins.early.AccessorTextureAtlasSprite;
+
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
@@ -35,7 +37,7 @@ public class InterpolatedIcon extends NewTextureAtlasSprite {
     }
 
     private void updateAnimationInterpolated() throws IllegalArgumentException {
-        AnimationMetadataSection animationMetadata = this.animationMetadata;
+        AnimationMetadataSection animationMetadata = ((AccessorTextureAtlasSprite) this).getAnimationMetadata();
         double d0 = 1.0D - tickCounter / (double) animationMetadata.getFrameTimeSingle(frameCounter);
         int i = animationMetadata.getFrameIndex(frameCounter);
         int j = animationMetadata.getFrameCount() == 0 ? framesTextureData.size() : animationMetadata.getFrameCount();

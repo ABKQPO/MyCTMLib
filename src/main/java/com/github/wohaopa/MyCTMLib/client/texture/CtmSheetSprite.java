@@ -10,6 +10,8 @@ import net.minecraft.client.resources.data.AnimationMetadataSection;
 import net.minecraft.util.IIcon;
 import net.minecraft.util.ResourceLocation;
 
+import com.github.wohaopa.MyCTMLib.mixins.early.AccessorTextureAtlasSprite;
+
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
@@ -130,7 +132,7 @@ public class CtmSheetSprite extends InterpolatedIcon {
         }
 
         // Reproduces the plain frame stepping, because the interpolation of the parent cannot be switched off.
-        AnimationMetadataSection animation = this.animationMetadata;
+        AnimationMetadataSection animation = ((AccessorTextureAtlasSprite) this).getAnimationMetadata();
         if (animation == null) {
             return;
         }

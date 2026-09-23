@@ -11,6 +11,7 @@ import net.minecraft.client.resources.ResourcePackRepository;
 
 import com.github.wohaopa.MyCTMLib.MyCTMLib;
 import com.github.wohaopa.MyCTMLib.client.resource.MyCTMLibMetadataSectionSerializer.MyCTMLibMetadataSection;
+import com.github.wohaopa.MyCTMLib.mixins.early.AccessorMinecraft;
 
 public class ResourcePackFeature implements IResourceManagerReloadListener {
 
@@ -44,7 +45,7 @@ public class ResourcePackFeature implements IResourceManagerReloadListener {
         if (pack == null) return null;
         try {
             MyCTMLibMetadataSection section = (MyCTMLibMetadataSection) pack
-                .getPackMetadata(Minecraft.getMinecraft().metadataSerializer_, "myctmlib");
+                .getPackMetadata(((AccessorMinecraft) Minecraft.getMinecraft()).getMetadataSerializer(), "myctmlib");
             return section == null ? null : section.getBooleanSetting(key);
         } catch (IOException | RuntimeException exception) {
             MyCTMLib.LOG.warn("Cannot read {} from resource pack {}", key, pack.getPackName(), exception);
