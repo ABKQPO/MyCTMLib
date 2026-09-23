@@ -7,12 +7,9 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 
 import com.google.gson.JsonObject;
 
-@Mixin(SimpleResource.class)
+@Mixin(value = SimpleResource.class, remap = true)
 public interface AccessorSimpleResource {
 
-    @Accessor("mcmetaJson")
+    @Accessor(value = "mcmetaJson", remap = true)
     JsonObject getMcMetaJson();
-
-    @Accessor("mcmetaJson")
-    void setMcmetaJson(JsonObject json);
 }

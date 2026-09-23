@@ -5,7 +5,7 @@ import net.minecraft.client.renderer.texture.TextureMap;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
-@Mixin(TextureMap.class)
+@Mixin(value = TextureMap.class, remap = true)
 public interface AccessorTextureMap {
 
     @Accessor(value = "skipFirst", remap = false)
