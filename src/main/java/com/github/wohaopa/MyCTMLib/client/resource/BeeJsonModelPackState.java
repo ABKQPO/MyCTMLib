@@ -12,7 +12,6 @@ import net.minecraft.client.resources.ResourcePackRepository;
 import com.github.wohaopa.MyCTMLib.MyCTMLib;
 import com.github.wohaopa.MyCTMLib.client.resource.MyCTMLibMetadataSectionSerializer.MyCTMLibMetadataSection;
 import com.github.wohaopa.MyCTMLib.config.ModConfig;
-import com.github.wohaopa.MyCTMLib.mixins.early.AccessorMinecraft;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
@@ -63,7 +62,7 @@ public class BeeJsonModelPackState implements IResourceManagerReloadListener {
     private boolean applySetting(IResourcePack pack) {
         try {
             MyCTMLibMetadataSection metadata = (MyCTMLibMetadataSection) pack
-                .getPackMetadata(((AccessorMinecraft) Minecraft.getMinecraft()).getMetadataSerializer(), "myctmlib");
+                .getPackMetadata(Minecraft.getMinecraft().metadataSerializer_, "myctmlib");
             if (metadata == null) {
                 return false;
             }

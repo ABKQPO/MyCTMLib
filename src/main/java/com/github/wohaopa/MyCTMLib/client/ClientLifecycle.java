@@ -10,7 +10,6 @@ import com.github.wohaopa.MyCTMLib.compat.ae2.Ae2Integration;
 import com.github.wohaopa.MyCTMLib.compat.forestry.ForestryIntegration;
 import com.github.wohaopa.MyCTMLib.compat.opencomputers.OpenComputersIntegration;
 import com.github.wohaopa.MyCTMLib.core.Mods;
-import com.github.wohaopa.MyCTMLib.mixins.early.AccessorMinecraft;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
@@ -20,7 +19,7 @@ public class ClientLifecycle {
 
     public static void preInit() {
         Minecraft minecraft = Minecraft.getMinecraft();
-        ((AccessorMinecraft) minecraft).getMetadataSerializer()
+        minecraft.metadataSerializer_
             .registerMetadataSectionType(new MyCTMLibMetadataSectionSerializer(), MyCTMLibMetadataSection.class);
         if (Mods.AppliedEnergistics2.isModLoaded()) {
             Ae2Integration.registerResources();

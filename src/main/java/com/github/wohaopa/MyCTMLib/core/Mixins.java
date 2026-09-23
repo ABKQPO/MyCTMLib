@@ -9,7 +9,6 @@ public enum Mixins implements IMixins {
         .addClientMixins(
             "AccessorTextureAtlasSprite",
             "AccessorTextureMap",
-            "AccessorMinecraft",
             "AccessorSimpleResource",
             "MixinItemRenderer",
             "MixinRenderBlocks",
