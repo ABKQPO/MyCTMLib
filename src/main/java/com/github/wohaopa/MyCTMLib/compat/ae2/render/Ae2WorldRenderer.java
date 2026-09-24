@@ -65,7 +65,7 @@ public class Ae2WorldRenderer {
                 int status = drive.getCellStatus(slot);
                 if (status == 0) continue;
                 float dx = (9 - (slot % 2) * 8) / 16F;
-                float dy = (13 - (slot / 2f) * 3) / 16F;
+                float dy = (13 - (slot / 2) * 3) / 16F;
                 ItemStack cell = drive.getStorageTypes()[slot];
                 part(
                     models.cells()
