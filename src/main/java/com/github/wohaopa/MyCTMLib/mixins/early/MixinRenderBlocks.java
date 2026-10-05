@@ -21,7 +21,7 @@ import com.github.wohaopa.MyCTMLib.client.ctm.Textures;
 import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 
-@Mixin(value = RenderBlocks.class, priority = 900, remap = true)
+@Mixin(value = RenderBlocks.class, priority = 1100, remap = true)
 public abstract class MixinRenderBlocks {
 
     @Shadow(remap = true)
@@ -60,6 +60,18 @@ public abstract class MixinRenderBlocks {
         renderCtmFace(block, x, y, z, icon, ForgeDirection.EAST, original);
     }
 
+    @WrapMethod(method = "getBlockIconFromSideAndMetadata")
+    private IIcon getBlockIconFromSideAndMetadata(Block block, int side, int metadata, Operation<IIcon> original) {
+        IIcon icon = block.getIcon(side, metadata);
+        return Textures.findConnectionManager(icon) == null ? original.call(block, side, metadata) : icon;
+    }
+
+    @WrapMethod(method = "getBlockIconFromSide")
+    private IIcon getBlockIconFromSide(Block block, int side, Operation<IIcon> original) {
+        IIcon icon = block.getBlockTextureFromSide(side);
+        return Textures.findConnectionManager(icon) == null ? original.call(block, side) : icon;
+    }
+
     @Inject(method = "renderBlockPane", at = @At("HEAD"), cancellable = true)
     private void renderMyCtmPane(BlockPane pane, int x, int y, int z, CallbackInfoReturnable<Boolean> cir) {
         if (blockAccess == null || hasOverrideBlockTexture()) {
@@ -96,13 +108,27 @@ public abstract class MixinRenderBlocks {
     @Unique
     private void renderCtmFace(Block block, double x, double y, double z, IIcon icon, ForgeDirection direction,
         Operation<Void> original) {
-        if (blockAccess == null || icon == null || hasOverrideBlockTexture()) {
+        if (icon == null || hasOverrideBlockTexture()) {
             original.call(block, x, y, z, icon);
             return;
         }
 
         RenderBlocks renderer = (RenderBlocks) (Object) this;
+        IIcon ctmIcon = icon;
         CTMIconManager manager = Textures.findConnectionManager(icon);
+        if (blockAccess == null) {
+            if (manager == null
+                || !Textures.renderInventoryBlock(renderer, block, x, y, z, ctmIcon, manager, direction)) {
+                original.call(block, x, y, z, icon);
+            }
+            return;
+        }
+        IIcon originalIcon = block.getIcon(blockAccess, (int) x, (int) y, (int) z, direction.ordinal());
+        CTMIconManager originalManager = Textures.findConnectionManager(originalIcon);
+        if (originalManager != null) {
+            ctmIcon = originalIcon;
+            manager = originalManager;
+        }
         double offset = LayeredFaceRender.nextOffset(renderer, direction, x, y, z, manager != null);
         double bound = myctmlib$getFaceBound(renderer, direction);
         if (offset != 0.0D) {
@@ -111,7 +137,7 @@ public abstract class MixinRenderBlocks {
         }
         try {
             if (manager == null
-                || !Textures.renderWorldBlock(renderer, blockAccess, block, x, y, z, icon, manager, direction)) {
+                || !Textures.renderWorldBlock(renderer, blockAccess, block, x, y, z, ctmIcon, manager, direction)) {
                 original.call(block, x, y, z, icon);
             }
         } finally {

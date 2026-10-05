@@ -79,6 +79,44 @@ public class Textures {
         return renderWorldBlock(renderBlocks, blockAccess, block, x, y, z, iIcon, manager, forgeDirection);
     }
 
+    public static boolean renderInventoryBlock(RenderBlocks renderBlocks, Block block, double x, double y, double z,
+        IIcon iIcon, CTMIconManager manager, ForgeDirection forgeDirection) {
+        if (renderBlocks == null || block == null
+            || iIcon == null
+            || manager == null
+            || forgeDirection == null
+            || !manager.hasConnectionTexture()) {
+            return false;
+        }
+
+        manager = selectTextureManager(
+            null,
+            (int) x,
+            (int) y,
+            (int) z,
+            normalizeIconName(iIcon.getIconName()),
+            manager);
+        int[] iconIdx = threadLocalIconIdx.get();
+        if (manager.hasFaceTiles()) {
+            int tile = selectInventoryTile(manager, (int) x, (int) y, (int) z, forgeDirection);
+            if (tile < 0) {
+                return false;
+            }
+            iconIdx[0] = tile;
+            return CtmFaceRenderer.render(renderBlocks, block, x, y, z, manager, forgeDirection, iconIdx);
+        }
+
+        if (manager.hasFaceTile()) {
+            return CtmFaceRenderer.render(renderBlocks, block, x, y, z, manager, forgeDirection, iconIdx);
+        }
+
+        iconIdx[0] = 17;
+        iconIdx[1] = 18;
+        iconIdx[2] = 19;
+        iconIdx[3] = 20;
+        return CtmFaceRenderer.render(renderBlocks, block, x, y, z, manager, forgeDirection, iconIdx);
+    }
+
     public static boolean renderWorldBlock(RenderBlocks renderBlocks, IBlockAccess blockAccess, Block block, double x,
         double y, double z, IIcon iIcon, CTMIconManager manager, ForgeDirection forgeDirection) {
         if (renderBlocks == null || blockAccess == null
@@ -137,6 +175,28 @@ public class Textures {
 
         int randomIndex = FastRandom.getRandomIndex(worldSeed, x, y, z, randomManagers.size() + 1);
         return randomIndex < randomManagers.size() ? randomManagers.get(randomIndex) : primaryManager;
+    }
+
+    private static int selectInventoryTile(CTMIconManager manager, int x, int y, int z, ForgeDirection forgeDirection) {
+        if (manager.usesRepeatTiles()) {
+            return manager.selectRepeatTile(x, y, z, forgeDirection);
+        }
+        if (manager.usesRandomTiles()) {
+            return manager.selectRandomTile(x, y, z, forgeDirection);
+        }
+        if (manager.usesTopTiles()) {
+            return manager.selectTopTile(false);
+        }
+
+        int slotMask = manager.getRequiredConnections(forgeDirection);
+        if (slotMask == 0) {
+            return -1;
+        }
+        boolean[] connections = threadLocalConnections.get();
+        for (int i = 0; i < connections.length; i++) {
+            connections[i] = false;
+        }
+        return manager.selectFaceTile(connections, forgeDirection, slotMask);
     }
 
     /**
