@@ -3,6 +3,7 @@ package com.github.wohaopa.MyCTMLib.compat.forestry;
 import java.util.IdentityHashMap;
 import java.util.Map;
 
+import net.minecraft.client.renderer.entity.RenderItem;
 import net.minecraft.client.resources.IResourceManager;
 import net.minecraft.client.resources.IResourceManagerReloadListener;
 import net.minecraft.item.Item;
@@ -10,6 +11,8 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.IIcon;
 import net.minecraftforge.client.IItemRenderer;
 import net.minecraftforge.client.MinecraftForgeClient;
+
+import org.lwjgl.opengl.GL11;
 
 import com.github.wohaopa.MyCTMLib.client.model.JsonItemModel;
 import com.github.wohaopa.MyCTMLib.client.model.JsonItemModel.BakedItem;
@@ -113,7 +116,7 @@ public class BeeJsonModelItemRenderer implements SinglePassItemRenderer, IResour
         }
         BakedItem model = getModel(beeType);
         if (model != null) {
-            modelRenderer.renderWithOverlay(type, stack, model, overlay);
+            renderWithEntityRotation(type, () -> modelRenderer.renderWithOverlay(type, stack, model, overlay));
         }
     }
 
@@ -140,7 +143,19 @@ public class BeeJsonModelItemRenderer implements SinglePassItemRenderer, IResour
             return;
         }
 
-        modelRenderer.render(type, stack, model);
+        renderWithEntityRotation(type, () -> modelRenderer.render(type, stack, model));
+    }
+
+    private void renderWithEntityRotation(ItemRenderType type, Runnable render) {
+        GL11.glPushMatrix();
+        try {
+            if (type == ItemRenderType.ENTITY && RenderItem.renderInFrame) {
+                GL11.glRotatef(180.0F, 0.0F, 1.0F, 0.0F);
+            }
+            render.run();
+        } finally {
+            GL11.glPopMatrix();
+        }
     }
 
     @Optional.Method(modid = "Forestry")
