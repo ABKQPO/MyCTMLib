@@ -8,8 +8,6 @@ import net.minecraftforge.common.util.ForgeDirection;
  */
 public class LayeredFaceRender implements AutoCloseable {
 
-    // Two compact vertex units remain distinct after Angelica quantizes either face direction.
-    private static final double LAYER_SPACING = 1.0D / 1024.0D;
     private static final ThreadLocal<LayeredFaceRender> scopes = ThreadLocal
         .withInitial(() -> new LayeredFaceRender(null));
 
@@ -20,8 +18,8 @@ public class LayeredFaceRender implements AutoCloseable {
     private double x;
     private double y;
     private double z;
-    private int layerCount;
-    private boolean hasCtm;
+    private boolean tessellationKnown;
+    private boolean splitIntoQuadrants;
 
     private LayeredFaceRender(LayeredFaceRender parent) {
         this.parent = parent;
@@ -48,26 +46,32 @@ public class LayeredFaceRender implements AutoCloseable {
     /**
      * Counts original face calls only; CTM's internal quadrant calls must bypass this method.
      */
-    public static double nextOffset(RenderBlocks renderer, ForgeDirection direction, double x, double y, double z,
-        boolean ctm) {
+    public static void recordTessellation(RenderBlocks renderer, ForgeDirection direction, double x, double y, double z,
+        boolean split) {
         LayeredFaceRender scope = scopes.get();
-        if (scope.renderer != renderer || scope.direction != direction
-            || scope.x != x
-            || scope.y != y
-            || scope.z != z) {
-            return 0.0D;
+        if (!scope.matches(renderer, direction, x, y, z) || scope.tessellationKnown) {
+            return;
         }
-        int layer = scope.layerCount++;
-        scope.hasCtm |= ctm;
-        return scope.hasCtm ? layer * LAYER_SPACING : 0.0D;
+        scope.tessellationKnown = true;
+        scope.splitIntoQuadrants = split;
+    }
+
+    public static boolean needsQuadrantSplit(RenderBlocks renderer, ForgeDirection direction, double x, double y,
+        double z) {
+        LayeredFaceRender scope = scopes.get();
+        return scope.matches(renderer, direction, x, y, z) && scope.tessellationKnown && scope.splitIntoQuadrants;
+    }
+
+    private boolean matches(RenderBlocks renderer, ForgeDirection direction, double x, double y, double z) {
+        return this.renderer == renderer && this.direction == direction && this.x == x && this.y == y && this.z == z;
     }
 
     @Override
     public void close() {
         renderer = null;
         direction = null;
-        layerCount = 0;
-        hasCtm = false;
+        tessellationKnown = false;
+        splitIntoQuadrants = false;
         if (parent != null) {
             scopes.set(parent);
         }

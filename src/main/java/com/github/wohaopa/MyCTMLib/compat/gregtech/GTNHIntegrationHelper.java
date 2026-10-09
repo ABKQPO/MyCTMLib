@@ -9,20 +9,25 @@ import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
-import com.github.wohaopa.MyCTMLib.mixins.late.AccessorGTRenderedTexture;
+import com.github.wohaopa.MyCTMLib.mixins.late.AccessorGTMultiTextureRender;
+import com.github.wohaopa.MyCTMLib.mixins.late.AccessorGTSidedTextureRender;
 import com.gtnewhorizon.gtnhlib.client.renderer.TessellatorManager;
 
+import gregtech.api.enums.Textures;
+import gregtech.api.interfaces.IBlockContainer;
 import gregtech.api.interfaces.IBlockWithClientMeta;
 import gregtech.api.interfaces.IBlockWithTextures;
-import gregtech.api.interfaces.IIconContainer;
 import gregtech.api.interfaces.ITexture;
 import gregtech.api.interfaces.tileentity.ITexturedTileEntity;
 import gregtech.common.blocks.BlockCasings5;
 import gregtech.common.blocks.BlockMachines;
-import gregtech.common.render.GTCopiedBlockTextureRender;
-import gregtech.common.render.GTRenderedTexture;
+import gregtech.common.render.GTMultiTextureRender;
+import gregtech.common.render.GTSidedTextureRender;
+import gregtech.common.render.IIconTexture;
 
 public class GTNHIntegrationHelper {
+
+    private static final int MAX_WRAPPER_DEPTH = 8;
 
     public static Tessellator getGTNHLibTessellator() {
         return TessellatorManager.get();
@@ -43,26 +48,11 @@ public class GTNHIntegrationHelper {
         if (block instanceof IBlockWithTextures texturedBlock) {
             ITexture[][] textures = texturedBlock.getTextures(blockMetadata);
             if (textures != null && forgeDirection.ordinal() < textures.length) {
-                ITexture[] sideTextures = textures[forgeDirection.ordinal()];
-                if (sideTextures != null) {
-                    int textureIndex = 0;
-                    if (block instanceof BlockCasings5 && blockMetadata >= 16) {
-                        textureIndex = sideTextures.length > 1 ? 1 : 0;
-                    }
-                    if (sideTextures.length > textureIndex) {
-                        ITexture selectedTexture = sideTextures[textureIndex];
-
-                        if (selectedTexture instanceof GTCopiedBlockTextureRender gtCopiedBlockTextureRender) {
-                            return gtCopiedBlockTextureRender.getBlock()
-                                .getIcon(forgeDirection.ordinal(), blockMetadata);
-                        } else if (selectedTexture instanceof GTRenderedTexture gtRenderedTexture) {
-                            IIconContainer container = ((AccessorGTRenderedTexture) gtRenderedTexture)
-                                .getIconContainer();
-                            if (container != null) {
-                                return container.getIcon();
-                            }
-                        }
-                    }
+                // Active coils keep their connection texture on the foreground layer, every other block on the base.
+                int layer = block instanceof BlockCasings5 && blockMetadata >= 16 ? 1 : 0;
+                IIcon icon = resolveLayerIcon(textures[forgeDirection.ordinal()], layer, forgeDirection);
+                if (icon != null) {
+                    return icon;
                 }
             }
         }
@@ -70,16 +60,60 @@ public class GTNHIntegrationHelper {
         if (block instanceof BlockMachines) {
             TileEntity tileEntity = blockAccess.getTileEntity(x, y, z);
             if (tileEntity instanceof ITexturedTileEntity texturedTileEntity) {
-                ITexture[] iTextures = texturedTileEntity.getTexture(block, forgeDirection);
-                for (ITexture texture : iTextures) {
-                    if (texture instanceof GTCopiedBlockTextureRender gtCopiedBlockTextureRender) {
-                        return gtCopiedBlockTextureRender.getBlock()
-                            .getIcon(forgeDirection.ordinal(), gtCopiedBlockTextureRender.getMeta());
-                    }
+                return resolveLayerIcon(texturedTileEntity.getTexture(block, forgeDirection), 0, forgeDirection);
+            }
+            return null;
+        }
+
+        return block.getIcon(blockAccess, x, y, z, forgeDirection.ordinal());
+    }
+
+    private static IIcon resolveLayerIcon(ITexture[] layers, int preferredLayer, ForgeDirection side) {
+        if (layers == null || layers.length == 0) {
+            return null;
+        }
+        int index = preferredLayer < layers.length ? preferredLayer : 0;
+        return resolveIcon(layers[index], side, 0);
+    }
+
+    private static IIcon resolveIcon(ITexture texture, ForgeDirection side, int depth) {
+        if (texture == null || depth > MAX_WRAPPER_DEPTH) {
+            return null;
+        }
+
+        if (texture instanceof GTSidedTextureRender sidedTexture) {
+            ITexture[] sides = ((AccessorGTSidedTextureRender) sidedTexture).getTextures();
+            if (sides == null || side.ordinal() >= sides.length) {
+                return null;
+            }
+            return resolveIcon(sides[side.ordinal()], side, depth + 1);
+        }
+
+        if (texture instanceof GTMultiTextureRender multiTexture) {
+            ITexture[] layers = ((AccessorGTMultiTextureRender) multiTexture).getTextures();
+            if (layers == null) {
+                return null;
+            }
+            for (ITexture layer : layers) {
+                IIcon icon = resolveIcon(layer, side, depth + 1);
+                if (icon != null) {
+                    return icon;
                 }
             }
-        } else {
-            return block.getIcon(blockAccess, x, y, z, forgeDirection.ordinal());
+            return null;
+        }
+
+        // Covers both GTRenderedTexture and GTCopiedBlockTextureRender, and any subclass of either. A null context
+        // keeps GregTech from re-entering the mcpatcher lookup, so this stays the raw atlas icon.
+        if (texture instanceof IIconTexture iconTexture) {
+            IIcon icon = iconTexture.getIcon(side.ordinal(), null);
+            return icon == Textures.InvisibleIcon.INVISIBLE_ICON ? null : icon;
+        }
+
+        // Textures that only expose the block they copy, such as the mcpatcher backed casing texture.
+        if (texture instanceof IBlockContainer blockContainer) {
+            Block copiedBlock = blockContainer.getBlock();
+            return copiedBlock == null ? null : copiedBlock.getIcon(side.ordinal(), blockContainer.getMeta());
         }
 
         return null;

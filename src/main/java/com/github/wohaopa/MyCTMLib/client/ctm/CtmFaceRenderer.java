@@ -24,6 +24,7 @@ public class CtmFaceRenderer {
         double maxY = renderBlocks.renderMaxY;
         double maxZ = renderBlocks.renderMaxZ;
         IIcon wholeFace = manager.getWholeFaceIcon(iconIndices);
+        LayeredFaceRender.recordTessellation(renderBlocks, direction, x, y, z, wholeFace == null);
         if (wholeFace != null) {
             // Match the split path's texture orientation on the north and east faces.
             IIcon previousWholeOverride = renderBlocks.overrideBlockTexture;
@@ -71,6 +72,41 @@ public class CtmFaceRenderer {
             renderBlocks.field_152631_f = previousFaceFlip;
             renderBlocks.setRenderBounds(minX, minY, minZ, maxX, maxY, maxZ);
         }
+    }
+
+    public static void renderMatchingSplitLayer(RenderBlocks renderBlocks, Block block, double x, double y, double z,
+        IIcon icon, ForgeDirection direction, FaceDrawer drawer) {
+        double minX = renderBlocks.renderMinX;
+        double minY = renderBlocks.renderMinY;
+        double minZ = renderBlocks.renderMinZ;
+        double maxX = renderBlocks.renderMaxX;
+        double maxY = renderBlocks.renderMaxY;
+        double maxZ = renderBlocks.renderMaxZ;
+
+        FaceLighting lighting = renderBlocks.enableAO ? faceLighting.get() : null;
+        if (lighting != null) {
+            lighting.capture(renderBlocks);
+        }
+
+        try {
+            for (int quadrant = 0; quadrant < 4; quadrant++) {
+                if (lighting != null) {
+                    lighting.apply(renderBlocks, direction.ordinal(), quadrant);
+                }
+                setQuadrantBounds(renderBlocks, direction.ordinal(), quadrant, minX, minY, minZ, maxX, maxY, maxZ);
+                drawer.draw(block, x, y, z, icon);
+            }
+        } finally {
+            if (lighting != null) {
+                lighting.restore(renderBlocks);
+            }
+            renderBlocks.setRenderBounds(minX, minY, minZ, maxX, maxY, maxZ);
+        }
+    }
+
+    public interface FaceDrawer {
+
+        void draw(Block block, double x, double y, double z, IIcon icon);
     }
 
     private static void renderFace(RenderBlocks renderBlocks, Block block, double x, double y, double z, IIcon icon,

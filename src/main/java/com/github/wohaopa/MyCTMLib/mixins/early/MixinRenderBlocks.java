@@ -15,6 +15,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import com.github.wohaopa.MyCTMLib.client.ctm.CTMIconManager;
+import com.github.wohaopa.MyCTMLib.client.ctm.CtmFaceRenderer;
 import com.github.wohaopa.MyCTMLib.client.ctm.LayeredFaceRender;
 import com.github.wohaopa.MyCTMLib.client.ctm.PaneCtmRenderer;
 import com.github.wohaopa.MyCTMLib.client.ctm.Textures;
@@ -129,47 +130,16 @@ public abstract class MixinRenderBlocks {
             ctmIcon = originalIcon;
             manager = originalManager;
         }
-        double offset = LayeredFaceRender.nextOffset(renderer, direction, x, y, z, manager != null);
-        double bound = myctmlib$getFaceBound(renderer, direction);
-        if (offset != 0.0D) {
-            int normal = direction.offsetX + direction.offsetY + direction.offsetZ;
-            myctmlib$setFaceBound(renderer, direction, bound + normal * offset);
+        if (manager != null
+            && Textures.renderWorldBlock(renderer, blockAccess, block, x, y, z, ctmIcon, manager, direction)) {
+            return;
         }
-        try {
-            if (manager == null
-                || !Textures.renderWorldBlock(renderer, blockAccess, block, x, y, z, ctmIcon, manager, direction)) {
-                original.call(block, x, y, z, icon);
-            }
-        } finally {
-            if (offset != 0.0D) {
-                myctmlib$setFaceBound(renderer, direction, bound);
-            }
+        // A plain layer stacked on a connection texture that split the face has to be split the same way. Sharing
+        // vertices is what keeps the two coplanar layers apart in the depth buffer however far away the block is.
+        if (LayeredFaceRender.needsQuadrantSplit(renderer, direction, x, y, z)) {
+            CtmFaceRenderer.renderMatchingSplitLayer(renderer, block, x, y, z, icon, direction, original::call);
+            return;
         }
-    }
-
-    @Unique
-    private static double myctmlib$getFaceBound(RenderBlocks renderer, ForgeDirection direction) {
-        return switch (direction) {
-            case DOWN -> renderer.renderMinY;
-            case UP -> renderer.renderMaxY;
-            case NORTH -> renderer.renderMinZ;
-            case SOUTH -> renderer.renderMaxZ;
-            case WEST -> renderer.renderMinX;
-            case EAST -> renderer.renderMaxX;
-            default -> throw new IllegalArgumentException("Unsupported layered face: " + direction);
-        };
-    }
-
-    @Unique
-    private static void myctmlib$setFaceBound(RenderBlocks renderer, ForgeDirection direction, double bound) {
-        switch (direction) {
-            case DOWN -> renderer.renderMinY = bound;
-            case UP -> renderer.renderMaxY = bound;
-            case NORTH -> renderer.renderMinZ = bound;
-            case SOUTH -> renderer.renderMaxZ = bound;
-            case WEST -> renderer.renderMinX = bound;
-            case EAST -> renderer.renderMaxX = bound;
-            default -> throw new IllegalArgumentException("Unsupported layered face: " + direction);
-        }
+        original.call(block, x, y, z, icon);
     }
 }
