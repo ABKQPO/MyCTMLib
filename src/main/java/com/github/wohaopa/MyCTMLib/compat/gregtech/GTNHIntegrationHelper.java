@@ -68,6 +68,10 @@ public class GTNHIntegrationHelper {
         return block.getIcon(blockAccess, x, y, z, forgeDirection.ordinal());
     }
 
+    public static IIcon resolveTextureIcon(ITexture texture, ForgeDirection side) {
+        return resolveIcon(texture, side, 0);
+    }
+
     private static IIcon resolveLayerIcon(ITexture[] layers, int preferredLayer, ForgeDirection side) {
         if (layers == null || layers.length == 0) {
             return null;

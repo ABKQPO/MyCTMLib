@@ -115,27 +115,19 @@ public abstract class MixinRenderBlocks {
         }
 
         RenderBlocks renderer = (RenderBlocks) (Object) this;
-        IIcon ctmIcon = icon;
         CTMIconManager manager = Textures.findConnectionManager(icon);
         if (blockAccess == null) {
-            if (manager == null
-                || !Textures.renderInventoryBlock(renderer, block, x, y, z, ctmIcon, manager, direction)) {
+            if (manager == null || !Textures.renderInventoryBlock(renderer, block, x, y, z, icon, manager, direction)) {
                 original.call(block, x, y, z, icon);
             }
             return;
         }
-        IIcon originalIcon = block.getIcon(blockAccess, (int) x, (int) y, (int) z, direction.ordinal());
-        CTMIconManager originalManager = Textures.findConnectionManager(originalIcon);
-        if (originalManager != null) {
-            ctmIcon = originalIcon;
-            manager = originalManager;
-        }
         if (manager != null
-            && Textures.renderWorldBlock(renderer, blockAccess, block, x, y, z, ctmIcon, manager, direction)) {
+            && Textures.renderWorldBlock(renderer, blockAccess, block, x, y, z, icon, manager, direction)) {
             return;
         }
-        // A plain layer stacked on a connection texture that split the face has to be split the same way. Sharing
-        // vertices is what keeps the two coplanar layers apart in the depth buffer however far away the block is.
+        // A layer stacked on a connection texture that split the face has to be split the same way. Sharing vertices
+        // is what keeps the coplanar layers apart in the depth buffer however far away the block is.
         if (LayeredFaceRender.needsQuadrantSplit(renderer, direction, x, y, z)) {
             CtmFaceRenderer.renderMatchingSplitLayer(renderer, block, x, y, z, icon, direction, original::call);
             return;

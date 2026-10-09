@@ -24,8 +24,10 @@ public class CtmFaceRenderer {
         double maxY = renderBlocks.renderMaxY;
         double maxZ = renderBlocks.renderMaxZ;
         IIcon wholeFace = manager.getWholeFaceIcon(iconIndices);
-        LayeredFaceRender.recordTessellation(renderBlocks, direction, x, y, z, wholeFace == null);
-        if (wholeFace != null) {
+        // Another layer of this face is drawn as four quadrant quads, so this one has to match it even though one
+        // quad would have covered it. Layers that disagree on their tessellation fight at every distance.
+        boolean forceSplit = LayeredFaceRender.needsQuadrantSplit(renderBlocks, direction, x, y, z);
+        if (wholeFace != null && !forceSplit) {
             // Match the split path's texture orientation on the north and east faces.
             IIcon previousWholeOverride = renderBlocks.overrideBlockTexture;
             boolean previousWholeFlip = renderBlocks.field_152631_f;
@@ -40,6 +42,17 @@ public class CtmFaceRenderer {
             return true;
         }
 
+        // A layout that covers a face with one tile has no per quadrant indices, so its quarters are taken from the
+        // tile itself when such a face still has to be split.
+        int wholeFaceTile = -1;
+        if (wholeFace != null) {
+            if (manager.hasFaceTiles()) {
+                wholeFaceTile = iconIndices[0];
+            } else if (manager.hasFaceTile()) {
+                wholeFaceTile = 0;
+            }
+        }
+
         IIcon previousOverride = renderBlocks.overrideBlockTexture;
         boolean previousFaceFlip = renderBlocks.field_152631_f;
         FaceLighting lighting = renderBlocks.enableAO ? faceLighting.get() : null;
@@ -49,7 +62,9 @@ public class CtmFaceRenderer {
 
         try {
             for (int quadrant = 0; quadrant < 4; quadrant++) {
-                IIcon sourceIcon = manager.getIcon(iconIndices[QUADRANT_ORDER[quadrant]]);
+                IIcon sourceIcon = wholeFaceTile >= 0
+                    ? manager.getTileQuadrantIcon(wholeFaceTile, QUADRANT_ORDER[quadrant])
+                    : manager.getIcon(iconIndices[QUADRANT_ORDER[quadrant]]);
                 if (sourceIcon == null) {
                     continue;
                 }

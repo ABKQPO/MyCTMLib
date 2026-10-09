@@ -161,6 +161,38 @@ public class Textures {
         return CtmFaceRenderer.render(renderBlocks, block, x, y, z, manager, forgeDirection, iconIdx);
     }
 
+    public static boolean facePlansQuadrantSplit(IBlockAccess blockAccess, int x, int y, int z, IIcon iIcon,
+        ForgeDirection forgeDirection) {
+        if (blockAccess == null || iIcon == null || forgeDirection == null) {
+            return false;
+        }
+
+        CTMIconManager manager = findConnectionManager(iIcon);
+        if (manager == null || !manager.hasConnectionTexture()) {
+            return false;
+        }
+
+        String icon = normalizeIconName(iIcon.getIconName());
+        manager = selectTextureManager(blockAccess, x, y, z, icon, manager);
+
+        // The tile driven and per face layouts always cover a face with a single tile.
+        if (manager.hasFaceTiles() || manager.hasFaceTile()) {
+            return false;
+        }
+
+        int[] iconIdx = new int[4];
+        if (manager.detectionDiameter == CTMIconManager.DetectionDiameter.DIAMETER_1) {
+            iconIdx[0] = 17;
+            iconIdx[1] = 18;
+            iconIdx[2] = 19;
+            iconIdx[3] = 20;
+        } else {
+            buildConnect(blockAccess, x, y, z, iIcon, forgeDirection, iconIdx);
+        }
+
+        return manager.getWholeFaceIcon(iconIdx) == null;
+    }
+
     public static CTMIconManager selectTextureManager(IBlockAccess blockAccess, int x, int y, int z, String iconName,
         CTMIconManager primaryManager) {
         List<CTMIconManager> randomManagers = ctmRandomMap.get(normalizeIconName(iconName));

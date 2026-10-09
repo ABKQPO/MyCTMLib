@@ -18,15 +18,14 @@ public class LayeredFaceRender implements AutoCloseable {
     private double x;
     private double y;
     private double z;
-    private boolean tessellationKnown;
     private boolean splitIntoQuadrants;
 
     private LayeredFaceRender(LayeredFaceRender parent) {
         this.parent = parent;
     }
 
-    public static LayeredFaceRender begin(RenderBlocks renderer, ForgeDirection direction, double x, double y,
-        double z) {
+    public static LayeredFaceRender begin(RenderBlocks renderer, ForgeDirection direction, double x, double y, double z,
+        boolean splitIntoQuadrants) {
         LayeredFaceRender scope = scopes.get();
         if (scope.renderer != null) {
             if (scope.child == null) {
@@ -40,26 +39,18 @@ public class LayeredFaceRender implements AutoCloseable {
         scope.x = x;
         scope.y = y;
         scope.z = z;
+        scope.splitIntoQuadrants = splitIntoQuadrants;
         return scope;
     }
 
     /**
-     * Counts original face calls only; CTM's internal quadrant calls must bypass this method.
+     * @return whether a layer drawn on this face has to be split into quadrants to share its vertices with the rest of
+     *         the stack. False outside a layered face, where a single quad matches what vanilla would have drawn.
      */
-    public static void recordTessellation(RenderBlocks renderer, ForgeDirection direction, double x, double y, double z,
-        boolean split) {
-        LayeredFaceRender scope = scopes.get();
-        if (!scope.matches(renderer, direction, x, y, z) || scope.tessellationKnown) {
-            return;
-        }
-        scope.tessellationKnown = true;
-        scope.splitIntoQuadrants = split;
-    }
-
     public static boolean needsQuadrantSplit(RenderBlocks renderer, ForgeDirection direction, double x, double y,
         double z) {
         LayeredFaceRender scope = scopes.get();
-        return scope.matches(renderer, direction, x, y, z) && scope.tessellationKnown && scope.splitIntoQuadrants;
+        return scope.splitIntoQuadrants && scope.matches(renderer, direction, x, y, z);
     }
 
     private boolean matches(RenderBlocks renderer, ForgeDirection direction, double x, double y, double z) {
@@ -70,7 +61,6 @@ public class LayeredFaceRender implements AutoCloseable {
     public void close() {
         renderer = null;
         direction = null;
-        tessellationKnown = false;
         splitIntoQuadrants = false;
         if (parent != null) {
             scopes.set(parent);
