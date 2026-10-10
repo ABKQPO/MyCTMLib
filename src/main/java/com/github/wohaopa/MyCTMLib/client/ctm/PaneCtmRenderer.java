@@ -502,6 +502,10 @@ public class PaneCtmRenderer {
     private static void drawHorizontalEdges(IBlockAccess blockAccess, BlockPane pane, int x, int y, int z, IIcon icon,
         CTMIconManager manager, boolean west, boolean east, boolean north, boolean south, double eastWestMinX,
         double eastWestMaxX, double northSouthMinZ, double northSouthMaxZ) {
+        IIcon trim = pane.func_150097_e();
+        if (trim == null) {
+            trim = icon;
+        }
         int metadata = blockAccess.getBlockMetadata(x, y, z);
         if (!isMatchingPane(blockAccess, pane, x, y + 1, z, metadata)) {
             drawHorizontalTopOrBottom(
@@ -509,7 +513,7 @@ public class PaneCtmRenderer {
                 x,
                 y,
                 z,
-                icon,
+                trim,
                 manager,
                 ForgeDirection.UP,
                 y + 1.0D + EDGE_OFFSET,
@@ -528,7 +532,7 @@ public class PaneCtmRenderer {
                 x,
                 y,
                 z,
-                icon,
+                trim,
                 manager,
                 ForgeDirection.DOWN,
                 y - EDGE_OFFSET,
@@ -783,31 +787,42 @@ public class PaneCtmRenderer {
 
     private static void drawFaceY(IBlockAccess blockAccess, int x, int y, int z, IIcon icon, CTMIconManager manager,
         ForgeDirection direction, double minX, double maxX, double minZ, double maxZ, double faceY) {
-        int[] indices = Textures.threadLocalIconIdx.get();
-        int tile = -1;
-        if (manager.hasFaceTiles()) {
-            tile = Textures.selectFaceTile(blockAccess, x, y, z, icon, manager, direction);
-        } else if (manager.hasFaceTile()) {
-            tile = 0;
-        } else {
-            Textures.buildConnect(blockAccess, x, y, z, icon, direction, indices);
+        if (minX >= maxX || minZ >= maxZ) {
+            return;
         }
         Tessellator tessellator = Tessellator.instance;
-        for (int horizontal = 0; horizontal < 2; horizontal++) {
-            for (int vertical = 0; vertical < 2; vertical++) {
-                double left = Math.max(minX, x + horizontal * 0.5D);
-                double right = Math.min(maxX, x + (horizontal + 1) * 0.5D);
-                double near = Math.max(minZ, z + vertical * 0.5D);
-                double far = Math.min(maxZ, z + (vertical + 1) * 0.5D);
-                if (left >= right || near >= far) {
-                    continue;
-                }
-                IIcon quadrant = getPaneQuadrant(manager, tile, direction, horizontal, vertical, indices);
-                if (quadrant == null) {
-                    continue;
-                }
-                drawFaceY(tessellator, direction, left, right, near, far, faceY, quadrant, horizontal, vertical, x, z);
-            }
+        double minU = minX - x;
+        double maxU = maxX - x;
+        double minV = minZ - z;
+        double maxV = maxZ - z;
+        if (direction == ForgeDirection.DOWN) {
+            drawQuad(
+                tessellator,
+                minX,
+                faceY,
+                maxZ,
+                getU(icon, minU),
+                getV(icon, maxV),
+                maxX,
+                faceY,
+                minZ,
+                getU(icon, maxU),
+                getV(icon, minV),
+                true);
+        } else {
+            drawQuad(
+                tessellator,
+                maxX,
+                faceY,
+                maxZ,
+                getU(icon, maxU),
+                getV(icon, maxV),
+                minX,
+                faceY,
+                minZ,
+                getU(icon, minU),
+                getV(icon, minV),
+                true);
         }
     }
 
@@ -912,43 +927,6 @@ public class PaneCtmRenderer {
                 getU(icon, 1.0D - minZFraction),
                 getV(icon, 1.0D - minYFraction),
                 twoSided);
-        }
-    }
-
-    private static void drawFaceY(Tessellator tessellator, ForgeDirection direction, double minX, double maxX,
-        double minZ, double maxZ, double y, IIcon icon, int horizontal, int vertical, int x, int z) {
-        double minXFraction = getTileFraction(minX, x + horizontal * 0.5D);
-        double maxXFraction = getTileFraction(maxX, x + horizontal * 0.5D);
-        double minZFraction = getTileFraction(minZ, z + vertical * 0.5D);
-        double maxZFraction = getTileFraction(maxZ, z + vertical * 0.5D);
-        if (direction == ForgeDirection.DOWN) {
-            drawQuad(
-                tessellator,
-                minX,
-                y,
-                maxZ,
-                getU(icon, minXFraction),
-                getV(icon, maxZFraction),
-                maxX,
-                y,
-                minZ,
-                getU(icon, maxXFraction),
-                getV(icon, minZFraction),
-                true);
-        } else {
-            drawQuad(
-                tessellator,
-                maxX,
-                y,
-                maxZ,
-                getU(icon, maxXFraction),
-                getV(icon, maxZFraction),
-                minX,
-                y,
-                minZ,
-                getU(icon, minXFraction),
-                getV(icon, minZFraction),
-                true);
         }
     }
 

@@ -44,7 +44,11 @@ public enum Mixins implements IMixins {
         .addCommonMixins("AccessorGTSidedTextureRender", "AccessorGTMultiTextureRender")
         .addClientMixins("MixinSBRWorldContext")
         .setPhase(Phase.LATE)
-        .addRequiredMod(Mods.Gregtech));
+        .addRequiredMod(Mods.Gregtech)),
+
+    ANGELICA(new MixinBuilder("Angelica connected texture priority mixin").addClientMixins("MixinCTMUtils")
+        .setPhase(Phase.LATE)
+        .addRequiredMod(Mods.Angelica));
 
     private final MixinBuilder builder;
 

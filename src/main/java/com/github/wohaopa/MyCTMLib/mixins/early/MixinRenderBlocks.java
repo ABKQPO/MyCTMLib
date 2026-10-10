@@ -19,6 +19,7 @@ import com.github.wohaopa.MyCTMLib.client.ctm.CtmFaceRenderer;
 import com.github.wohaopa.MyCTMLib.client.ctm.LayeredFaceRender;
 import com.github.wohaopa.MyCTMLib.client.ctm.PaneCtmRenderer;
 import com.github.wohaopa.MyCTMLib.client.ctm.Textures;
+import com.github.wohaopa.MyCTMLib.compat.angelica.AngelicaCtmBridge;
 import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 
@@ -122,16 +123,22 @@ public abstract class MixinRenderBlocks {
             }
             return;
         }
-        if (manager != null
-            && Textures.renderWorldBlock(renderer, blockAccess, block, x, y, z, icon, manager, direction)) {
-            return;
+
+        IIcon faceIcon = icon;
+        if (manager != null) {
+            if (Textures.renderWorldBlock(renderer, blockAccess, block, x, y, z, icon, manager, direction)) {
+                AngelicaCtmBridge.dropQueuedFace();
+                return;
+            }
+            faceIcon = AngelicaCtmBridge
+                .resolveIcon(icon, block, blockAccess, (int) x, (int) y, (int) z, direction.ordinal());
         }
-        // A layer stacked on a connection texture that split the face has to be split the same way. Sharing vertices
-        // is what keeps the coplanar layers apart in the depth buffer however far away the block is.
+
         if (LayeredFaceRender.needsQuadrantSplit(renderer, direction, x, y, z)) {
-            CtmFaceRenderer.renderMatchingSplitLayer(renderer, block, x, y, z, icon, direction, original::call);
+            AngelicaCtmBridge.dropQueuedFace();
+            CtmFaceRenderer.renderMatchingSplitLayer(renderer, block, x, y, z, faceIcon, direction, original::call);
             return;
         }
-        original.call(block, x, y, z, icon);
+        original.call(block, x, y, z, faceIcon);
     }
 }

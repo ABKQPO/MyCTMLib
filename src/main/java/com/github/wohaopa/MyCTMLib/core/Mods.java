@@ -18,7 +18,8 @@ public enum Mods implements IMod, ITargetMod {
     Ae2FluidCraft("ae2fc"),
     ThaumicEnergistics("thaumicenergistics"),
     IndustrialCraft2("IC2", "ic2.core.coremod.IC2core"),
-    Gregtech("gregtech");
+    Gregtech("gregtech"),
+    Angelica("angelica");
 
     private final String id;
     private final String resourceDomain;

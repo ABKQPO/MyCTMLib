@@ -111,6 +111,10 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
 
             CtmMethod method = CtmMethod.fromName(config.method);
 
+            if (method == CtmMethod.COMPACT) {
+                method = null;
+            }
+
             if (method != null && !method.isImplemented()) {
                 // Recognized but not ported yet, so the original texture stays in place.
             } else if (config.connectionTexture != null && method == CtmMethod.FIXED) {
