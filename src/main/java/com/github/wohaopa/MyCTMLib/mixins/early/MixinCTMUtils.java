@@ -1,4 +1,4 @@
-package com.github.wohaopa.MyCTMLib.mixins.late;
+package com.github.wohaopa.MyCTMLib.mixins.early;
 
 import net.minecraft.block.Block;
 import net.minecraft.util.IIcon;

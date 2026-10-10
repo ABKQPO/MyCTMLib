@@ -47,7 +47,7 @@ public enum Mixins implements IMixins {
         .addRequiredMod(Mods.Gregtech)),
 
     ANGELICA(new MixinBuilder("Angelica connected texture priority mixin").addClientMixins("MixinCTMUtils")
-        .setPhase(Phase.LATE)
+        .setPhase(Phase.EARLY)
         .addRequiredMod(Mods.Angelica));
 
     private final MixinBuilder builder;
