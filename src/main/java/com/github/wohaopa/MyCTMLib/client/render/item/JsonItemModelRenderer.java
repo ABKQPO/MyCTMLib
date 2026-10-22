@@ -1,5 +1,7 @@
 package com.github.wohaopa.MyCTMLib.client.render.item;
 
+import java.util.Arrays;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.texture.TextureMap;
@@ -17,6 +19,8 @@ import cpw.mods.fml.relauncher.SideOnly;
 
 @SideOnly(Side.CLIENT)
 public class JsonItemModelRenderer {
+
+    private static final int UNTINTED = 0xFFFFFF;
 
     private int[] tintColors = new int[0];
     private final ItemIconOverlayRenderer overlayRenderer = new ItemIconOverlayRenderer();
@@ -47,11 +51,14 @@ public class JsonItemModelRenderer {
             Minecraft.getMinecraft()
                 .getTextureManager()
                 .bindTexture(TextureMap.locationBlocksTexture);
+            GL11.glEnable(GL11.GL_TEXTURE_2D);
             GL11.glEnable(GL11.GL_BLEND);
             GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
             GL11.glEnable(GL11.GL_ALPHA_TEST);
             GL11.glAlphaFunc(GL11.GL_GREATER, 0.1F);
             GL11.glEnable(GL11.GL_CULL_FACE);
+            GL11.glEnable(GL11.GL_DEPTH_TEST);
+            GL11.glDepthMask(true);
             GL11.glDepthFunc(GL11.GL_LEQUAL);
             GL11.glDisable(GL11.GL_LIGHTING);
             GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
@@ -73,11 +80,16 @@ public class JsonItemModelRenderer {
     }
 
     private void prepareTintColors(ItemStack stack, int[] tintIndices) {
+        int required = 0;
+        for (int tintIndex : tintIndices) {
+            required = Math.max(required, tintIndex + 1);
+        }
+        if (tintColors.length != required) {
+            tintColors = new int[required];
+        }
+        Arrays.fill(tintColors, UNTINTED);
         int passes = stack.getItem()
             .getRenderPasses(stack.getItemDamage());
-        if (tintColors.length != passes) {
-            tintColors = new int[passes];
-        }
         for (int tintIndex : tintIndices) {
             if (tintIndex < passes) {
                 tintColors[tintIndex] = stack.getItem()
@@ -88,7 +100,7 @@ public class JsonItemModelRenderer {
 
     private void renderQuad(Tessellator tessellator, ModelQuadView quad, float shade) {
         int tintIndex = quad.getColorIndex();
-        int color = tintIndex >= 0 && tintIndex < tintColors.length ? tintColors[tintIndex] : 0xFFFFFF;
+        int color = tintIndex >= 0 && tintIndex < tintColors.length ? tintColors[tintIndex] : UNTINTED;
         tessellator.setColorOpaque_F(
             ((color >> 16) & 255) / 255.0F * shade,
             ((color >> 8) & 255) / 255.0F * shade,
