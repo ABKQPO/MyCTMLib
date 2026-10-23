@@ -9,6 +9,7 @@ public class CtmFaceRenderer {
 
     private static final ThreadLocal<FaceLighting> faceLighting = ThreadLocal.withInitial(FaceLighting::new);
     private static final ThreadLocal<CtmQuadrantIcon> quadrantIcons = ThreadLocal.withInitial(CtmQuadrantIcon::new);
+    private static final ThreadLocal<RotatedFaceIcon> rotatedFaceIcons = ThreadLocal.withInitial(RotatedFaceIcon::new);
     private static final int[] QUADRANT_ORDER = { 0, 1, 3, 2 };
 
     public static boolean render(RenderBlocks renderBlocks, Block block, double x, double y, double z,
@@ -103,13 +104,16 @@ public class CtmFaceRenderer {
             lighting.capture(renderBlocks);
         }
 
+        RotatedFaceIcon rotatedIcon = rotatedFaceIcons.get();
+
         try {
             for (int quadrant = 0; quadrant < 4; quadrant++) {
                 if (lighting != null) {
                     lighting.apply(renderBlocks, direction.ordinal(), quadrant);
                 }
                 setQuadrantBounds(renderBlocks, direction.ordinal(), quadrant, minX, minY, minZ, maxX, maxY, maxZ);
-                drawer.draw(block, x, y, z, icon);
+                double uOffset = rotatedFaceUOffset(renderBlocks, direction, minX, minY, minZ, maxX, maxY, maxZ);
+                drawer.draw(block, x, y, z, uOffset == 0.0D ? icon : rotatedIcon.setSource(icon, uOffset));
             }
         } finally {
             if (lighting != null) {
@@ -122,6 +126,41 @@ public class CtmFaceRenderer {
     public interface FaceDrawer {
 
         void draw(Block block, double x, double y, double z, IIcon icon);
+    }
+
+    private static double rotatedFaceUOffset(RenderBlocks renderBlocks, ForgeDirection direction, double minX,
+        double minY, double minZ, double maxX, double maxY, double maxZ) {
+        double verticalShift = shift(renderBlocks.renderMinY, renderBlocks.renderMaxY, minY, maxY);
+        return switch (direction) {
+            case NORTH -> switch (renderBlocks.uvRotateEast) {
+                    case 1 -> verticalShift;
+                    case 2 -> -verticalShift;
+                    case 3 -> shift(renderBlocks.renderMinX, renderBlocks.renderMaxX, minX, maxX);
+                    default -> 0.0D;
+                };
+            case SOUTH -> switch (renderBlocks.uvRotateWest) {
+                    case 1 -> -verticalShift;
+                    case 2 -> verticalShift;
+                    default -> 0.0D;
+                };
+            case WEST -> switch (renderBlocks.uvRotateNorth) {
+                    case 1 -> -verticalShift;
+                    case 2 -> verticalShift;
+                    default -> 0.0D;
+                };
+            case EAST -> switch (renderBlocks.uvRotateSouth) {
+                    case 1 -> verticalShift;
+                    case 2 -> -verticalShift;
+                    case 3 -> shift(renderBlocks.renderMinZ, renderBlocks.renderMaxZ, minZ, maxZ);
+                    default -> 0.0D;
+                };
+            // The top and bottom faces read their own bounds in every rotation.
+            default -> 0.0D;
+        };
+    }
+
+    private static double shift(double pieceMin, double pieceMax, double faceMin, double faceMax) {
+        return ((pieceMin + pieceMax) - (faceMin + faceMax)) * 16.0D;
     }
 
     private static void renderFace(RenderBlocks renderBlocks, Block block, double x, double y, double z, IIcon icon,
@@ -418,6 +457,63 @@ public class CtmFaceRenderer {
             int block = Math.round(interpolate(blockTopLeft, blockTopRight, blockBottomLeft, blockBottomRight, u, v));
             int sky = Math.round(interpolate(skyTopLeft, skyTopRight, skyBottomLeft, skyBottomRight, u, v));
             return sky << 16 | block & 0xFFFF;
+        }
+    }
+
+    private static class RotatedFaceIcon implements IIcon {
+
+        private IIcon source;
+        private double uOffset;
+
+        private IIcon setSource(IIcon source, double uOffset) {
+            this.source = source;
+            this.uOffset = uOffset;
+            return this;
+        }
+
+        @Override
+        public float getMinU() {
+            return source.getMinU();
+        }
+
+        @Override
+        public float getMaxU() {
+            return source.getMaxU();
+        }
+
+        @Override
+        public float getInterpolatedU(double value) {
+            return source.getInterpolatedU(value + uOffset);
+        }
+
+        @Override
+        public float getMinV() {
+            return source.getMinV();
+        }
+
+        @Override
+        public float getMaxV() {
+            return source.getMaxV();
+        }
+
+        @Override
+        public float getInterpolatedV(double value) {
+            return source.getInterpolatedV(value);
+        }
+
+        @Override
+        public String getIconName() {
+            return source.getIconName();
+        }
+
+        @Override
+        public int getIconWidth() {
+            return source.getIconWidth();
+        }
+
+        @Override
+        public int getIconHeight() {
+            return source.getIconHeight();
         }
     }
 
