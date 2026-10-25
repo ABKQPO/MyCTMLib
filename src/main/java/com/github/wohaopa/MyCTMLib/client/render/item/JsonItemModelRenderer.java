@@ -26,7 +26,18 @@ public class JsonItemModelRenderer {
     private final ItemIconOverlayRenderer overlayRenderer = new ItemIconOverlayRenderer();
 
     public void render(ItemRenderType type, ItemStack stack, BakedItem model) {
-        renderModel(stack, model, () -> JsonItemDisplayTransform.apply(type, model.model()));
+        renderModel(stack, model, null, () -> JsonItemDisplayTransform.apply(type, model.model()));
+    }
+
+    public void render(ItemRenderType type, ItemStack stack, BakedItem model, int[] tints) {
+        renderModel(stack, model, tints, () -> JsonItemDisplayTransform.apply(type, model.model()));
+    }
+
+    public void render(ItemRenderType type, ItemStack stack, BakedItem model, Runnable modelTransform) {
+        renderModel(stack, model, null, () -> {
+            JsonItemDisplayTransform.apply(type, model.model());
+            modelTransform.run();
+        });
     }
 
     public void renderWithOverlay(ItemRenderType type, ItemStack stack, BakedItem model, IIcon overlay) {
@@ -35,14 +46,14 @@ public class JsonItemModelRenderer {
     }
 
     public void renderGui(ItemStack stack, BakedItem model, int x, int y, float zLevel) {
-        renderModel(stack, model, () -> {
+        renderModel(stack, model, null, () -> {
             GL11.glTranslatef(x + 8.0F, y + 8.0F, zLevel);
             GL11.glScalef(16.0F, -16.0F, 16.0F);
             JsonItemDisplayTransform.applyGui(model.model());
         });
     }
 
-    private void renderModel(ItemStack stack, BakedItem model, Runnable transform) {
+    private void renderModel(ItemStack stack, BakedItem model, int[] tints, Runnable transform) {
         Tessellator tessellator = Tessellator.instance;
         GL11.glPushAttrib(
             GL11.GL_ENABLE_BIT | GL11.GL_COLOR_BUFFER_BIT | GL11.GL_CURRENT_BIT | GL11.GL_DEPTH_BUFFER_BIT);
@@ -63,7 +74,11 @@ public class JsonItemModelRenderer {
             GL11.glDisable(GL11.GL_LIGHTING);
             GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
             transform.run();
-            prepareTintColors(stack, model.tintIndices());
+            if (tints == null) {
+                prepareTintColors(stack, model.tintIndices());
+            } else {
+                tintColors = tints.clone();
+            }
             tessellator.startDrawingQuads();
 
             ModelQuadView[] quads = model.quads();

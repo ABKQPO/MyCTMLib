@@ -26,7 +26,20 @@ public enum Mixins implements IMixins {
         .addRequiredMod(Mods.Forestry)),
 
     APPLIED_ENERGISTICS_2(new MixinBuilder("AE2 JSON device models")
-        .addClientMixins("MixinRenderDrive", "MixinRenderMEChest", "MixinRenderBlockWireless")
+        .addClientMixins(
+            "MixinRenderDrive",
+            "MixinRenderMEChest",
+            "MixinRenderBlockWireless",
+            "MixinRenderBlockCharger",
+            "MixinRenderBlockInscriber",
+            "MixinRenderBlockAssembler",
+            "MixinRenderBlockCrank",
+            "MixinRenderTinyTNT",
+            "MixinRenderQuartzTorch",
+            "MixinRenderBlockSkyChest",
+            "MixinModelCompass",
+            "MixinBaseBlockRender",
+            "AccessorAEBaseBlock")
         .setPhase(Phase.LATE)
         .addRequiredMod(Mods.AppliedEnergistics2)),
 

@@ -5,6 +5,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.util.IIcon;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.client.event.TextureStitchEvent;
 
@@ -14,11 +15,13 @@ import com.github.wohaopa.MyCTMLib.client.model.JsonBlockModel.BakedBlock;
 import com.github.wohaopa.MyCTMLib.client.resource.JsonModelResources;
 import com.github.wohaopa.MyCTMLib.client.resource.ResourcePackFeature;
 import com.github.wohaopa.MyCTMLib.mixins.early.AccessorTextureMap;
+import com.github.wohaopa.MyCTMLib.mixins.late.AccessorAEBaseBlock;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.gtnewhorizon.gtnhlib.client.model.loading.ResourceLoc.ModelLoc;
 
+import appeng.api.AEApi;
 import cpw.mods.fml.common.eventhandler.EventPriority;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 
@@ -33,6 +36,7 @@ public class Ae2ModelLibrary {
 
     private volatile Snapshot snapshot;
     private final Map<String, JsonBlockModel> pending = new LinkedHashMap<>();
+    private final Map<String, String> sprites = new HashMap<>();
     private JsonObject manifest;
 
     public Snapshot getSnapshot() {
@@ -43,7 +47,9 @@ public class Ae2ModelLibrary {
     public void beforeStitch(TextureStitchEvent.Pre event) {
         if (event.map.getTextureType() != 0) return;
         snapshot = null;
+        openAdvancedInscriber(false);
         pending.clear();
+        sprites.clear();
         manifest = null;
         if (((AccessorTextureMap) event.map).myctmlib$isSkippingFirstLoad()) return;
         JsonModelResources resources = new JsonModelResources(
@@ -67,6 +73,15 @@ public class Ae2ModelLibrary {
                 collect(tiers, resources);
             }
             collect(manifest.getAsJsonObject("overrides"), resources);
+            JsonObject extraSprites = manifest.getAsJsonObject("sprites");
+            if (extraSprites != null) {
+                for (Map.Entry<String, JsonElement> entry : extraSprites.entrySet()) {
+                    String texture = entry.getValue()
+                        .getAsString();
+                    event.map.registerIcon(texture);
+                    sprites.put(entry.getKey(), texture);
+                }
+            }
             for (JsonBlockModel model : pending.values()) {
                 for (String texture : model.getTextures()
                     .values()) {
@@ -75,6 +90,7 @@ public class Ae2ModelLibrary {
             }
         } catch (RuntimeException exception) {
             pending.clear();
+            sprites.clear();
             manifest = null;
             MyCTMLib.LOG.error("Cannot load AE2 JSON models; keeping the original renderers", exception);
         }
@@ -110,14 +126,32 @@ public class Ae2ModelLibrary {
                             .getAsJsonObject(),
                         baked));
             }
+            Map<String, IIcon> stitched = new HashMap<>();
+            for (Map.Entry<String, String> entry : sprites.entrySet()) {
+                // Look the sprite up after stitching; the registered instance is not always the one that is uploaded.
+                IIcon sprite = event.map.getAtlasSprite(entry.getValue());
+                if ("missingno".equals(sprite.getIconName())) {
+                    // Sprites only restyle AE2's own drawing, which keeps its original texture without them.
+                    MyCTMLib.LOG.warn("Missing AE2 sprite {}; keeping the original texture", entry.getValue());
+                } else {
+                    stitched.put(entry.getKey(), sprite);
+                }
+            }
             snapshot = new Snapshot(
                 resolve(manifest.getAsJsonObject("devices"), baked),
-                new Ae2CellModels(Map.copyOf(cells), resolve(manifest.getAsJsonObject("overrides"), baked)));
+                new Ae2CellModels(Map.copyOf(cells), resolve(manifest.getAsJsonObject("overrides"), baked)),
+                Map.copyOf(stitched));
+            // Like every model, the opening follows the enableAe2JsonModels gate in getSnapshot.
+            Snapshot enabled = getSnapshot();
+            openAdvancedInscriber(
+                enabled != null && enabled.devices()
+                    .get("advanced_inscriber") != null);
             MyCTMLib.LOG.info("Loaded {} AE2 JSON models with cached block orientations", baked.size());
         } catch (RuntimeException exception) {
             MyCTMLib.LOG.error("Cannot bake AE2 JSON models; keeping the original renderers", exception);
         } finally {
             pending.clear();
+            sprites.clear();
             manifest = null;
         }
     }
@@ -147,5 +181,15 @@ public class Ae2ModelLibrary {
         return Map.copyOf(result);
     }
 
-    public record Snapshot(Map<String, BakedBlock> devices, Ae2CellModels cells) {}
+    private static void openAdvancedInscriber(boolean open) {
+        AEApi.instance()
+            .definitions()
+            .blocks()
+            .advancedInscriber()
+            .maybeBlock()
+            .asSet()
+            .forEach(block -> ((AccessorAEBaseBlock) block).myctmlib$setOpaque(!open));
+    }
+
+    public record Snapshot(Map<String, BakedBlock> devices, Ae2CellModels cells, Map<String, IIcon> sprites) {}
 }
