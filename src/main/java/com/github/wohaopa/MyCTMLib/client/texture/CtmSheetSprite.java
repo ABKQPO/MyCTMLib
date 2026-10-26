@@ -18,10 +18,11 @@ import cpw.mods.fml.relauncher.SideOnly;
 /**
  * Connection sheet sprite that lays its units out with padding before the atlas stitches it.
  * <p>
- * A resource pack keeps shipping one sheet texture, and the sprite stays registered under that real resource name, so
- * atlas resource resolution and missing texture tracking keep working. The image handed to the atlas is built here
- * instead: every unit is surrounded by copies of its own edge texels, so filtered or mipmapped sampling next to a block
- * border reads that unit again rather than whichever unit happens to sit next to it inside the sheet.
+ * A resource pack keeps shipping one sheet texture, and the sprite is normally registered under that sheet resource
+ * name. When an incompatible sprite already owns that name, the atlas can hold this sheet under a derived name instead;
+ * either way the image handed to the atlas is built here, not read from the registered name. Every unit is surrounded
+ * by copies of its own edge texels, so filtered or mipmapped sampling next to a block border reads that unit again
+ * rather than whichever unit happens to sit next to it inside the sheet.
  * <p>
  * A unit is the piece a face is drawn from: one cell for the full, horizontal, vertical, top, repeat and random
  * layouts, and a two by two block of cells for the compact layout, where one unit holds a whole connection variant.
@@ -50,7 +51,7 @@ public class CtmSheetSprite extends InterpolatedIcon {
     /**
      * Creates a connection sheet sprite laid out as two by two compact variants.
      *
-     * @param name          the atlas name this sprite is registered under, which is the sheet resource name
+     * @param name          the atlas registration name; normally the sheet resource name, possibly a derived name
      * @param sheetLocation the sheet resource, used to read the animation metadata
      * @param sheet         the already loaded sheet image
      * @param padding       the number of replicated edge pixels added around each unit
@@ -64,7 +65,7 @@ public class CtmSheetSprite extends InterpolatedIcon {
     /**
      * Creates a connection sheet sprite.
      *
-     * @param name          the atlas name this sprite is registered under, which is the sheet resource name
+     * @param name          the atlas registration name; normally the sheet resource name, possibly a derived name
      * @param sheetLocation the sheet resource, used to read the animation metadata
      * @param sheet         the already loaded sheet image
      * @param columns       the number of unit columns in the sheet
@@ -96,6 +97,36 @@ public class CtmSheetSprite extends InterpolatedIcon {
      */
     public IIcon[] getUnitIcons() {
         return units;
+    }
+
+    /**
+     * Returns whether this sprite is compatible with a registration that names the same connection texture: same unit
+     * layout, same source image and same interpolation. Only then can both registrations share one sprite instead of
+     * one of them taking the other's atlas slot. A sheet of another layout is never compatible, because the compact
+     * consumer expects exactly four variant units.
+     *
+     * @param image       the sheet image of the other registration
+     * @param interpolate whether that registration asks for interpolated animation frames
+     * @return whether source, layout and interpolation all match
+     */
+    public boolean isSameSource(BufferedImage image, boolean interpolate) {
+        if (image == null || this.interpolate != interpolate) {
+            return false;
+        }
+        if (columns != COMPACT_GRID || rows != COMPACT_GRID || units.length != COMPACT_GRID * COMPACT_GRID) {
+            return false;
+        }
+        if (image.getWidth() != sheet.getWidth() || image.getHeight() != sheet.getHeight()) {
+            return false;
+        }
+        for (int y = 0; y < sheet.getHeight(); y++) {
+            for (int x = 0; x < sheet.getWidth(); x++) {
+                if (image.getRGB(x, y) != sheet.getRGB(x, y)) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     @Override

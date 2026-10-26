@@ -229,13 +229,29 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
                             if (sheet != null && sheet.getWidth() == sheet.getHeight()
                                 && sheet.getWidth() >= 4
                                 && (sheet.getWidth() & 1) == 0) {
-                                CtmSheetSprite sheetSprite = new CtmSheetSprite(
+                                boolean interpolate = useInterpolation(simpleCTM);
+                                // One connection texture is shared by every icon that names it, so a second
+                                // registration keeps using the sheet the atlas already holds. Replacing it would
+                                // orphan the first manager and leave its sprite without atlas bounds. The atlas name
+                                // doubles as the sprite name, so TextureMap bookkeeping stays consistent.
+                                String sheetKey = connectionSheetKey(
                                     config.connectionTexture,
-                                    completeResourceLocation(new ResourceLocation(config.connectionTexture), 0),
+                                    textureName,
                                     sheet,
-                                    CtmSheetSprite.DEFAULT_PADDING,
-                                    useInterpolation(simpleCTM));
-                                mapRegisteredSprites.put(config.connectionTexture, sheetSprite);
+                                    interpolate);
+                                Object registered = mapRegisteredSprites.get(sheetKey);
+                                CtmSheetSprite sheetSprite = isCompatibleSheet(registered, sheet, interpolate)
+                                    ? (CtmSheetSprite) registered
+                                    : null;
+                                if (sheetSprite == null) {
+                                    sheetSprite = new CtmSheetSprite(
+                                        sheetKey,
+                                        completeResourceLocation(new ResourceLocation(config.connectionTexture), 0),
+                                        sheet,
+                                        CtmSheetSprite.DEFAULT_PADDING,
+                                        interpolate);
+                                    mapRegisteredSprites.put(sheetKey, sheetSprite);
+                                }
                                 builder.setIconVariants(sheetSprite.getUnitIcons());
                             } else {
                                 currentCTM = useInterpolation(simpleCTM)
@@ -342,6 +358,58 @@ public abstract class MixinTextureMap extends AbstractTexture implements ITickab
             if (ModConfig.debug) {
                 MyCTMLib.LOG.warn("[MyCTMLib] Ignoring resource metadata for texture {}.", textureName, e);
             }
+        }
+    }
+
+    /**
+     * Returns whether an already registered sprite can serve the compact connection sheet being handled: it has to be
+     * a compact sheet of the same source image and interpolation, so registrations that name the same sheet share one
+     * sprite instead of replacing each other.
+     *
+     * @param candidate   the registered sprite, may be null or of another type
+     * @param sheet       the sheet image of the registration being handled
+     * @param interpolate whether that registration asks for interpolated animation frames
+     * @return whether the candidate is the same connection sheet
+     */
+    @Unique
+    private boolean isCompatibleSheet(Object candidate, BufferedImage sheet, boolean interpolate) {
+        return candidate instanceof CtmSheetSprite && ((CtmSheetSprite) candidate).isSameSource(sheet, interpolate);
+    }
+
+    /**
+     * Returns the atlas name a connection sheet is registered under. The connection texture name is used while it is
+     * free or already holds a compatible sheet. Otherwise a name derived from the icon is probed, and a deterministic
+     * numeric suffix keeps probing until a free or compatible name is found, so an incompatible sprite is never
+     * overwritten.
+     *
+     * @param connectionTexture the connection texture name declared by the metadata
+     * @param textureName       the icon name this sheet is being registered for
+     * @param sheet             the sheet image of the registration being handled
+     * @param interpolate       whether that registration asks for interpolated animation frames
+     * @return the atlas name to register the sheet under
+     */
+    @Unique
+    private String connectionSheetKey(String connectionTexture, String textureName, BufferedImage sheet,
+        boolean interpolate) {
+        Object owner = this.mapRegisteredSprites.get(connectionTexture);
+        if (owner == null || isCompatibleSheet(owner, sheet, interpolate)) {
+            return connectionTexture;
+        }
+
+        // concat and String.valueOf keep this class free of string concatenation bytecode, which the current JDK
+        // would otherwise compile to an invokedynamic call and ship as an extra versions:17 class entry.
+        String base = connectionTexture.concat("_")
+            .concat(
+                textureName.replace(':', '_')
+                    .replace('/', '_'));
+        String candidate = base;
+        for (int suffix = 2;; suffix++) {
+            Object conflict = this.mapRegisteredSprites.get(candidate);
+            if (conflict == null || isCompatibleSheet(conflict, sheet, interpolate)) {
+                return candidate;
+            }
+            candidate = base.concat("_")
+                .concat(String.valueOf(suffix));
         }
     }
 
