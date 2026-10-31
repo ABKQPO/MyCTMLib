@@ -51,8 +51,9 @@ public class MyCTMLibMetadataSectionSerializer implements IMetadataSectionSerial
             return getBooleanSetting("enableBeeJsonModels");
         }
 
-        public Boolean getAe2JsonModelsEnabledSetting() {
-            return getBooleanSetting("enableAe2JsonModels");
+        public JsonObject getObjectSetting(String key) {
+            return json.has(key) && json.get(key)
+                .isJsonObject() ? json.getAsJsonObject(key) : null;
         }
 
         public Boolean getBooleanSetting(String key) {

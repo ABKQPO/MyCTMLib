@@ -1,8 +1,11 @@
 package com.github.wohaopa.MyCTMLib.compat.ae2.model;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.IIcon;
@@ -13,7 +16,7 @@ import com.github.wohaopa.MyCTMLib.MyCTMLib;
 import com.github.wohaopa.MyCTMLib.client.model.JsonBlockModel;
 import com.github.wohaopa.MyCTMLib.client.model.JsonBlockModel.BakedBlock;
 import com.github.wohaopa.MyCTMLib.client.resource.JsonModelResources;
-import com.github.wohaopa.MyCTMLib.client.resource.ResourcePackFeature;
+import com.github.wohaopa.MyCTMLib.client.resource.ResourcePackFeatureGroup;
 import com.github.wohaopa.MyCTMLib.mixins.early.AccessorTextureMap;
 import com.github.wohaopa.MyCTMLib.mixins.late.AccessorAEBaseBlock;
 import com.google.gson.JsonElement;
@@ -28,11 +31,51 @@ import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 public class Ae2ModelLibrary {
 
     public static final Ae2ModelLibrary INSTANCE = new Ae2ModelLibrary();
-    public static final ResourcePackFeature FEATURE = new ResourcePackFeature("enableAe2JsonModels");
+    public static final Map<String, Model> MODELS = new LinkedHashMap<>();
+
+    static {
+        model("drive", true, "drive", "drive_item", "cell_led");
+        model("chest", true, "chest", "chest_lights_on", "chest_lights_off", "chest_item", "cell_led");
+        model(
+            "wireless_access_point",
+            false,
+            "wireless_access_point",
+            "wireless_on",
+            "wireless_off",
+            "wireless_status_off",
+            "wireless_status_on",
+            "wireless_status_channel",
+            "wireless_item");
+        model("charger", false, "charger");
+        model("inscriber", false, "inscriber");
+        model("advanced_inscriber", false, "advanced_inscriber");
+        model("molecular_assembler", false, "molecular_assembler", "molecular_assembler_lights");
+        model("tiny_tnt", false, "tiny_tnt");
+        model("crank", false, "crank_base", "crank_handle", "crank_item");
+        model(
+            "quartz_fixture",
+            false,
+            "quartz_fixture_standing",
+            "quartz_fixture_standing_odd",
+            "quartz_fixture_wall",
+            "quartz_fixture_wall_odd",
+            "quartz_fixture_item");
+        model("sky_chest", false, "sky_chest_base", "sky_chest_lid");
+        model("smooth_sky_chest", false, "smooth_sky_chest_base", "smooth_sky_chest_lid");
+        model("meteorite_compass", false, "meteorite_compass_base", "meteorite_compass_pointer");
+        model("matter_cannon", false, "matter_cannon_item");
+        model("network_tool", false, "network_tool_item");
+        model("advanced_network_tool", false, "advanced_network_tool_item");
+        model("color_applicator", false, "color_applicator_item", "color_applicator_colored_item");
+    }
+
+    /** Manifest sprites that restyle AE2's own drawing for one model; they are optional. */
+    private static final Map<String, String> SPRITE_OWNERS = Map.of("inscriber_inside", "inscriber");
+
+    public static final ResourcePackFeatureGroup FEATURE = new ResourcePackFeatureGroup(
+        "enableAe2JsonModels",
+        MODELS.keySet());
     private static final ResourceLocation MANIFEST = new ResourceLocation("myctmlib", "ae2/models.json");
-    private static final String[] REQUIRED_DEVICES = { "drive", "chest", "wireless_access_point", "chest_lights_on",
-        "chest_lights_off", "wireless_on", "wireless_off", "wireless_status_off", "wireless_status_on",
-        "wireless_status_channel", "wireless_item", "chest_item", "drive_item", "cell_led" };
 
     private volatile Snapshot snapshot;
     private final Map<String, JsonBlockModel> pending = new LinkedHashMap<>();
@@ -40,7 +83,11 @@ public class Ae2ModelLibrary {
     private JsonObject manifest;
 
     public Snapshot getSnapshot() {
-        return FEATURE.isEnabled() ? snapshot : null;
+        return snapshot;
+    }
+
+    private static void model(String name, boolean cells, String... devices) {
+        MODELS.put(name, new Model(List.of(devices), cells));
     }
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
@@ -58,24 +105,53 @@ public class Ae2ModelLibrary {
         FEATURE.onResourceManagerReload(
             Minecraft.getMinecraft()
                 .getResourceManager());
-        if (!FEATURE.isEnabled()) return;
+        Set<String> enabled = FEATURE.getEnabled();
+        if (enabled.isEmpty()) return;
         try {
             manifest = resources.readObject(MANIFEST);
-            JsonObject devices = manifest.getAsJsonObject("devices");
-            for (String key : REQUIRED_DEVICES) {
-                if (!devices.has(key)) throw new JsonParseException("Missing AE2 device model: " + key);
+            JsonObject allDevices = manifest.getAsJsonObject("devices");
+            if (allDevices == null) throw new JsonParseException("Missing AE2 device models");
+            Set<String> loaded = new HashSet<>();
+            JsonObject devices = new JsonObject();
+            boolean cellsNeeded = false;
+            for (String name : enabled) {
+                Model model = MODELS.get(name);
+                List<String> missing = model.devices()
+                    .stream()
+                    .filter(device -> !allDevices.has(device))
+                    .toList();
+                if (!missing.isEmpty()) {
+                    MyCTMLib.LOG
+                        .warn("AE2 JSON model {} is missing devices {}; keeping its original renderer", name, missing);
+                    continue;
+                }
+                loaded.add(name);
+                for (String device : model.devices()) devices.add(device, allDevices.get(device));
+                cellsNeeded |= model.cells();
             }
+            // afterStitch resolves the sections it reads back from the manifest, so keep only the enabled ones.
+            manifest.add("devices", devices);
             collect(devices, resources);
-            JsonObject cells = manifest.getAsJsonObject("cells");
-            for (String kind : new String[] { "item", "fluid", "essentia" }) {
-                JsonObject tiers = cells.getAsJsonObject(kind);
-                if (!tiers.has("default")) throw new JsonParseException("Missing default cell model: " + kind);
-                collect(tiers, resources);
+            if (cellsNeeded) {
+                JsonObject cells = manifest.getAsJsonObject("cells");
+                if (cells == null) throw new JsonParseException("Missing AE2 cell models");
+                for (String kind : new String[] { "item", "fluid", "essentia" }) {
+                    JsonObject tiers = cells.getAsJsonObject(kind);
+                    if (tiers == null || !tiers.has("default")) {
+                        throw new JsonParseException("Missing default cell model: " + kind);
+                    }
+                    collect(tiers, resources);
+                }
+                collect(manifest.getAsJsonObject("overrides"), resources);
+            } else {
+                manifest.add("cells", new JsonObject());
+                manifest.add("overrides", new JsonObject());
             }
-            collect(manifest.getAsJsonObject("overrides"), resources);
             JsonObject extraSprites = manifest.getAsJsonObject("sprites");
             if (extraSprites != null) {
                 for (Map.Entry<String, JsonElement> entry : extraSprites.entrySet()) {
+                    String owner = SPRITE_OWNERS.get(entry.getKey());
+                    if (owner != null && !loaded.contains(owner)) continue;
                     String texture = entry.getValue()
                         .getAsString();
                     event.map.registerIcon(texture);
@@ -141,10 +217,9 @@ public class Ae2ModelLibrary {
                 resolve(manifest.getAsJsonObject("devices"), baked),
                 new Ae2CellModels(Map.copyOf(cells), resolve(manifest.getAsJsonObject("overrides"), baked)),
                 Map.copyOf(stitched));
-            // Like every model, the opening follows the enableAe2JsonModels gate in getSnapshot.
-            Snapshot enabled = getSnapshot();
+            // The opening follows the advanced_inscriber switch, which decides whether its device was loaded.
             openAdvancedInscriber(
-                enabled != null && enabled.devices()
+                snapshot.devices()
                     .get("advanced_inscriber") != null);
             MyCTMLib.LOG.info("Loaded {} AE2 JSON models with cached block orientations", baked.size());
         } catch (RuntimeException exception) {
@@ -190,6 +265,8 @@ public class Ae2ModelLibrary {
             .asSet()
             .forEach(block -> ((AccessorAEBaseBlock) block).myctmlib$setOpaque(!open));
     }
+
+    public record Model(List<String> devices, boolean cells) {}
 
     public record Snapshot(Map<String, BakedBlock> devices, Ae2CellModels cells, Map<String, IIcon> sprites) {}
 }

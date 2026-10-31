@@ -208,6 +208,8 @@ public class Ae2WorldRenderer {
     private boolean renderTile(Snapshot models, AEBaseTile tile) {
         Map<String, BakedBlock> devices = models.devices();
         if (tile instanceof TileDrive drive) {
+            // Each switched-on model brings all of its devices, so one lookup tells whether the drive is on.
+            if (devices.get("drive") == null) return false;
             AEColor color = drive.getColor();
             boolean powered = drive.isPowered();
             setColors(color);
@@ -231,6 +233,7 @@ public class Ae2WorldRenderer {
             return true;
         }
         if (tile instanceof TileChest storage) {
+            if (devices.get("chest") == null) return false;
             AEColor color = storage.getColor();
             boolean powered = storage.isPowered();
             setColors(color);
@@ -252,6 +255,7 @@ public class Ae2WorldRenderer {
             return true;
         }
         if (tile instanceof TileWireless wireless) {
+            if (devices.get("wireless_access_point") == null) return false;
             setColors(AEColor.Transparent);
             int flags = wireless.getClientFlags();
             boolean powered = (flags & TileWireless.POWERED_FLAG) != 0;
